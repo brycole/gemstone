@@ -1,0 +1,132 @@
+=begin
+Catrania's child.lic script, tweaked.
+Updated by Drafix through 11/04/15 changes.
+USAGE:  once you have a kid, type ;child2
+
+This script uses Tillmen's STEP2 for the movement phase.
+You must have the script "STEP2.lic."
+
+     author: Kalros
+       name: Child2
+       tags: escort
+    version: 1.5
+
+11/06/10 - added disabling spells for when there are NPCs present (but no PCs)...can change by adding/removing/reordering numbers from list. (line 13)
+12/16/10 - and onward: bug fixes
+02/19/10 - added illistim and disabled automatic reward collection
+03/07/10 - disabling spells will now only be cast when targetable NPCs are in the room.  no more ewaving the Fleet Captain
+03/28/10 - i noticed sometimes it was prepping ewave when only the kid was present; these 'false positives' should be fixed now
+06/04/11 - you people never tell me when shit is broken....I tried to fix a few things...hope i didnt make it worse.  LET ME KNOW
+         - should go to helgas for landing guard and back to gate if it just missed him again
+         - added Teras
+04/17/12 - added Vaalor.
+05/18/12 - made it work in RR....wasn't seeing the purser properly.
+12/10/12 - made it cast 213 correctly as a disabling spell  (was trying to cast 213 AT critters before...I didn't know you couldnt!)  thanks to Velfi for pointing it out.
+		 - also fixed the purser bug.  sorry about that...it thought everyone was in RR when they weren't.
+05/19/15 - Drafix took over maintaining this piece of fail from Jeril's grubby paws
+		 - added recognizing of passive critters
+		 - added dropping off child to nearest guard
+		 - prevented script from using seeking
+06/01/15
+		 - added pause back in
+06/25/15
+		 - Fix alternate drop off spot
+07/03/15
+		 - Rewrote parts of the script to simplify and make it work with Pinefar v1.3!
+07/06/15
+		 - Rewrote some more parts of it to make it work with vaalor guards.
+		 - Fixed a loop problem for choosing the alternate rooms twice
+11/04/15
+		 - Fixed purser in RR
+02/19/15
+		 - Drafix removed as maintainer
+		 - Kalros added as maintainer
+=end
+Settings['untargetable'] ||= Array.new
+
+if script.vars[0] =~ /list/
+	echo Settings['untargetable'].inspect
+	exit
+elsif script.vars[0] =~ /clear/
+	Settings['untargetable'] = Array.new
+	exit
+end
+
+
+seeking = $go2_use_seeking
+$go2_use_seeking = false
+before_dying{ $go2_use_seeking = seeking }
+
+Watchfor.new ("You failed"){Script.self.kill}
+disabler = [ 1011, 1608, 709, 213, 912, 316, 619, 1219, 135 ]
+
+dropoff_points = Room.current.find_all_nearest_by_tag("advguard") + Room.current.find_all_nearest_by_tag("advguard2") + [2777, 2778, 2782, 2779, 2780, 2781, 2783, 2784, 2785, 2786, 2787]
+reportee = 'sergeant|guard|purser|Belle'
+place = Room.current.find_nearest(dropoff_points)
+dropoff_points.delete(place)
+1.times{
+	loop {
+		if Room.current.id != place
+			thatroom = Room.current.id
+			waitrt?
+			start_script 'step2', ["#{place}"]
+			wait_while{running?('step2')}
+			wait_until{ thatroom != Room.current.id }
+			waitrt?
+			if GameObj.npcs.size != nil && !checkpcs && GameObj.npcs.any?{ |npc| !npc.type =~ /passive npc/ || !Settings['untargetable'].include?(npc.noun)} && !GameObj.npcs.any?{ |npc| npc.name =~ /#{reportee}/i}
+				disabler.any? { |num|
+					if Spell[num].known? && Spell[num].affordable?
+						found = false
+						put "target random"
+						while line = get
+							if line =~ /Could not find a valid target\./
+								Settings['untargetable'].push(*checknpcs)
+								Settings['untargetable'] = Settings['untargetable'].uniq
+								break
+							elsif line =~/You are now targeting/
+								found = true
+								break
+							end
+						end
+						if found
+							if num == 213 
+								Spell[num].cast
+							elsif num == 1011
+								fput "renew 1011"
+								Spell[num].cast
+							else 
+								Spell[num].cast("target")
+							end
+						end
+					end 
+				} unless GameObj.npcs.size == 1 && GameObj.npcs.find{ |npc| npc.noun == 'child' }
+			end
+			
+				
+			wait_until{ GameObj.npcs.any?{ |npc| npc.noun == 'child' } }
+			if Room.current.id != place
+				waitrt?
+				redo
+			else
+				waitrt?
+				break
+			end
+		else
+			break
+		end
+	}
+
+	if Room.current.id == place && !npc=[GameObj.npcs.find{ |npc| npc.name =~ /#{reportee}/i }, GameObj.room_desc.find{|i| i.name =~ /#{reportee}/}].find{|i| i}
+		place = Room.current.find_nearest(dropoff_points)
+		dropoff_points.delete(place)
+		redo
+	else
+		fput "ask ##{npc.id} about bounty"
+	end
+}
+echo ";unpause to turn in task, ;kill to terminate the script"
+pause_script if Char.name != 'Drafix'
+waitfor "Adventurer's Guild"
+start_script 'go2',  ['advguild']
+wait_while {running? ('go2')}
+fput "ask taskmaster about bounty"

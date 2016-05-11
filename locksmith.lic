@@ -1,0 +1,138 @@
+=begin
+
+	comment!
+	Edited, Supremely by Aethor Whiteaxe
+	Edited, poorly, by Kewlzansor.
+
+=end
+
+# List group members here.
+$group = []
+
+def get_money
+start_script 'go2', [ 'bank' ]
+wait_while{running?( 'go2' )}
+fput "withdraw 8000 silvers"
+end
+
+def find_locksmith
+start_script 'go2', [ 'locksmith']
+wait_while{running?('go2')}
+end
+
+def set_cmd
+if Room.current.id == 1881
+	$cmd = "pull keys"
+elsif Room.current.id == 12282
+	$cmd = "ring chime"
+else
+	$cmd = "ring bell"
+end
+end
+
+
+#9491=nothing, 5724=wastebarrel, 5612=casket, 4024=barrel, 10434=barrel, 2425=barrel 4663=coffer
+def set_trashcan
+$room = Room.current.id
+if $room == 1881 or $room ==12282 then $trashcan = "crate"
+elsif $room == 5724 then $trashcan = "wastebarrel"
+elsif $room == 5612 then $trashcan = "casket"
+elsif $room == 4663 then $trashcan = "coffer"
+elsif $room == 4024 or $room == 10434 or room == 2425 then $trashcan = "barrel"
+else;echo "I dont know where the fuck you are!";exit
+end
+
+if $room == 12282 then $workspace = "table" else $workspace = "counter"
+end
+end
+
+def scan_counter
+	result = dothistimeout "look on #{$workspace}", 5, /On the .* you see|There is nothing on there/
+	if result !~ /There is nothing on there/	
+		contents = result.scan(/\b(?:#{$boxitems.join('|')})(?= and an? |,|\.)/)
+		contents.each { |box|
+			fput "get #{box} from #{$workspace}"
+			if $room == 9491
+				fput "drop #{box}"
+			else
+				set_trashcan
+				fput "put #{box} in #{$trashcan}"
+			end
+		}
+	end
+end
+
+
+def box_pick
+
+$contents.each { |box|
+	wait_until { (checkpcs.to_a - ["#{$group}"]).empty? == true }
+	scan_counter
+	fput "get #{box} from #{$container}"
+	fput "put my #{box} on #{$workspace}"
+	result = dothis $cmd, /Gimme \d+ silvers/
+	amount = /Gimme (\d+) silvers/.match(result).captures.first
+	fput "pay #{amount}"
+	fput "get #{box} from #{$workspace}"
+	fput "open my #{box}"
+	fput "get coins from my #{box}"
+	waitrt?
+	fput "empty my #{box} in my #{Lich.lootsack}"
+	waitrt?
+	result = dothis "look in my #{box}", /There is nothing in there|In the .* you see/
+	if result =~ /There is nothing in there/
+		if $room == 9491
+			fput "drop #{box}"
+            echo "Make sure to clean this up!"
+		else
+			fput "put #{box} in #{$trashcan}" 
+		end
+	elsif result =~ /In the .* you see/
+		respond 'Box not empty!'
+		exit
+	end
+    }
+end
+
+$boxitems=["box", "strongbox", "chest", "coffer", "trunk"]
+
+if GameObj.loot.any? { |obj| obj.noun == 'disk' and obj.name =~ /#{checkname}/ }
+	result = dothistimeout "look in #{checkname} disk", 5, /In the .*? you see|There is nothing in there/
+	if result !~ /There is nothing in there/
+		$contents = result.scan(/\b(?:#{$boxitems.join('|')})(?= and an? |,|\.)/)
+		if $contents.empty? == false
+			echo "Disk: #{$contents}"
+			$container = "#{checkname} disk"
+			get_money
+			find_locksmith
+			set_cmd
+			set_trashcan
+			wait_until { GameObj.loot.any? { |obj| obj.noun == 'disk' and obj.name =~ /#{checkname}/} == true}
+			box_pick
+		end
+	
+	end
+end
+	
+result = dothistimeout "look in my #{Lich.lootsack}", 5, /In the .*? you see|There is nothing in there/
+if result !~ /There is nothing in there/ 	
+	$contents = result.scan(/\b(?:#{$boxitems.join('|')})(?= and an? |,|\.)/)
+	if $contents.empty? == false
+		echo "Lootsack: #{$contents}"
+		$container = "my #{Lich.lootsack}"
+		wait_while{running?( 'herbheal' )}
+		wait_while{running?( 'go2' )}
+		get_money
+		find_locksmith
+		set_cmd
+		set_trashcan
+		box_pick
+		start_script "go2", [ 'bank' ]
+		wait_while{running?( 'go2')}
+		fput "depo all"
+		start_script 'go2', [ 'town' ]
+	end
+end
+
+
+exit

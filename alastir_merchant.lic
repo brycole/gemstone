@@ -1,0 +1,13 @@
+
+verb_list = ['SWINDLER', 'SNAKE OIL SALESMEN', 'CHARLATAN', 'GRIFTER', 'CROOK', 'DOUBLE-DEALER']
+
+$verb_count = 2
+
+
+while true
+  ala_msg = "#{verb_list[$verb_count]} ALERT: Alastir/Sashafierce will do ANYTHING to make a dollar.  Proof here! http://forum.gsplayers.com/showthread.php?101988-Scam-Alert-SashaFierce-Alastir."
+  LNet.send_message(attr={'type'=>'channel', 'channel'=>'merchant'}, ala_msg)
+  $verb_count += 1
+  $verb_count = 0 if $verb_count > 5
+  sleep 3600
+end

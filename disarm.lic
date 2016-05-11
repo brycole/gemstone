@@ -1,0 +1,42 @@
+## Disarm Script
+## v.01 by Kalros
+## Requires Trusted!
+
+## Instructions
+## Enter yor weapon_noun into weapon_noun
+## Enter your "weapon long" as displayed in ";e echo GameObj.loot" @name when your weapon is on the ground
+
+$disarmed = false
+weapon_noun = 'paingrip'
+weapon_long = 'ora-spiked black paingrip'
+
+## Enter any scripts here that may interfere when you get disarmed
+scripts = ['ubermonk', 'bigshot', 'sbounty', 'transcend', 'fbigshot', 'sloot', 'go2']
+
+def toggle_scripts(pause, script_list)
+  script_list.each {|s| eval("#{pause}_script '#{s}'") if running? "#{s}"}
+end
+
+Thread.new {
+  while true
+    GameObj.loot.find {|i| i.name == weapon_long} ? $disarmed = true : $disarmed = false
+    sleep 0.5
+  end
+}
+
+while true
+  if $disarmed
+    echo "You have been disarmed!"; print "\a"
+    toggle_scripts('pause', scripts)
+    waitrt?
+    fput "get #{weapon_noun}" until $disarmed == false
+    echo "You are no longer disarmed!"
+    if GameObj.right_hand.noun != weapon_noun and GameObj.left_hand.noun != weapon_noun
+    	10.times {echo "Your weapon is missing!";sleep 1; print "\a"}
+    	toggle_scripts('unpause', scripts)
+    	exit
+    end
+    toggle_scripts('unpause', scripts)
+  end
+  sleep 0.5
+end

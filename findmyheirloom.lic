@@ -1,0 +1,34 @@
+=begin
+This should find your heirloom
+Code stolen shamelessly from Tillmen's loot-be-gone
+-Veni
+=end
+
+unless lootsack = (GameObj.inv.find { |obj| obj.name =~ /\b#{Regexp.escape(UserVars.lootsack.strip)}$/i } || GameObj.inv.find { |obj| obj.name =~ /\b#{Regexp.escape(UserVars.lootsack).sub(' ', ' .*')}$/i } || GameObj.inv.find { |obj| obj.name =~ /\b#{Regexp.escape(UserVars.lootsack).sub(' ', ' .*')}/i })
+	echo 'error: failed to find your lootsack'
+	exit
+end
+close_lootsack = false
+if lootsack.contents.nil?
+	open_result = dothistimeout "open ##{lootsack.id}", 5, /^You open|^That is already open\.$/
+	if open_result =~ /^You open/
+		close_lootsack = true
+	else
+		dothistimeout "look in ##{lootsack.id}", 5, /In .*? you see/
+		if lootsack.contents.nil?
+			echo 'error: failed to find lootsack contents'
+			exit
+		end
+	end
+end		
+
+for item in lootsack.contents
+			look_result = dothistimeout "look ##{item.id}", 3, /^Engraved .* initials|^You see nothing unusual\.$|^The ring appears|^It takes you a moment|^It is difficult to see/
+			if look_result =~ /^Engraved .* initials/
+				fput 'unhide' if invisible?
+				empty_hands
+				fput "get ##{item.id}"
+
+				break
+			end
+end

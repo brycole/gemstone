@@ -1,0 +1,44 @@
+#Familiar protector to keep your familiar alive while afk or whatever.
+
+
+while true
+	wait_until {(Spell[920].timeleft != 0.0) && (Spell[920].timeleft < 5.0)} 
+	if running? "waggle"
+			pause_script "waggle"
+			didpause = true			
+	end
+	
+	if checkprep != 'None' then put "release" end
+	
+	waitcastrt?
+	waitrt?
+	casted = false
+	while !casted
+		wait_until {checkmana(20) || checkstamina(50)}
+		if checkmana 20 
+			fput "inc 920"
+		elsif checkstamina 50
+			fput "sigil of power"
+			pause 1
+			fput "inc 920"
+		end
+			
+		waitfor "You gesture."
+		line2 = get
+		waitcastrt?
+		if line2 == "Your magic fizzles ineffectually."
+			room = Room.current.id
+			until room != Room.current.id
+				echo "*** You are in an ANTI-MAGIC zone ***"
+				echo "*** familiar keeper will restart in 25 seconds ***"
+				echo "*** and only if you leave this room ***"
+				pause 25
+			end
+		end
+		if (Spell[920].timeleft > 5.0) then casted = true end
+	end
+	if didpause
+			pause 3
+			unpause_script "waggle"
+	end
+end

@@ -1,0 +1,24 @@
+@wear_items = Array.new
+
+GSC.open_satchel
+
+## Enhancive Remove Section
+GSC.remove_enhancive($combat_enhancives)
+GSC.remove_enhancive($skin_enhancives)
+
+## Armor start
+GSC.remove_armor($armors)
+
+## End Remove Section ##
+
+fput 'stow right' if GameObj.right_hand.noun.nil? == false
+fput 'stow left' if GameObj.right_hand.noun.nil? == false
+
+## Enhancive Wear Section ##
+
+#GSC.wear_enhancive($exp_enhancives)
+
+fput 'stow right' if GameObj.right_hand.noun.nil? == false
+fput 'stow left' if GameObj.right_hand.noun.nil? == false
+
+GSC.close_satchel

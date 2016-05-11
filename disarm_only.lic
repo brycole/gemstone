@@ -1,0 +1,162 @@
+## Disarm only
+## Kalros
+## 1/11/2016
+## v. 01
+
+
+def bput(message, *matches)
+    waitrt?
+    timer = Time.now
+    log = []
+    matches.flatten!
+    matches.map! { |item| item.is_a?(Regexp) ? item : /#{item}/i }
+    clear
+    put message
+    while Time.now - timer < 15
+      response = get?
+
+      if response.nil?
+        pause 0.1
+        next
+      end
+
+      log += [response]
+
+      case response
+      when /(?:\.\.\.wait |Wait |\.\.\. wait )([0-9]+)/
+        pause Regexp.last_match(1).to_i
+        put message
+        timer = Time.now
+        next
+      when /Sorry, you may only type ahead/
+        pause 1
+        put message
+        timer = Time.now
+        next
+      when /^You are still stunned/
+        pause 0.5
+        put message
+        timer = Time.now
+        next
+      end
+
+      matches.each do |match|
+        if (result = response.match(match))
+        	check_status
+        	return result.to_a.first
+        end
+      end
+    end
+    echo '*** No match was found after 15 seconds, dumping info'
+    echo "messages seen length: #{log.length}"
+    log.each { |message| echo "message: #{message}" }
+    echo "checked against #{matches}"
+    $FAILED_COMMAND
+  end
+
+def check_status
+
+	waitrt?
+	return
+end
+
+def hands_empty?
+	return false if !GameObj.right_hand.id.nil? or !GameObj.left_hand.id.nil?
+	return true
+end
+
+def stow_trapped_box(box_id)
+	bput "_drag ##{box_id} ##{GameObj[/case/].id}", "#{$put_msg}" if $case_full == false
+	$case_full = true unless hands_empty?
+	bput "_drag ##{box_id} ##{GameObj[/satchel/].id}", "#{$put_msg}" if $case_full == true
+	unless hands_empty?
+		echo "Out of room for disarmed boxes."
+		return
+	end
+end
+
+$put_msg = /^You tuck|^You put|^Your .+ won't/
+
+disarm_messages =[]
+
+disarm_messages << acid_msg = "^The lock appears to be free"
+disarm_messages << crystal_msg = "^Looking closely into the keyhole of the lock, you spy.*crystal"
+disarm_messages << cloud_msg = "^Looking closely into the keyhole of the lock, you spy a small vial of liquid"
+disarm_messages << fire_msg = "^Looking closely into the keyhole of the lock, you spy a small vial of fire-red liquid"
+disarm_messages << jaws_msg = "^You notice a discolored oval ring around the outside of the"
+disarm_messages << needle_msg = "^Hmmm, you can see what appears to be a tiny hole"
+disarm_messages << scarab_msg = "^Peering closely into the lock, you spy a"
+disarm_messages << sphere_msg = "^Examining the .*(box|strongbox|chest|trunk|coffer), you locate.*sphere held"
+disarm_messages << spore_msg = "^Peering into the box's lock, you see a small tube"
+disarm_messages << springs_msg = "^After carefully examining the lock, you move on to the hinges of the"
+disarm_messages << plate_msg = "^You see a metal"
+disarm_messages = "#{disarm_messages.join('|')}"
+
+$disarm_msg = /^Roundtime|^You discover no|^Contortionist|^The lock appears to be free|#{disarm_messages}/
+
+if $disarm_list.nil? or $disarm_list.empty? or $disarm_index.nil?
+	$disarm_list = GameObj.loot
+	$disarm_index = 0
+end
+$disarm_list.each_with_index {|box, index|
+	fput "disarm ##{box.id}"
+	sleep 1;waitrt?
+	result = matchtimeout(1, "#{$disarm_msg}")
+	if result !~ /#{$disarm_msg}/
+		## Moving boxes, first to cloak, then to pack, then exiting script.
+		## Need to move containers to variables in the future.
+		bput "_drag ##{box.id} ##{GameObj[/cloak/].id}", "#{$put_msg}" if $cloak_full == false
+		$cloak_full = true unless hands_empty?
+		bput "_drag ##{box.id} ##{GameObj[/pack/].id}", "#{$put_msg}" if $cloak_full == true
+		unless hands_empty?
+			echo "Out of room for boxes."
+			break
+		end
+		next
+	elsif 
+		## Messages for traps that have been disarmed, no traps, or otherwise no disarm needed.
+		result =~ /^Contortionist|^The lock appears to be free|with some sort of dark paste|bent back slightly|which appears to be empty/
+		next
+	elsif result =~ /#{acid_msg}/
+		echo "Acid trap. Stowing."
+		stow_trapped_box(box.id); next
+	elsif result =~ /#{crystal_msg}/
+		echo "Crystal trap. Stowing."
+		stow_trapped_box(box.id); next
+	elsif result =~ /#{cloud_msg}/
+		echo "Cloud trap. Stowing."
+		stow_trapped_box(box.id); next
+	elsif result =~ /#{fire_msg}/
+		echo "Fire-cloud trap. Stowing."
+		stow_trapped_box(box.id); next
+	elsif result =~ /#{jaws_msg}/
+		echo "Jaws trap. Stowing."
+		stow_trapped_box(box.id); next
+	elsif result =~ /#{needle_msg}/
+		echo "Needle trap. Stowing."
+		stow_trapped_box(box.id); next
+	elsif result =~ /#{scarab_msg}/
+		echo "Scarab trap. Skipping!"; next
+	elsif result =~ /#{sphere_msg}/
+		echo "Sphere trap. Stowing."
+		stow_trapped_box(box.id); next
+	elsif result =~ /#{spore_msg}/
+		echo "Spore trap. Skipping."; next
+	elsif result =~ /#{springs_msg}/
+		echo "Springs trap. Stowing for acid."
+		stow_trapped_box(box.id); next
+	elsif result =~ /#{plate_msg}/
+		echo "Plate trap found! Skipping"
+		## Place holder for plate boxes
+		next
+	else
+		echo "Trap found!"
+		echo "Skipping!"
+		#$disarm_index -= 1
+		next
+	end
+}
+echo $disarm_index
+$disarm_list = $disarm_list.drop($disarm_index + 1)
+$cloak_full = false
+$case_full = false

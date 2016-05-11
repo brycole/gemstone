@@ -1,0 +1,77 @@
+#!/usr/bin/env ruby
+
+ gemdb= ["aquamarine gem",
+"asterfire quartz",
+"black moonstone",
+"black opal",
+"black pearl",
+"blue diamond",
+"blue moonstone",
+"blue sapphire",
+"blue starstone",
+"cats-eye moonstone",
+"chameleon agate",
+"dragonfire emerald",
+"dragonfire opal",
+"dragonfire quartz",
+"dragonsbreath sapphire",
+"firestone",
+"golden moonstone",
+"golden topaz",
+"green garnet",
+"green sapphire",
+"green starstone",
+"grey pearl",
+"grey moonstone",
+"opaline moonstone",
+"pink pearl",
+"rhodochrosite stone",
+"pink sapphire",
+"pink topaz",
+"pink coral",
+"red coral",
+"red starstone",
+"red sunstone",
+"smoky topaz",
+"star emerald",
+"star ruby",
+"star sapphire",
+"turquoise stone",
+"uncut diamond",
+"uncut emerald",
+"uncut ruby",
+"violet sapphire",
+"violet spinel",
+"white opal",
+"white pearl",
+"white starstone",
+"white sunstone",
+"yellow sapphire",
+"yellow sunstone" ]
+
+
+
+fput "open my satchel"
+fput "look in my backpack" 
+contents = waitfor("In the .+ you see", "There is nothing").gsub(/ and (?:an|a|some)/, ',')
+  gems = contents.scan(/\b(?:#{gemdb.join('|')})(?=,|\.)/) 
+
+while true
+
+  if gems.empty? 
+	fput "close my satchel"
+      exit 
+ else 
+ gem = gems.shift
+ fput "get #{gem} from my backpack"
+ fput "put my #{gem} in my satchel"
+ end
+end
+
+fput "close my satchel"
+
+
+exit
+
+
+ 

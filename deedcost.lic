@@ -1,0 +1,16 @@
+=begin
+
+	A simple script to calculate the cost of deeds in Landing
+
+	By Drafix
+	
+=end
+
+put 'exp'
+deed = matchfind "Deeds: ?"
+matchfind "You? ?\."
+echo
+echo "Total Cost For Deed in Coin: #{(deed.to_i + Stats.level)*100}"
+echo "Total Cost For Deed in Gems factor 4: #{(deed.to_i + Stats.level)*100/4}"
+echo "Total Cost For Deed in Gems factor 3: #{(deed.to_i + Stats.level)*100/3}"
+echo

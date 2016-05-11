@@ -1,0 +1,2726 @@
+=begin
+
+     Bigbounty
+     
+     All in one Hunting/Looting/Bounty/Spellup/Healing script
+     with options of using outside scripts as well.
+
+     ;trust Bigbounty and run ;Setup Bigbounty to set your options.
+
+     Thanks to Gib, Tillmen and Sheikh for some of your code used.
+     
+     under construction - Working on seperating bounties, selling feature, 
+     rift hunting and using herbs to heal for non empaths features.
+     checkback for more updates. Will not support, you have to figure it out. 
+
+     By, Nostradamus.
+
+=end
+
+
+silence_me
+
+unless $SAFE == 0
+        message( sprintf( "BIGBOUNTY: This script requires trust permission" ) )
+        message( sprintf( "BIGBOUNTY: Type #{$lich_char}trust #{Script.self.name}" ) )
+	exit
+end
+
+
+VERSION = "09.17.2012"
+RALLY_TIME    = 5
+REST_INTERVAL = 60
+require 'drb'
+@rest_reason = nil
+@not_hunting_reason = nil
+@enable_combat_healing = true
+
+
+def message(text)
+    string = ''
+    if $fake_stormfront then string.concat("\034GSL\r\n ") else string.concat("<pushBold\/>") end
+    if( text.index('\n') )
+        text.split('\n').each { |line| string.concat("| #{line}") }
+    else
+        string.concat('| ' + text)
+    end
+    if $fake_stormfront then string.concat("\034GSM\r\n ") else string.concat("<popBold\/>") end
+    puts string
+end
+
+
+def logged_in
+	time = Time.now - $login_time
+	hours = (time / 3600).floor
+	minutes = ((time - hours * 3600) / 60).floor
+	seconds = (time - (( hours * 3600) + (minutes * 60))).floor
+	if seconds == 60
+		seconds = 0
+		minutes += 1
+	end
+	if minutes >= 60
+		hours += 1
+		minutes -= 60
+	end
+	if seconds == 1 then secword = 'second' else secword = 'seconds' end
+	if minutes == 1 then minword = 'minute' else minword = 'minutes' end
+	if hours == 1 then hourword = 'hour' else hourword = 'hours' end
+	if hours > 0
+		if seconds > 0 && minutes > 0
+			line = message( sprintf( "BIGBOUNTY: You have been logged in for #{hours} #{hourword} #{minutes} #{minword} #{seconds} #{secword}." ) )
+		elsif seconds > 0
+			line = message( sprintf( "BIGBOUNTY: You have been logged in for #{hours} #{hourword} #{seconds} #{secword}." ) )
+		elsif minutes > 0
+			line = message( sprintf( "BIGBOUNTY: You have been logged in for #{hours} #{hourword} #{minutes} #{minword}." ) )
+		else
+		end
+	elsif minutes > 0
+		if seconds > 0
+			line = message( sprintf( "BIGBOUNTY: You have been logged in for #{minutes} #{minword} #{seconds} #{secword}." ) )
+		else
+			line = message( sprintf( "BIGBOUNTY: You have been logged in for #{minutes} #{minword}." ) )
+		end
+	else
+		line = message( sprintf( "BIGBOUNTY: You have been logged in for #{seconds} #{secword}." ) )
+	end
+
+	return([hours, minutes, seconds])
+end
+
+
+def spam
+    def waitcastrt?
+        return if Spell[515].active?
+        if (XMLData.cast_roundtime_end.to_f - Time.now.to_f + XMLData.server_time_offset.to_f) > 0
+            sleep((XMLData.cast_roundtime_end.to_f - Time.now.to_f + XMLData.server_time_offset.to_f).abs)
+        end
+    end
+
+    def waitrt?
+        if (XMLData.roundtime_end.to_f - Time.now.to_f + XMLData.server_time_offset.to_f) > 0
+            sleep((XMLData.roundtime_end.to_f - Time.now.to_f + XMLData.server_time_offset.to_f).abs)
+        end
+    end
+end
+
+
+def unspam
+    def waitcastrt?
+        if (XMLData.cast_roundtime_end.to_f - Time.now.to_f + XMLData.server_time_offset.to_f) > 0
+            sleep((XMLData.cast_roundtime_end.to_f - Time.now.to_f + XMLData.server_time_offset.to_f + "0.6".to_f).abs)
+        end
+    end
+
+    def waitrt?
+        if (XMLData.roundtime_end.to_f - Time.now.to_f + XMLData.server_time_offset.to_f) > 0
+            sleep((XMLData.roundtime_end.to_f - Time.now.to_f + XMLData.server_time_offset.to_f + "0.6".to_f).abs)
+        end
+    end
+end
+
+
+def self_cure(cureloc, curemana)
+	curelevel = curemana
+	curelevel -= 4 if curelevel > 14
+	wait_while { checkrt > 0 or checkcastrt > 0 }
+	if checkmana(curemana) and Char.prof == "Empath" and Char.level >= curelevel and Spells.empath >= curelevel
+		fput "cure #{cureloc}"
+		pause("2s")
+		return false
+	end
+	wait_while { checkrt > 0 or checkcastrt > 0 }
+	return true
+end
+
+
+def self_heal(type, dtr)
+	if checkhealth < maxhealth then self_cure("", 1) end
+	dtr = 3 if dtr > 3
+	dtr = 1 if dtr < 1
+	if type == "Wounds"
+		dtr.times { |m|
+			n = [3, 2, 1][m]
+			x = [5, 5, 0][m]
+			if Wounds.head == n		then self_cure("head", 4+x) end
+			if Wounds.neck == n		then self_cure("neck", 4+x) end
+			if Wounds.chest == n		then self_cure("chest", 5+x) end
+			if Wounds.abdomen == n		then self_cure("abdomen", 5+x) end
+			if Wounds.leftArm == n		then self_cure("left arm", 2+x) end
+			if Wounds.rightArm == n		then self_cure("right arm", 2+x) end
+			if Wounds.leftLeg == n		then self_cure("left leg", 2+x) end
+			if Wounds.rightLeg == n		then self_cure("right leg", 2+x) end
+			if Wounds.back == n		then self_cure("back", 5+x) end
+			if Wounds.leftHand == n		then self_cure("left hand", 2+x) end
+			if Wounds.rightHand == n	then self_cure("right hand", 2+x) end
+			if Wounds.nerves == n		then self_cure("nerves", 3+x) end
+			if Wounds.leftEye == n		then self_cure("left eye", 5+x) end
+			if Wounds.rightEye == n		then self_cure("right eye", 5+x) end
+		}
+	elsif type == "Scars"
+		dtr.times { |m|
+			n = [3, 2, 1][m]
+			x = [4, 4, 0][m]
+			if Scars.head == n		then self_cure("head", 13+x) end
+			if Scars.neck == n		then self_cure("neck", 13+x) end
+			if Scars.chest == n		then self_cure("chest", 14+x) end
+			if Scars.abdomen == n		then self_cure("abdomen", 14+x) end
+			if Scars.leftArm == n		then self_cure("left arm", 11+x) end
+			if Scars.rightArm == n		then self_cure("right arm", 11+x) end
+			if Scars.leftLeg == n		then self_cure("left leg", 11+x) end
+			if Scars.rightLeg == n		then self_cure("right leg", 11+x) end
+			if Scars.back == n		then self_cure("back", 14+x) end
+			if Scars.leftHand == n		then self_cure("left hand", 11+x) end
+			if Scars.rightHand == n		then self_cure("right hand", 11+x) end
+			if Scars.nerves == n		then self_cure("nerves", 12+x) end
+			if Scars.leftEye == n		then self_cure("left eye", 14+x) end
+			if Scars.rightEye == n		then self_cure("right eye", 14+x) end
+		}
+ 	end
+end
+
+
+def selfheal
+    if Char.prof == "Empath"
+      message( sprintf( "BIGBOUNTY: Checking for wounds" ) )
+        self_heal("Wounds", 3)
+       self_heal("Scars", 3)
+    end
+end
+
+
+def combatheal
+    if Char.prof == "Empath" && @enable_combat_healing && percentmana >= 50
+      message( sprintf( "BOUNTYHUNTER: Wounded in combat...healing down" ) )
+	Spell[220].cast && Spell[220].affordable? && !Spell[220].active? && Spell[220].known?	
+        self_heal("Wounds", 3)
+      self_heal("Scars", 3)
+    fput "out"
+    end
+end
+
+
+def disarmed?
+     $myshield = [] 
+     
+     GameObj.loot.each{|item|
+     
+     if item.noun =~ /aegis/ && item.name =~ /illthorn/ then $myshield.push(item.id)
+
+			waitcastrt?
+  		        waitrt?			   
+     		end
+
+	     }
+
+	     $myshield.each{|item, cont|
+		     multifput("get ##{item}","stow ##{item}","ready shield")		
+	     }
+end
+
+
+def restingspells(single_cast = false)
+    message( sprintf( "BIGBOUNTY: Refreshing spells under #{@SPELL_TIME} minutes " ) )
+
+    spells = UserVars.op['rest_spells'].split(',')
+    spells.each do |i|
+        i = i.to_i
+
+        sign = Spell[i]
+        wait_until {sign.affordable?}
+        
+	if( sign.known? && sign.timeleft <= @SPELL_TIME )
+            if( i  == 9805 )
+                2.times { sign.cast }
+            else
+                while(1)
+                    result = sign.cast
+                    break if result !~ /Spell Hindrance/ || !sign.affordable? || dead?
+                end
+            end
+				
+			    break if single_cast
+        end
+    end
+end
+
+
+def remove_bounty
+    return if checkbounty =~ /^You have succeeded|^You succeeded in|You have located the heirloom/i
+
+    put 'bounty'
+	message( sprintf( "BIGBOUNTY: Removing Bounty" ) )
+	sleep 5
+	
+	npc = find_taskmaster()
+
+	ask_result = dothistimeout "ask #{npc} about remove", 5, /^#{npc}.*?want to be removed|Trying to sneak/	
+	if ask_result =~ /Trying to sneak/
+		fput "ask #{npc} about bounty"
+	else
+		dothistimeout "ask #{npc} about remove", 5, /^#{npc}.*?have removed you/
+	end
+end
+
+
+def get_new_bounty
+	message( sprintf( "BIGBOUNTY: Getting New Bounty" ) )
+ 
+    starting_room = Room.current.id
+    remove_bounty() unless checkbounty =~ /suppress|kill|dangerous|cull|citizen lost|You are not currently assigned a task|gem dealer|lost heirloom|LOOT the item|SEARCH the area/ ##do not change.
+
+	npc = find_taskmaster()
+	res = dothistimeout "ask #{npc} for bounty", 5, /^#{npc}.*?(?:protective escort|creature problem|local divinist|local gem dealer|local furrier|lost heirloom|local healer|local herbalist|local resident|bandit problem|I'm kind of busy right now)/ ## shouldnt change
+	if res =~ /I'm kind of busy right now.*Come back in about (\w+) minutes/
+        wait_times = { 'fifteen' => 15, 'ten' => 10, 'five' => 5 }
+        wait = wait_times[$1] || 5
+
+		Spell['Next Bounty'].putup
+		Spell['Next Bounty'].timeleft = wait
+	end
+
+    remove_bounty() if checkbounty =~ /bandit problem|protective escort|local divinist|local herbalist|local healer|local alchemist|local furrier|Go to the area just inside/i ## do not change
+
+    ask_npc_about_bounty()
+
+    remove_bounty() if checkbounty =~ /bandit|lynx|cockatrice|fisherman|daggerbeak|kobold|ghoul|rat|rodent|ant|worm|rolton|skeleton|grub|gnarp|snake|gnome|goblin|ghost|shade|siren|phantom|squirrel|nymph|thyril|nipper|vysan|salamander|spider|gnoll|snowcat|relnak|velnalin|troglodyte|hobgoblin|viper|cobra|revenant|orc|moccasin|whiptail|leaper|urgh/i
+
+    go2(starting_room) unless Room.current.id == starting_room
+end
+
+
+def in_progress
+
+	message( sprintf( "BIGBOUNTY: Approved bounty in progress" ) )
+end
+
+
+def find_gemdealer
+	message( sprintf( "BIGBOUNTY: Finding Gem Dealer" ) )
+	go2('gemshop')
+
+            npc = GameObj.npcs.find { |npc| npc.name =~ /clerk|jeweler|zirconia|tanzania|dealer/i }
+	
+	if npc.nil?
+		message( sprintf( "BIGBOUNTY: Gem Dealer Not Found" ) )
+	end
+	
+	return npc.noun
+end
+
+
+def find_guard
+	message( sprintf( "BIGBOUNTY: Locating Guard" ) )
+	go2('advguard')
+	
+	return 'purser' if Room.current.id == 10915
+	unless npc = GameObj.npcs.find { |npc| npc.name =~ /guard|sergeant/i }
+        if Room.current.id == 420 or Room.current.id == 3424 # WL/IMT
+           message( sprintf( "BIGBOUNTY: No guard at the tavern, checking the gate" ) )
+	      mymove "bank"
+	      fput "withdraw 10"
+              go2('advguard2')
+            npc = GameObj.npcs.find { |npc| npc.name =~ /guard|sergeant/i }
+        end
+	end
+	
+	if npc.nil?
+		message( sprintf( "BIGBOUNTY: No Guard On Duty" ) )
+		message( sprintf( "BIGBOUNTY: #{npc.inspect}" ) )
+	end
+	
+	return npc.noun
+end
+
+
+def find_taskmaster
+	message( sprintf( "BIGBOUNTY: Locating Taskmaster" ) )
+	go2('advguild')
+	return GameObj.npcs.last.noun
+end
+
+
+def ask_npc_about_bounty
+
+    if checkbounty =~ /creature problem|local resident|lost heirloom/i 
+    npc = find_guard()
+    	ask_result = dothistimeout "ask #{npc} about bounty", 5, /Yes, (?:I|we) do have a task for you/
+    end
+
+    if checkbounty =~ /SEARCH the area/i 
+    npc = find_guard()
+    	ask_result = dothistimeout "ask #{npc} about bounty", 5, /Yes, (?:I|we) do have a task for you/
+	search_heirloom()
+    end
+
+    if checkbounty =~ /gem dealer/i 
+    npc = find_gemdealer()
+        ask_result = dothistimeout "ask #{npc} about bounty", 5, /Yes, (?:I|we) do have a task for you/
+    end
+  
+    	     if checkbounty =~ /gem/i && (@STOCKPILE)
+		wait_while { checkrt > 0 || checkcastrt > 0 }
+	           $bigbounty.run_script( @STOCKPILE_SCRIPT, true )
+
+
+        ready_to_turn_in = (percentmind >= @BOUNTY_MIND and !saturated?)
+        if checkbounty =~ /succeeded/i and ready_to_turn_in	 
+
+		   turn_in_bounty()
+                     go2('town')
+             end	
+      end   
+end    
+
+
+def bounty_succeeded?
+    return if checkbounty =~ /^You have succeeded|^You succeeded in|You have located the heirloom/i
+end
+
+
+def turn_in_guard
+    message( sprintf( "BIGBOUNTY: Turning in guard" ) )
+    npc = find_guard()
+
+	ask_result = dothistimeout "ask #{npc} about bounty", 5, /adventurer.*?guild/i
+end
+
+
+def turn_in_bounty
+    message( sprintf( "BIGBOUNTY: Turning in bounty" ) )
+    
+    if checkbounty =~ /You have located the heirloom/i
+        turn_in_heirloom()
+    elsif checkbounty =~ /^You succeeded in your task and should report back to/i
+        turn_in_guard()
+    end
+	
+	npc = find_taskmaster()
+	ask_result = dothistimeout "ask #{npc} about bounty", 5, /^#{npc}.*?done with that assignment/
+    go2('bank')
+    fput 'deposit all'
+
+    get_new_bounty() if new_bounty_ready?
+end
+
+
+def get_inventory(sack)
+	return GameObj.inv.find { |inv| inv.name =~ /^#{sack}$/ or inv.noun =~ /\b#{sack}\b/ }
+end
+
+
+def turn_in_heirloom
+	message( sprintf( "BIGBOUNTY: Turning in heirloom" ) )
+	npc = find_guard()
+
+	empty_hands
+
+	sacks = [ get_inventory(UserVars.jewelrysack), get_inventory(UserVars.uncommonsack), get_inventory(UserVars.wandsack), get_inventory(UserVars.lootsack) ].uniq
+		
+	found = false
+	check_heirloom = proc { |thing|
+		res = dothistimeout "look ##{thing.id}", 3, /^Engraved .* initials|^You see nothing unusual\.$|^The ring appears|^It takes you a moment|^It is difficult to see/
+		if res =~ /^Engraved .* initials/
+			found = true
+			fput "get ##{thing.id}"
+			fput "give ##{thing.id} to #{npc}"
+		end
+	}
+	
+	close = false
+	sacks.each { |sack|
+		if sack.contents.nil?
+			open_result = dothistimeout "open ##{sack.id}", 5, /^You open|^That is already open\.$/
+			if open_result =~ /^You open/
+				close = true
+			else
+				dothistimeout "look in ##{sack.id}", 5, /In .*? you see/
+				if sack.contents.nil?
+					msg 'fixme'
+					Script.self.kill
+				end
+			end
+		end
+		
+		sack.contents.each { |item| check_heirloom.call(item); break if found }
+		
+		fput "close ##{thing.id}" if close
+		break if found
+	}
+	
+	fill_hands
+
+	unless found
+		message( sprintf( "BIGBOUNTY: Heirloom was not found" ) )
+        return false
+	end
+    return true
+end
+
+
+def search_heirloom
+    message( sprintf( "BIGBOUNTY: Starting search" ) )
+
+    last_room = nil
+    searched_rooms = []
+    wanderb = proc {		
+        last_room ||= nil
+
+        room = Room.current
+        next_room_options = room.wayto.keys - UserVars.op['hunting_boundaries'].split(',')
+        if next_room_options.length > 1
+            # subtract last room if possible
+            next_room_options.delete_if { |option| option == last_room }
+        end
+        if ( (next_room_options - searched_rooms) > 0 )
+            # subtract searched rooms if possible
+            next_room_options = (next_room_options - searched_rooms)
+        end
+
+        next_room_id = next_room_options[ rand(next_room_options.length) ]
+        way = room.wayto[next_room_id]
+        if way.class == String
+            move(way)
+        else
+            way.call
+        end
+        last_room = room.id
+        searched_rooms.push(room.id)
+    }
+
+    @HUNTING_PREP_COMMANDS.each { |i| fput(i) }
+    go2( UserVars.op['hunting_room_id'] )
+    dothistimeout 'stow all', 5, /You are not holding|You put/
+	
+	start_time = Time.now.to_f
+	loop {
+		if wounded? or Time.now.to_f - start_time > 1200
+			 message( sprintf( "BIGBOUNTY: Wounded or timed out....Resting" ) )
+            return false
+		end
+		
+        unless GameObj.npcs.any? { |npc| npc.status !~ /dead|gone/ }
+                        @RESTING_COMMANDS.each { |i| fput(i) }
+			$bigbounty.cast_signs()
+			  Spell[213].cast if Spell[213].affordable? && !Spell[213].active? && Spell[213].known?
+			  fput "kneel" until kneeling?
+			   dothistimeout "search", 4, /You intently search the area|interest here/
+		
+			if checkbounty =~ /You have located the heirloom/i
+                wait_while { checkrt > 0 || checkcastrt > 0 }
+        @HUNTING_PREP_COMMANDS.each { |i| fput(i) }
+                internal_looter()
+                return turn_in_heirloom()
+			end
+		end
+
+        @HUNTING_PREP_COMMANDS.each { |i| fput(i) } 
+        $bigbounty.change_stance('defensive')
+		fput "stand" until standing?
+		wanderb.call
+	}
+end
+
+
+def new_bounty_ready?
+    return !Spell['Next Bounty'].active?
+end
+
+
+def bounty_wait?
+    unless checkbounty =~ /gem|lost heirloom|LOOT the item|SEARCH the area/ ## CRITTERS AND BOUNTY TASKS YOU DONT WANT TO CANCEL WHEN 9003 IS UP.
+        if Spell[9003].timeleft <= 3
+            message( sprintf( "BIGBOUNTY: New bounty will be ready soon... waiting" ) )
+            sleep( Spell[9003].timeleft * 60 )
+        end
+
+        get_new_bounty() if new_bounty_ready?
+    end
+end
+
+
+def bountytask
+    bounty_wait? if Spell[9003].timeleft <= 3
+       in_progress if checkbounty =~ /suppress|kill|dangerous|cull|gem dealer|lost heirloom|LOOT the item/i  ## CRITTERS AND BOUNTY TASKS YOU DONT WANT TO CANCEL WHEN SPELL 9003 IS UP.
+          get_new_bounty if checkbounty =~ /^You are not currently/i
+            search_heirloom if checkbounty =~ /SEARCH the area/i
+
+        ready_to_turn_in = (percentmind >= @BOUNTY_MIND and !saturated?) 
+     turn_in_bounty if checkbounty =~ /^You have succeeded in your task and can return|^You succeeded in your task and should report back to|You have located the heirloom/i and ready_to_turn_in
+end
+
+$metal_materials = ["Alexandrite","Bronze","Coraesine","Drakar","Drake","Eahnor","Eonake","Faenor","Feras","Glaes","Golvern","Gornar","Imflass","Invar","Iron","Ironwood","Kelyn","Krodera","Mithglin","Mithril","Obsidian","Ora","Razern","Rhimar","Rolaren","Urglaes","Urnon","Vaalorn","Veil","Veniom","Vultite","Zorchar"]
+$wood_materials = ["Carmiln","Deringo","Faewood","Fireleaf","Glowbark","Hoarbeam","Ilthorn","Ipantor","Kakore","Lor","Mesille","Modwir","Mossbark","Orase","Rowan","Ruic","Sephwir","Villswood","Witchwood","Wyrwood","Yew"]
+$junk_words = ["moldy","moth-eaten","ragged","ripped","rotted","slashed","sloppy","tattered","torn"]
+$junk_list = ["wolifrew lichen","rose-marrow potion","bandana","woven cloak","pair of unlaced boots"]
+
+$dont_search = ["glacei","golem","elemental", "skayl"]
+
+
+def search()
+	GameObj.npcs.each { |npc| waitrt?; if npc.status=~ /dead/ and !$dont_search.include?(npc.noun) then fput "loot ##{npc.id}"; end }
+end
+
+
+def loot_disk(item)
+
+	if checkright and checkleft
+		handsfull = true
+		if GameObj.left_hand.name =~ /shield|buckler|targe|heater|parma|aegis|scutum|mantlet|pavis/i
+			stoweditem = [GameObj.left_hand,"worn"]; fput "wear ##{stoweditem[0].id}"
+		elsif GameObj.left_hand.noun =~ /bow/
+			stoweditem = [GameObj.right_hand,"stowed"]; fput "put ##{stoweditem[0].id} in my #{Lich.lootsack}"
+		else stoweditem = [GameObj.left_hand,"stowed"]; fput "put ##{stoweditem[0].id} in my #{Lich.lootsack}"
+		end
+	else handsfull = false
+	end
+
+	item.each { |obj|
+		lootitem = GameObj.loot.find { |thing| thing.name =~ /#{obj}/i }
+		multifput "get ##{lootitem.id}","put ##{lootitem.id} in #{Char.name} disk"; pause 0.25
+		if checkleft =~ /#{lootitem.noun}/ or checkright =~ /#{lootitem.noun}/
+			multifput "open my #{Lich.lootsack}","put ##{obj.id} in my #{Lich.lootsack}","close my #{Lich.lootsack}"
+		end
+	}
+
+
+	if handsfull
+		if stoweditem[1] =~ /worn/ then fput "remove ##{stoweditem[0].id}"
+		else multifput "open my #{Lich.lootsack}","get ##{stoweditem[0].id} from my #{Lich.lootsack}","close my #{Lich.lootsack}"; end
+	end
+end
+
+
+def loot_stow(item)
+	# Manage full hands
+	if checkright and checkleft
+		handsfull = true
+		if GameObj.left_hand.name =~ /shield|buckler|targe|heater|parma|aegis|scutum|mantlet|pavis/i
+			stoweditem = [GameObj.left_hand,"worn"]; fput "wear ##{stoweditem[0].id}"
+		elsif GameObj.left_hand.noun =~ /bow/
+			stoweditem = [GameObj.right_hand,"stowed"]; fput "put ##{stoweditem[0].id} in my #{Lich.lootsack}"
+		else stoweditem = [GameObj.left_hand,"stowed"]; fput "put ##{stoweditem[0].id} in my #{Lich.lootsack}"
+		end
+	else handsfull = false
+	end
+
+	item.each { |obj|
+		lootitem = GameObj.loot.find { |thing| thing.name =~ /#{obj}/i }
+		multifput "get ##{lootitem.id}","put ##{lootitem.id} in my #{Lich.lootsack}"
+	}
+
+	# Manage full hands
+	if handsfull
+		if stoweditem[1] =~ /worn/ then fput "remove ##{stoweditem[0].id}"
+		else multifput "open my #{Lich.lootsack}","get ##{stoweditem[0].id} from my #{Lich.lootsack}","close my #{Lich.lootsack}"; end
+	end
+end
+
+
+def loot_bundle
+	packlist = GameObj.loot.find_all { |obj| obj.name =~ /heavy backpack/ }
+	packlist.each { |obj| multifput "open ##{obj.id}","look in ##{obj.id}" }
+	GameObj.loot.find_all { |obj| obj.type !~ /clothing/ and obj.noun !~ /disk|coins/ }.each { |obj|
+		fput "_drag ##{obj.id} ##{packlist[0].id}"
+	}
+	while packlist.size > 1
+		multifput "get ##{packlist[1].id}","empty ##{packlist[1].id} in ##{packlist[0].id}"; waitrt?
+		if !packlist[1].contents.empty?
+			packlist[1].contents.each { |obj| fput "_drag ##{obj.id} ##{packlist[0].id}"}
+		end
+		multifput "drop ##{packlist[1].id}","clean table"
+		packlist.delete_at(1)
+	end
+end
+
+
+def internal_looter()
+	# Build array of good loot in the room
+	lootlist=[]
+	GameObj.loot.each { |obj|
+		goodloot = false
+		# Never loot
+		if obj.type =~ /food|junk|ammo|cursed/ then goodloot = false
+		# Other junk
+		elsif !$junk_list.find { |junk| obj.name =~ /#{junk}/i }.nil? then goodloot = false
+		# Always loot
+		elsif obj.type =~ /reagent|note|box|gem|magic|scroll|wand|skin|instrument|jar|jewelry|herb|lockpick/ then goodloot = true
+		# Exceptions
+		elsif obj.type =~ /armor|weapon/
+			if !$metal_materials.find { |mat| obj.name =~ /#{mat}/i }.nil? then goodloot = true; end
+			if !$wood_materials.find { |mat| obj.name =~ /#{mat}/i }.nil? then goodloot = true; end
+		elsif obj.type =~ /clothing/
+			if $junk_names.find { |mat| obj.name =~ /#{mat}/i }.nil? then goodloot = true; end
+		else goodloot = false; end
+		# Create array of good loot
+		if goodloot then lootlist.push(obj); end
+	}
+
+	if lootlist.size >= 1
+		# Manage full hands
+		if checkright and checkleft
+			handsfull = true
+			if GameObj.left_hand.name =~ /shield|buckler|targe|heater|parma|aegis|scutum|mantlet|pavis/i
+				stoweditem = [GameObj.left_hand,"worn"]; fput "wear ##{stoweditem[0].id}"
+			elsif GameObj.left_hand.noun =~ /bow/
+				stoweditem = [GameObj.right_hand,"stowed"]; fput "put ##{stoweditem[0].id} in my #{Lich.lootsack}"
+			else stoweditem = [GameObj.left_hand,"stowed"]; fput "put ##{stoweditem[0].id} in my #{Lich.lootsack}"
+			end
+		else handsfull = false
+		end
+
+		# Get all of the good loot
+		lootlist.each { |obj|
+			# Put boxes in disk if one exists
+			if obj.type =~ /box/ and GameObj.loot.any? { |item| item.name =~ /#{Char.name} disk/i }
+				multifput "get ##{obj.id}","put ##{obj.id} in #{Char.name} disk"
+				if GameObj.right_hand.type =~ /box/ or GameObj.left_hand.type =~ /box/ then fput "put ##{obj.id} in my #{Lich.lootsack}"; end
+			# Otherwise stow
+			else
+				if obj.noun == Lich.lootsack then multifput "get ##{obj.id}","put ##{obj.id} in my second #{Lich.lootsack}"
+				else multifput "get ##{obj.id}","put ##{obj.id} in my #{Lich.lootsack}"
+				end
+			end
+		}
+
+		# Manage full hands
+		if handsfull
+			if stoweditem[1] =~ /worn/ then fput "remove ##{stoweditem[0].id}"
+			else fput "get ##{stoweditem[0].id} from my #{Lich.lootsack}"; end
+		end
+	end
+end
+
+
+def status_check
+    disarmed?()
+    
+    if(@CURE_POISON) && checkpoison
+      Spell[114].cast if Spell[114].affordable? && !Spell[114].active? && Spell[114].known?	
+        matchtimeout(15, "You gesture while calling upon the lesser spirits to aid you with the UnPoison spell")
+    end
+    
+    if(@CURE_DISEASE) && checkdisease
+      Spell[113].cast if Spell[113].affordable? && !Spell[113].active? && Spell[113].known?	
+        matchtimeout(15, "You gesture while calling upon the lesser spirits to aid you with the UnDisease spell")
+    end
+
+    if(@REMOVE_WEB) && checkwebbed
+        if Char.prof =~ /Wizard/i     
+          spell = 906
+            web = GameObj.loot.find { |l| l.name =~ /\bweb\b/i }
+            Spell[spell.to_i].cast('web') if Spell[spell.to_i].affordable? && Spell[spell.to_i].known?
+	end
+
+        if Char.prof =~ /Sorcerer/i     
+	  spell = 417
+           web = GameObj.loot.find { |l| l.name =~ /\bweb\b/i }
+           Spell[spell.to_i].cast('web') if Spell[spell.to_i].affordable? && Spell[spell.to_i].known?
+	end
+
+        if Char.prof =~ /Empath|Cleric/i
+	  spell = 209
+           web = GameObj.loot.find { |l| l.name =~ /\bweb\b/i }
+           Spell[spell.to_i].cast('web') if Spell[spell.to_i].affordable? && Spell[spell.to_i].known?
+	end
+
+        if Char.prof =~ /Paladin|Ranger|Bard|Rogue|warrior/i
+          spell = 119
+           web = GameObj.loot.find { |l| l.name =~ /\bweb\b/i }
+           Spell[spell.to_i].cast('web') if Spell[spell.to_i].affordable? && Spell[spell.to_i].known?
+        end
+    end
+    
+    if checknotstanding    
+       fput "stand" until standing?
+    end
+     
+    if(@COMBAT_HEAL) && checkstunned or bleeding? && Char.prof =~ /Empath/
+       wait_while checkstunned
+        combatheal()
+       run
+    end
+
+    if(@CURE_MUSCLES) && percentstamina <= 75 && Char.prof =~ /Empath/
+       Spell[1107].cast if Spell[1107].affordable? && !Spell[1107].active? && Spell[1107].known?	
+       matchtimeout(15, " momentary surge of energy")
+    end
+
+       wait_while { checkrt > 0 || checkcastrt > 0 }
+end
+
+
+def restbread
+    if Char.prof =~ /Empath|Cleric/ && Spell[203].timeleft == 0
+    empty_hands
+	Spell[203].cast && Spell[203].affordable? && !Spell[203].active? && Spell[203].known?
+    wait_while { checkrt > 0 || checkcastrt > 0 }
+	fput "gobble ##{GameObj.right_hand.id}" until GameObj.right_hand.name == "Empty"
+   fill_hands
+   end
+end
+
+
+def manabread
+    if GameObj.pcs.find{|pc| pc.noun =~ /Molester|Staypuff/i} && XMLData.game =~ /GSF/i
+       empty_hands
+          fput "whisper ##{GameObj.pcs.find{|pc| pc.noun =~ /Molester|Staypuff/i}.id} bread"
+          matchtimeout(15, "(Molester|Staypuff) offers you a|(waybread|flatbread|biscuit|bread|cake|loaf|dumpling) appears in the air, then falls to the ground")
+	    fput "accept"
+	    pause 1 
+         fput "gobble ##{GameObj.right_hand.id}" until GameObj.right_hand.name == "Empty"
+       empty_hands
+    else GameObj.pcs.find{|pc| pc.noun =~ /Mofuggah|Alfred/i} && XMLData.game =~ /GSF/i
+       empty_hands
+          fput "whisper ##{GameObj.pcs.find{|pc| pc.noun =~ /Mofuggah|Alfred/i}.id} bread"
+          matchtimeout(15, "(Mofuggah|Alfred) drops|(waybread|flatbread|biscuit|bread|cake|loaf|dumpling) appears in the air, then falls to the ground")
+            fput "_drag ##{GameObj.loot.find{|thing| thing.noun =~ /waybread|flatbread|biscuit|bread|cake|dumpling/i}.id} right"
+            fput "gobble ##{GameObj.right_hand.id}" until GameObj.right_hand.name == "Empty"
+       empty_hands
+    end   
+end
+
+
+def go2(target)
+    wait_while { running? 'go2' }
+    unless target.to_i == Room.current.id
+        start_script( 'go2', [target, '_disable_confirm_']  )
+        wait_while { running?('go2') }
+    end
+end
+
+
+wander_rooms = Array.new
+
+
+## OTF  HUNTING ROOMS
+##hunting_ground_rooms = [ '12046', '12047', '12048', '12049', '12050', '12051', '12052', '12053', '12055', '12056', '12061', '12057', '12058', '12062', '12065', '12059', '12063', '12064', '12060', '12066', '12070', '12067', '12068', '12071', '12073', '12069', '12072', '12074', '12076', '12079', '12075', '12077', '12078', '12079', '12080', '12081', '12082', '12083', '12084', '12085', '12086', '12087']
+
+
+## RIFT HUNTING ROOMS P4
+## hunting_ground_rooms = [ '12141', '12140', '12119', '12252', '12103', '12133', '12152', '12151', '12097', '12098', '12156', '12096', '12095', '12248', '12139', '12106', '12138', '12146', '12153', '12122', '12145', '12157', '12125' ]
+
+
+## RIFT HUNTING ROOMS P5
+## hunting_ground_rooms = [ '12228', '12219', '12254', '12253', '12246', '12245', '12244', '12243', '12241', '12239', '12238', '12236', '12235', '12232', '12240', '12229' ]
+
+
+## NELEMAR THIRD FLOOR
+## hunting_ground_rooms = [ '12731', '12732', '12733', '12734', '12739', '12740', '12741', '12742', '12743', '12744' ]
+ 
+
+wander = proc {
+    sleep 0.1
+    room = Room.current
+    next_room_options = room.wayto.keys & hunting_ground_rooms
+    next_room = next_room_options.find_all { |r| not wander_rooms.include?(r) }
+    if next_room.empty?
+        next_room = wander_rooms.find { |r| next_room_options.include?(r) }
+    else
+        next_room = next_room[rand(next_room.length)]
+    end
+    if not next_room
+        start_script 'go2', [ Room.current.find_nearest(hunting_ground_rooms.collect { |id| id.to_i }).to_s ]
+        wait_while { running?('go2') }
+    else
+        wander_rooms.delete(next_room)
+        wander_rooms.push(next_room)
+        way = room.wayto[next_room]
+        if way.class == String 
+            move(way)
+        else
+            way.call
+        end
+    end
+}
+
+
+#######################################################################################################################
+#######################################################################################################################
+#######################################################################################################################
+
+
+before_dying { unspam() }
+before_dying { $bigbounty.gather_ammo }
+
+
+class Event
+attr_accessor :type, :created_at, :room_id
+@@RECOGNIZED = [ :HUNTING_PREP_COMMANDS, :HUNTING_SCRIPTS_START, :CAST_SIGNS, :ATTACK,
+:HUNTING_SCRIPTS_STOP, :RESTING_SCRIPTS_START, :RESTING_PREP_COMMANDS, :DISPLAY_WATCH ]
+
+
+def initialize( type, time_stamp, room_id )
+    raise "Event type not recognized" unless @@RECOGNIZED.include?(type)
+    @type       = type
+    @created_at = time_stamp
+    @room_id    = room_id
+end
+
+
+def stale?
+    if( Room.current.id != @room_id || Time.now.to_i - @created_at > 15 )
+        return true
+    else
+        return false
+    end
+end
+
+
+def type
+    return @type
+    end
+end
+
+
+class Group
+include DRbUndumped
+attr_accessor :leader, :members
+
+
+def initialize()
+    @members = Hash.new
+end
+
+
+def set_leader(leader)
+    @leader = leader
+end
+
+
+def add_member(member)
+    @members[member.name()] = member
+end
+
+
+def size()
+    return @members.size
+end
+
+
+def get_names
+    return @members.keys + [@leader.name]
+end
+
+
+def room_id()
+    return @leader.room_id()
+end
+
+
+def add_event(type)
+    @members.each_pair { |k,v|
+        begin
+            v.add_event( type, Time.now.to_i, Room.current.id )
+        rescue
+            @leader.message("Error adding #{type.to_s} event to members stack: #{$!}")
+            @leader.message($!.backtrace.join("\n"))
+        end
+    }
+end
+
+ 
+def add_leader_event(event)
+    @leader.add_event( Event.new(event) ) unless @leader.event_stack.size > 5
+end
+
+
+def roundtime?()
+    @members.each_pair { |k,v|
+        begin
+            return true if v.rt? > 0
+        rescue
+            @leader.message("Error polling member for RT. Removing!")
+            @members.delete(k)
+        end
+    }
+    return false
+end
+
+
+def should_hunt?()
+    emergency = @leader.event_stack.size == 0 ? nil : @leader.event_stack.shift
+    if(emergency)
+        @leader.clear_events
+        return false
+    end
+
+    @members.each_pair { |k,v|
+        begin
+            return false if !v.should_hunt?
+        rescue
+            @leader.message("Error polling member. Removing!")
+            @members.delete(k)
+        end
+    }
+	    $bigbounty_status = :hunting
+    return true
+end
+
+
+def should_rest?()
+    @members.each_pair { |k,v|
+        begin
+            return false if !v.should_rest?
+        rescue
+            @leader.message("Error polling member. Removing!")
+            @members.delete(k)
+        end
+    }
+    return true
+end
+
+    
+def emergency_rest?()
+    @members.each_pair { |k,v|
+        begin
+            return true if v.wounded?
+        rescue
+            @leader.message("Error polling member. Removing!")
+            @members.delete(k)
+        end
+    }
+    return false
+    end
+end
+
+
+class Bigbounty
+include DRbUndumped
+attr_accessor :BIRTH_TIME, :START_TIME, :STORED_TIMES, :FRIED, :OOM, :CURE_POISON, :CURE_DISEASE,
+    :SIGNS, :TARGETS, :INVALID_TARGETS, :FLEE_COUNT, :ALWAYS_FLEE_FROM, :ATTACK_PERCENT, :COMBAT_HEAL,
+    :USE_WRACKING, :HEALTH, :AMMO, :AMMO_CONTAINER, :HIDE_FOR_AMMO, :STOCKPILE, :REMOVE_WEB,
+    :REST_TILL_EXP, :REST_TILL_MANA, :USE_HERBS, :DEAD_MAN_SWITCH, :CANCEL_LIST, :CURE_MUSCLES, 
+    :RESTING_ROOM_ID, :RESTING_COMMANDS, :RESTING_SCRIPTS, :HUNTING_ROOM_ID, :STOCKPILE_SCRIPT,
+    :HUNTING_BOUNDARIES, :HUNTING_SCRIPTS, :HUNTING_COMMANDS, :REST_HEAL, :CAST_REST_SPELLS,
+    :DISABLE_COMMANDS, :HUNTING_STANCE, :HUNTING_PREP_COMMANDS, :MAKE_BREAD, :ATTACK_SPELL,
+    :MONITOR_INTERACTION, :FLEE_CLOUDS, :WRACKING_SPIRIT, :HOUSE_LOOTER, :BOUNTY_MIND,
+    :REST_TILL_SPIRIT, :BOUNTY_MODE, :DO_BOUNTIES, :REST_SPELLS, :SPELL_TIME, :HUNT_SUPPRESS,
+    :event_stack, :followers
+
+PRONE = /sleeping|webbed|stunned|kneeling|sitting|^lying|prone/
+
+
+def add_event( type, time_stamp, room_id )
+    unless( @event_stack.size > 5 && type == :ATTACK )
+        @event_stack.push( Event.new( type, time_stamp, room_id ) )
+    end
+end
+
+
+def grab_event()
+    @event_stack.shift()
+end
+
+
+def clear_events()
+    @event_stack.clear
+end
+
+
+def initialize(bounty_mode=nil)
+	    $bigbounty = self
+    if bounty_mode
+            message( sprintf( "BIGBOUNTY: Bounty Mode" ) )
+        @BOUNTY_MODE = true
+    end
+		
+    UserVars.op ||= Hash.new
+    CharSettings['targetable']   ||= Array.new
+    CharSettings['untargetable'] ||= Array.new
+    @BIRTH_TIME   = Time.now.to_i
+    @START_TIME   = 1
+    @STORED_TIMES = Array.new
+
+    @followers = nil
+    @event_stack = Array.new
+
+    load_settings()
+    dead_man_switch()
+
+    # this is mainly for azbounty:
+    before_dying {
+        @HUNTING_SCRIPTS.each { |i|
+            echo "Cleaning up hunting scripts: #{i}."
+            stop_script(i) if running?(i)
+        }
+    }
+                
+end
+
+
+def load_settings()
+	  message( sprintf( "BIGBOUNTY: Settings Loaded" ) )
+    set_value_required( 'hunting_commands',     'split_xx' )
+    set_value_required( 'fried',                'to_i'     )
+    set_value_required( 'oom',                  'to_i'     )
+    set_value_required( 'rest_till_mana',       'to_i'     )
+    set_value_required( 'rest_till_exp',        'to_i'     )
+
+    set_value( 'hunting_room_id',      'to_i',  4 )
+    set_value( 'resting_room_id',      'to_i',  4 )
+    set_value( 'hunting_boundaries',   'split',    Array.new )
+    set_value( 'hunting_commands_b',   'split_xx', Array.new )
+    set_value( 'hunting_commands_c',   'split_xx', Array.new )
+    set_value( 'disable_commands',     'split_xx', Array.new )
+		
+    set_value( 'targets',          'targets',         nil       )
+    set_value( 'dead_man_switch',     '',             false     )
+    set_value( 'stockpile',           '',             false     )
+    set_value( 'monitor_interaction', '',             false     )
+    set_value( 'depart_switch',       '',             false     )
+    set_value( 'encumbered',       'to_i',            200       )
+    set_value( 'health',           'to_i',            200       )
+    set_value( 'signs',            'split',           Array.new )
+    set_value( 'attack_spell',     'split',           Array.new )
+    set_value( 'spam',             '',                true      )
+    set_value( 'flee_count',       'to_i',            10        )
+    set_value( 'wracking_spirit',  'to_i',            0         )
+    set_value( 'attack_percent',   'to_i',            0         )
+    set_value( 'bounty_mind',      'to_i',            100       )
+    set_value( 'invalid_targets',  'split',           Array.new )
+    set_value( 'cancel_list',      'split',           Array.new )
+    set_value( 'always_flee_from', 'split',           Array.new )
+    set_value( 'flee_clouds',      '',                false     )
+    set_value( 'hunt_suppress',    '',                false     )
+    set_value( 'make_bread',       '',                false     )
+    set_value( 'cure_poison',      '',                false     )
+    set_value( 'cure_muscles',     '',                false     )
+    set_value( 'combat_heal',      '',                false     )
+    set_value( 'remove_web',       '',                false     )
+    set_value( 'make_bread',       '',                false     )
+    set_value( 'cast_rest_spells', '',                false     )
+    set_value( 'rest_heal',        '',                false     )
+    set_value( 'do_bounties',      '',                false     )
+    set_value( 'house_looter',     '',                false     )
+    set_value( 'use_wracking',     '',                false     )
+    set_value( 'lone_targets_only', '',               false     )
+    set_value( 'rest_till_spirit', 'to_i',            0         )
+    set_value( 'spell_time',       'to_i',            120       )
+    set_value( 'ammo',             '',                nil       )
+    set_value( 'ammo_container',   '',                nil       )
+    set_value( 'fresh_wand_container',   '',          nil       )
+    set_value( 'dead_wand_container',    '',          nil       )
+    set_value( 'wand',                   '',          nil       )
+    set_value( 'wand_if_oom',            '',          false     )
+    set_value( 'hide_for_ammo',    '',                nil       )
+    set_value( 'wounded_eval',     '',                nil       )
+    set_value( 'resting_scripts',  'split',           Array.new )
+    set_value( 'rest_spells',      'split',           Array.new )
+    set_value( 'hunting_scripts',  'split',           Array.new )
+    set_value( 'loot_script',      '',                nil       )
+    set_value( 'stockpile_script', '',                nil       )
+    set_value( 'hunting_stance',   '',                'offensive')
+    set_value( 'resting_commands',           'split_xx',      Array.new )
+    set_value( 'hunting_prep_commands',      'split_xx',      Array.new )
+end
+
+
+def clean_value( clean, value )
+    if( clean == 'to_i' )
+        return value.to_i
+    elsif( clean == 'split' )
+        return value.split(/,\s*/)
+    elsif( clean == 'split_xx' )
+        cleaned = Array.new
+        value.split(/,\s*/).each { |i|
+            rep = 1
+            cmd = ''
+            if( i =~ /(.*)\(x(\d+)\)$/ )
+                rep = $2.to_i
+                cmd = $1
+            elsif( i =~ /(.*)\(xx\)/ )
+                rep = 5
+                cmd = $1
+            else
+                cmd = i
+            end
+            and_tokens = cmd.split(/\sand\s/)
+            cmd = and_tokens.size == 1 ? and_tokens[0] : and_tokens
+            rep.times do cleaned.push(cmd) end
+        }
+        return cleaned
+    elsif( clean == 'targets' )
+        targets = Hash.new
+        tokens = value.split(/,/)
+        tokens.each do |i|
+            if( i =~ /(.*)\(([a|b|c|A|B|C])\)/ )
+                targets[$1.downcase.strip] = $2.downcase.strip
+            else
+                targets[i.downcase.strip] = 'a'
+            end
+        end
+        return targets
+    else
+        return value
+    end
+end
+
+
+def set_value( key, clean, default )
+    if( !UserVars.op[key].nil? && UserVars.op[key] !~ /^\s*$/ )
+        cleaned = clean_value( clean, UserVars.op[key] )
+        instance_variable_set( "@#{key.upcase}", cleaned )
+    else
+        instance_variable_set( "@#{key.upcase}", default )
+    end
+end
+
+
+def set_value_required( key, clean )
+    if( !UserVars.op[key].nil? && UserVars.op[key] !~ /^\s*$/ )
+        set_value( key, clean, nil )
+    else
+        message( sprintf( "BIGBOUNTY: ERROR: Missing required setting: #{key}" ) )
+        message( sprintf( "BIGBOUNTY: (fried? is percenthealth and oom is percentmana)" ) )
+        Script.self.kill
+    end
+end
+
+def cmd( command, npc = nil, stance_dance = true )
+    command = command.dup
+
+    if( command.class.to_s == 'Array' )
+        stance_dance = false if command.any? { |j| j =~ /stance/ }
+        command.each do |i|
+            cmd( i, npc, stance_dance )
+        end
+        return
+    end
+
+    # check mana/stamina
+    if( command =~ /(.*)\(([s|m])(\d+)\)$/ )
+        if( $2 == 's' )
+            return if !checkstamina($3.to_i)
+        elsif( $2 == 'm' )
+            return if !checkmana($3.to_i)
+        end
+        command = $1
+    end
+        
+    if( command =~ /force\s+(.*)\s+(?:till|until)\s+(\d+)/ )            
+        cmd_force( $1, $2.to_i, npc )
+        return
+    end
+        
+    # sub id
+    command.gsub!( /target/, "##{npc.id}" ) if !npc.nil?
+        
+    # waitrt/waitcastrt
+    unless( command =~ /^nudgeweapons?/ )
+        waitrt?
+        waitcastrt? if command =~ /^\d+|incant/
+    end
+
+        # change_stance
+        stand()
+        unless( command =~ /^(?:\d+|wait|sleep|wand|berserk|script|hide|nudgeweapon)/ )
+            change_stance(@HUNTING_STANCE) if stance_dance
+        end
+
+        return if npc && !valid_target?(npc)
+
+        if( command =~ /^(\d+)(.*)$/ )
+            cmd_spell( $1.to_i, $2.strip, npc )
+		elsif( command =~ /^throw/i )
+			cmd_throw( npc )
+		elsif( command =~ /^k?weed/i )
+			cmd_weed( command, npc )
+        elsif( command =~ /^wand\s+(.*)/i )
+            cmd_wand(npc)
+        elsif( command =~ /^hide/i )
+            cmd_hide()
+        elsif( command =~ /^mstrike/i )
+            cmd_mstrike( command, npc )
+        elsif( command =~ /^fire/i )
+            cmd_ranged(npc)
+        elsif( command =~ /^berserk/i )
+            cmd_berserk()
+        elsif( command =~ /^script\s+(.*?)(\s|$)(.*)/i )
+            cmd_run_script( $1, $3 )
+        elsif( command =~ /^sleep\s+(\d+)/i )
+            cmd_sleep( $1, npc )
+        elsif( command =~ /^stance\s+(.*)/i )
+            change_stance($1)
+        elsif( command =~ /^wait\s+(\d+)/i )
+            wait_for_swing( $1.to_i, npc )
+        elsif( command =~ /^nudgeweapons?\s*/i )
+            cmd_nudge_weapons
+        else
+            return if command =~ /1030/ && checkmana < 10
+            bs_put command
+        end
+    end
+	
+	def cmd_throw( npc )
+		unless npc.status == 'lying down'
+			empty_hands
+			dothistimeout "throw ##{npc.id}", 1, /^You attempt to throw a .*\!$/
+			waitrt?
+			fill_hands
+		end
+	end
+    
+    def cmd_force( force_this, goal, npc )
+        start = Time.now
+        loop {
+            cmd( force_this, npc )
+            buffer = reget(20)
+            buffer.each_with_index { |line, i|
+                if( line =~ /^You.*(#{checknpcs.join('|')})(\.|!)|^You feint (high|low|(to the (left|right)))/ )
+                    if buffer[i + 1] && buffer[i + 1] =~ /== \+(\d+)/
+                        return if $1.to_i >= goal # spell/swing
+                    elsif buffer[i - 1] && buffer[i - 1] =~ /^\[Roll result: (\d+)/
+                        return if $1.to_i >= goal # cman
+                    elsif buffer[i + 1] =~ /^As you focus on your magic, your vision swims with a swirling haze of crimson/
+                        return
+                    end
+                elsif( line =~ /^You do not have enough stamina to attempt this maneuver\./ )
+                    return
+                elsif( line =~ /^Your magic fizzles ineffectually\./ )
+                    return
+                end
+            }
+            if ( force_this =~ /^(\d+) / && !Spell[$1.to_i].affordable? )
+                message( sprintf( "BIGBOUNTY: Force ran out of mana giving up" ) ); return;
+            end
+            return if GameObj.npcs.size.nil? || GameObj.npcs.size == 0
+            return if should_flee?
+            return if should_rest?
+            return if npc.status =~ /dead|gone/
+            return if ( Time.now - start ) > 30
+        }
+    end
+	
+	def cmd_weed( command, target )
+		return if target.status =~ /dead|gone/
+		return if GameObj.loot.find { |loot| loot.name =~ /vine/ }
+		return unless Spell[610].known? and Spell[610].affordable?
+		
+		waitcastrt?
+		change_stance('offensive') if command == 'kweed'
+		Spell[610].cast("##{target.id}")
+		change_stance('guarded') if command == 'kweed'
+		waitcastrt?
+	end
+
+    def cmd_spell( id, target_id, target )
+        if ( checkprep != "None" and checkprep != Spell[id].name )
+            fput 'release'
+        end
+
+        return if id == 506 and Spell[506].active?
+        return if id == 9605 and Spell[9606].active? # surge cooldown
+		return if target.status =~ /dead|gone/
+        unless( Spell[id].affordable? )
+            if(@WAND_IF_OOM)
+                cmd_wand(target); return;
+            end
+            if(@USE_WRACKING)
+                wrack()
+            end
+        end
+		
+		if ( !Spell[id].affordable? and id != 9605 and id != 506 )
+			$bigbounty_should_rest = true
+			$rest_reason = "out of mana"
+		end
+        waitcastrt?
+        Spell[id].cast(target_id)
+    end
+
+
+    def cmd_wand(target)
+        if(@FRESH_WAND_CONTAINER)
+            hands = GameObj.right_hand.name.to_s + GameObj.left_hand.name.to_s
+            wand  = ( @WAND && @WAND !~ /^\s*$/ ) ? @WAND : 'wand'
+            until( (GameObj.right_hand.name.to_s + GameObj.left_hand.name.to_s) =~ /#{wand}/i )
+                result = dothistimeout( "get #{wand} from my #{@FRESH_WAND_CONTAINER}", 3, /You remove|You slip|Get what/ )
+                if( result =~ /Get what/ )
+                    message( sprintf( "BIGBOUNTY: ERROR: Couln't find a fresh wand. Resting" ) ); $bigbounty_should_rest = true; return;
+                elsif(result.nil?)
+                    message("ERROR: Timed out looking for wand."); return;
+                end
+            end
+
+            change_stance('offensive')
+            result = dothistimeout( "wave my wand at ##{target.id}", 2, /d100|You hurl|is already dead|You do not see that here|You are in no condition|I could not find|Wait/ )
+            change_stance('defensive')
+            
+            if( result =~ /You are in no condition/ )
+                message( sprintf( "BIGBOUNTY: ERROR: Wounded, resting." ) ); $bigbounty_should_rest = true; return;
+            elsif(result.nil?)
+                if(@DEAD_WAND_CONTAINER)
+                    bs_put "put my wand in my #{@DEAD_WAND_CONTAINER}"
+                else
+                    bs_put "drop my wand"
+                end
+            end
+        else
+            message( sprintf( "BIGBOUNTY: ERROR: Wand command called but fresh wand container not defined." ) )
+        end
+    end
+
+    def cmd_hide()
+        tries = 0
+        until(hiding?)
+            break if tries > 3 || should_flee?
+            change_stance('defensive')
+            bs_put 'hide'; tries += 1;
+        end
+    end
+
+    def cmd_mstrike( command, target )
+        if( !Spell[9005].active? && Skills.multiopponentcombat >= 30 && GameObj.npcs.all? { |i| i.noun !~ /nest/i } )
+            if( GameObj.npcs.size > 1 and target.nil? )
+                bs_put "mstrike"
+            else
+                bs_put "mstrike ##{target.id}"
+            end
+        else
+            bs_put "kill ##{target.id}"
+        end
+    end
+
+    def cmd_ranged(npc)
+        waitrt?
+
+        result = dothistimeout "get 1 my #{@AMMO.sub(/s$/, '')}", 2, /You remove|Get what\?|You already/
+		if( result =~ /Get what\?/ )
+			$bigbounty_should_rest = true
+            $rest_reason = "Out of ammo"
+			return
+		end
+		
+        result = dothistimeout(
+            "fire ##{npc.id}",
+            2,
+            /You fire|You cannot|Could not find|seconds|Get what?/
+        )
+        if( result =~ /^Could not find/ )
+			#$bigbounty_should_rest = true
+            #$rest_reason = "Out of ammo"
+			gather_ammo
+		elsif( result =~ /You cannot fire/ )
+			unless GameObj.right_hand.id.nil?
+				line = dothistimeout "stow ##{GameObj.right_hand.id}", 3, /put|closed/
+				if line =~ /closed/
+					fput "open my #{@AMMO_CONTAINER}"
+					fput "put ##{GameObj.right_hand.id} in my ##{@AMMO_CONTAINER}"
+				end
+			end
+		elsif( result =~ /but it has no effect/ )
+            $bigbounty_should_rest = true
+            $rest_reason = "Ammo had no effect (need blessed or magical)"
+		elsif ( result == false )
+			$bigbounty_should_rest = true
+			$rest_reason = "Unknown result from fire routine: #{result}"
+        end
+    end
+
+    def cmd_berserk()
+        if( checkstamina(20) )
+            put 'stance def'
+            until( get =~ /^Everything around you turns red|^You scream/ )
+                bs_put 'berserk'
+            end
+            until( get =~ /^The redness fades from the world/ )
+                break if checkmind(7)
+            end
+        else
+            bs_put 'target random'; bs_put 'kill';
+        end
+    end
+
+    def cmd_run_script( name, args )
+        if( args == nil || args =~ /^\s*$/ )
+            run_script( name, true )
+        else
+            args = args.split(/ /)
+            run_script( name, true, args )
+        end
+    end
+
+    def cmd_sleep( time, npc )
+        change_stance('defensive')
+        time.to_i.times do
+            sleep 1
+            break if should_rest?
+            break if npc && npc.status =~ /dead|gone/
+        end
+    end
+    
+    def cmd_nudge_weapons()
+        return if checkpaths.size == 0
+
+        GameObj.loot.each { |i|
+            next unless i.noun =~ /axe|scythe|pitchfork|falchion|sword|lance|sword|dagger|estoc|falchion|handaxe|katana|katar|gauche|rapier|scimitar|whip-blade|cudgel|crowbill|whip|mace|star|hammer|claidhmore|flail|flamberge|maul|pick|staff|mattock/
+            change_stance('defensive')
+            
+            sheathed = false
+            unless( righthand.nil? || lefthand.nil? )
+                sheathed = true
+                fput 'sheath'
+                unless( righthand.nil? || lefthand.nil? )
+                    message( sprintf( "BIGBOUNTY: Unable to empty hands using a sheath." ) )
+                    return
+                end
+            end
+        
+            dirs = checkpaths
+            dir  = checkpaths.shift
+            fput "get ##{i.id}"
+            put dir
+            put "drop ##{i.id}"
+            fput reverse_direction(dir)
+            fput "gird" if sheathed
+        }
+    end
+
+    def dead_man_switch()
+        if @DEAD_MAN_SWITCH
+            Thread.new {
+                while( running?('bigbounty') )
+                    if( dead? ||  percenthealth < 40 )
+                        echo 'AUTOBOT ALERT: Your character is in trouble!'
+                        fput 'quit'
+                    end
+                    sleep 2
+                end
+            };
+        elsif @DEATH_RECOVERY_SWITCH
+            start_exec_script( <<-EOF
+                while( running?('bigbounty') );
+                    if(dead?);
+                        stop_script('bigbounty');
+			wait_while { dead? }
+			sleep 45
+			start_script('go2',['town','_disable_confirm_'])
+			wait_while { running?('go2') }
+			sleep 15
+			start_script('useherbs');
+			wait_while { running?('useherbs') }
+			start_script('waggle');
+			5.times { sleep 60; fput 'info'; echo 'YOU BIT THE DUST DURING YOUR LAST ADVENTURE!'; echo 'HOW UNFORTUNATE!'; };
+			sleep 1 until percentspirit == 100 && !running?('waggle');
+			start_script('go2',['bank','_disable_confirm_'])
+			wait_while { running?('go2') }
+			fput "withdraw 25"
+			start_script( 'bigshot', ['solo'] );
+                        Script.self.kill;
+                    end;
+                    sleep 5;
+                end;
+                EOF
+            );
+        else
+            Thread.new {
+                loop { Script.self.kill if dead?; sleep 5; }
+            }
+        end
+    end
+
+
+    def keep_awake()
+        Thread.new {
+            while( running?('bigbounty') )
+                sleep 150; put 'look';
+            end
+        }
+    end 
+
+
+    def monitor_interaction()
+        if @MONITOR_INTERACTION
+            start_exec_script( <<-eos
+                def show_window(line);
+                    window_title = Char.name + ':' + line;
+                    Gtk.queue {
+                        $myWindow = Gtk::Window.new;
+                        $myWindow.title = "Autobot Alert!";
+                        $myWindow.set_size_request(450, 25);
+                        label = Gtk::Label.new window_title;
+                        $myWindow.add(label);
+                        $myWindow.show_all;
+                    };
+                end;
+                while(line = get);
+                    break unless running?('bigbounty');
+                    if(line =~ /SEND|POLICY|[Rr](\s)*[Ee](\s)*[Pp](\s)*[Oo](\s)*[Rr](\s)*[Tt]|peaking to you|unresponsive|taps you|nods to you|lease respond|not in control|character|violation|lease speak|peak out loud|Y U SHOU D|whispers,|speaking to you|smiles at you|waves to you|grins at you|hugs you|takes hold your hand|grabs your hand|clasps your hand|trying to drag you/);
+                        unless(line =~ /LNet/);
+                            show_window(line);
+                            echo "AUTOBOT ALERT: " + line;
+                        end;
+                    end;
+                end;
+            eos
+            )
+        end
+    end
+
+
+    def wrack()
+        if Spell[9918].known? and not Spell[9012].active?
+            Spell[9918].cast if checkspirit >= @WRACKING_SPIRIT
+        elsif Spell[9718].known?
+            ( checkstamina / 50 ).times { Spell[9718].cast }
+        end
+    end
+
+
+    def change_stance( new_stance, force = true )
+        #return unless new_stance =~ /off/ # pookahs/bog
+        return if Spell[1617].active? || Spell[216].active? || dead?
+
+        if( stance() =~ /#{new_stance}/ )
+            return
+        elsif( checkcastrt() > 0 && new_stance =~ /def/ )
+            return if stance() == 'guarded'
+        end
+
+        if(force)
+            result = dothistimeout( "stance #{new_stance}", 3, /You are now in an?|Cast Round Time in effect|You are unable to change/ )
+        else
+            put "stance #{new_stance}"
+        end
+    end
+
+
+    def wait_for_swing( seconds, target = nil )
+        status_tags
+        start = Time.now
+        swung = false
+        while(1)
+            change_stance( 'defensive', false ) unless target && target.status =~ PRONE
+            stand()
+            
+            pcs = checkpcs ? ' you(\.|!|r? )|' + checkpcs.join('|') : 'you(\.|!|r? )'
+            break if clear.any? { |line| line =~ /#{target.id}.*(#{pcs})/ && line !~ /^<style id=""\/><style id="roomDesc"\/>|<component id='room objs'>|<compDef id='room objs'>/ }
+            break if GameObj.npcs.size.nil? || GameObj.npcs.size == 0
+            break if should_flee?
+            break if target && target.status =~ PRONE
+            break if ( Time.now - start ) > seconds
+            sleep 0.50
+        end
+        status_tags
+    end
+
+
+    def croak(message)
+        message(message);
+        croak_scripts( ['bigbounty'] )
+    end
+
+
+    def run_script( name, pause_bigbounty = false, args = [] )
+        if Script.running.find { |s| s.name.downcase == name.downcase }.paused or running? name
+            stop_script name
+            wait_while { running? name }
+        end
+
+        start_script name, args 
+        if pause_bigbounty
+            wait_until { !running? name }
+        end
+    end
+
+
+    def run_scripts( scripts, pause_bigbounty = false )
+        scripts.each do |i|
+            tokens = i.split(/\s+/)
+            if( tokens.size > 1 )
+                run_script( tokens[0], pause_bigbounty, tokens[1..-1] )
+            else
+                run_script( tokens[0], pause_bigbounty )
+            end
+        end
+    end
+
+
+    def croak_script(name)
+        kill_script(name) if running?(name)
+    end
+
+
+    def croak_scripts(scripts)
+        scripts.each { |i| croak_script(i) }
+    end
+
+
+    def stand()
+        until(standing?)
+            change_stance('defensive')
+            bs_put 'stand'
+        end
+    end
+
+
+    def lead( my_group = nil )
+        monitor_interaction()
+        @followers = my_group || Group.new()
+
+        if(should_rest?)
+            rest()
+        else
+            hunt()
+        end
+    end
+
+
+    def find_routine(target)
+        if( !solo? && fried? )
+            return @DISABLE_COMMANDS
+        else
+			key = @TARGETS.keys.find { |k| target.name =~ /^#{k}$/ or target.noun =~ /^#{k}$/ }
+			if key.nil?
+				routine_letter = 'a'
+			else
+				routine_letter = @TARGETS[key]
+			end
+			
+			if routine_letter == 'c'
+				return @HUNTING_COMMANDS_C unless @HUNTING_COMMANDS_C.size == 0
+			elsif routine_letter == 'b'
+				return @HUNTING_COMMANDS_B unless @HUNTING_COMMANDS_B.size == 0
+			end
+			
+			return @HUNTING_COMMANDS
+        end
+    end
+
+
+    def solo?
+        # tails wont have followers
+        if( @followers && @followers.size == 0 )
+            return true
+        else
+            return false
+        end
+    end
+
+
+    def leading?
+        return !following?
+    end
+    
+
+    def following?
+        return @followers.nil?
+    end
+
+
+    # this is a leader method
+    def hunt()
+        start_watch()
+        message( sprintf( "BIGBOUNTY: Hunting." ) )
+
+        # hackity hack hack hack
+        if( Char.name == 'waeiojrefwioj' )
+            fput 'stop singing'
+            echo 'waiting until mana is full'
+            sleep 1 until( percentmana >= 100 )
+            
+            run_script( 'tbounty', true ) unless Script.index.join =~ /sbounty/
+            start_script('songofpower'); sleep 4;
+            [ '1003', '1006', '1010', '1019' ].each { |i| Spell[i.to_i].cast unless Spell[i.to_i].active?; sleep 1; }
+            sleep 1; start_script('sonicshield'); sleep 3;
+            fput "disband"
+            echo 'waiting one pulse'
+            sleep 90
+        end
+
+
+        # prep/go
+        @followers.add_event(:HUNTING_PREP_COMMANDS)
+        @HUNTING_PREP_COMMANDS.each { |i| fput(i) }
+        sleep 3 if Char.name == 'Azathoth' # HACK
+
+
+        @followers.add_event(:CAST_SIGNS)
+        cast_signs()
+
+
+        @followers.add_event(:HUNTING_SCRIPTS_START)
+        run_scripts( @HUNTING_SCRIPTS, false )
+
+
+        goto(@HUNTING_ROOM_ID)
+        if( !solo? && @followers.get_names.any? { |i| !checkpcs.include?(i) } )
+            @followers.add_event(:CAST_SIGNS) # trigger rubber band
+            sleep 10 # wait for followers
+        end
+        
+
+        spam() if UserVars.op['spam']
+
+        # loop
+        target = nil
+        just_arrived = true
+        last_attack = 0
+        loop {
+            while( (target = find_target(target, just_arrived)) && !should_rest? )
+                if( (Time.now.to_i - last_attack > 15) || just_arrived )
+                    @followers.add_event(:ATTACK)
+                    last_attack = Time.now.to_i
+                end
+                pre_attack()
+                attack(target)
+		status_check()
+                just_arrived = false
+                loot()
+            end
+            gather_ammo()
+
+            if(should_rest?)
+                break
+            else
+                prepare_for_movement()
+		status_check()
+                target = bs_wander()
+				sleep 1
+                just_arrived = true
+            end
+        }
+
+        # go rest
+        unspam()
+        rest()
+    end
+
+
+    # this is a leader method
+    def rest()
+        message( sprintf( "BIGBOUNTY: Resting." ) )
+        $bigbounty_should_rest = nil
+        if @BOUNTY_MODE # bounty script should take over from here
+          echo "Bounty mode. Killing self. Reason: #{$rest_reason}"
+          Script.self.kill
+        end
+          
+        stop_watch()
+
+####################################################################################################################
+############################################################################ RESTING RESTING RESTING RESTING RESTING
+
+        # prep/go
+        goto(@RESTING_ROOM_ID)
+        @followers.add_event(:DISPLAY_WATCH)
+
+
+        @followers.add_event(:HUNTING_SCRIPTS_STOP)
+        croak_scripts(@HUNTING_SCRIPTS)
+        
+
+        @followers.add_event(:RESTING_PREP_COMMANDS)
+        @RESTING_COMMANDS.each { |i| fput(i) }
+
+		if @REST_HEAL then selfheal()
+		end
+		
+
+		if @DO_BOUNTIES then bountytask()
+		end
+
+
+        @followers.add_event(:RESTING_SCRIPTS_START)
+        run_scripts( @RESTING_SCRIPTS, true )
+
+
+                if @CAST_REST_SPELLS then restingspells()
+		end
+		
+
+		if XMLData.game =~ /GSF/i then manabread()
+ 		end
+
+
+		if @MAKE_BREAD then restbread()
+		end
+
+
+        # loop
+        until(should_hunt?)
+	    logged_in
+            display_watch_current()
+            display_watch_average()
+            display_watch_total()
+            message( sprintf( "BIGBOUNTY: last rested because: #{$rest_reason}" ) ) if $rest_reason
+            message( sprintf( "BIGBOUNTY: isn't hunting because: #{$not_hunting_reason}" ) ) if $not_hunting_reason           
+            fput "experience"
+	    sleep REST_INTERVAL
+        end
+
+
+        hunt()
+    end
+#################################################   <------------PRE ATTACK-------------< ###########################
+
+    def pre_attack(single_cast = false)
+
+        spells = UserVars.op['attack_spell'].split(',')
+        spells.each do |i|
+            i = i.to_i
+
+            sign = Spell[i]
+        if( !sign.active? && percentmana >= @ATTACK_PERCENT )
+          
+	    if(sign.affordable? && sign.known? )
+                if( i  == 9805 )
+                    2.times { sign.cast }
+                else
+                    while(1)
+                        result = sign.cast
+                        break if result !~ /Spell Hindrance/ || !sign.affordable? || dead?
+                    end
+                end
+	     end		
+			        break if single_cast
+          end
+       end
+    end
+
+
+    def attack(target)
+        commands = find_routine(target)
+
+        commands.each do |i|
+            return unless valid_target?(target)
+            return if wounded? || $bigbounty_should_rest
+            stand()
+            cast_signs()
+            
+            cmd( i, target )
+        end
+        sleep 1 if commands.size == 0
+    end
+
+
+    def goto(id)
+        prepare_for_movement()
+        until( Room.current.id == id )
+            run_script( 'go2', true, [ id, '_disable_confirm_' ] )
+        end
+    end
+
+
+    def start_watch()
+        @START_TIME = Time.now.to_i
+    end
+
+
+    def stop_watch()
+        if( @START_TIME > 100 )
+            @STORED_TIMES.push( Time.now.to_i - @START_TIME )
+        end
+        @START_TIME = 0
+    end
+
+
+    def display_watch_current()
+        if( @STORED_TIMES.size > 0 )
+            seconds = @STORED_TIMES[-1]
+            message( sprintf( "BIGBOUNTY: Last Hunt: %d min. %0.2f secs.",seconds / 60, seconds % 60 ) )
+        end
+    end
+
+
+    def display_watch_average()
+        average = 0
+        if( @STORED_TIMES.size == 1 )
+            average = @STORED_TIMES[0]
+        elsif( @STORED_TIMES.size > 1 )
+            @STORED_TIMES.each { |i| average += i }
+            average /= @STORED_TIMES.size
+        else
+            return
+        end
+        message( sprintf( "BIGBOUNTY: Average Hunt: %d min. %0.2f secs.",
+            average / 60, average % 60 ) )
+    end
+
+
+    def display_watch_total()
+        total = Time.now.to_i - @BIRTH_TIME
+        message( sprintf( "BIGBOUNTY: Total Time Running: %d min.  %0.2f secs.",
+            total / 60, total % 60 ) )
+    end
+
+
+    def room_id()
+        return Room.current.id()
+    end
+
+
+    def name()
+        return Char.name
+    end
+
+
+    def poaching?()
+        if(leading?)
+            checkpcs.each { |i| return true unless @followers.get_names.include?(i) }
+            return false
+        else
+            return false
+        end
+    end
+
+
+    def should_flee?( just_entered = false )
+        GameObj.loot.each { |i| return true if i.noun == 'cloud' } if @FLEE_CLOUDS
+        return true if GameObj.npcs.any?  { |i| @ALWAYS_FLEE_FROM.include?(i.noun) }
+        return true if checkpcs.any?      { |i| @ALWAYS_FLEE_FROM.include?(i) }
+        return true if !leading? && checkpcs.empty?
+
+        npcs = GameObj.npcs.find_all { |i| i.status !~ /dead|gone/ }
+		npcs.delete_if { |npc| (@INVALID_TARGETS.include?(npc.name) or @INVALID_TARGETS.include?(npc.noun)) }
+		
+		flee_count = (just_entered && @LONE_TARGETS_ONLY) ? 1 : @FLEE_COUNT
+		if npcs.size > flee_count
+			return true
+		end
+    end
+
+
+    def valid_target?( target, just_entered = false )
+        return false if target == nil || target == false
+        return false if should_flee?(just_entered)
+        return false if just_entered && poaching?
+        return false if target.noun =~ /child|traveller|scribe|merchant|dignitary|official|magistrate/i
+        
+        if( !CharSettings['targetable'].include?(target.noun) && !CharSettings['untargetable'].include?(target.name) )
+            result = dothistimeout( "target ##{target.id}", 3, /^You are now targeting|^You can't target/ )
+            if( result =~ /^You are now targeting/ )
+                CharSettings['targetable'].push(target.noun)
+            elsif( result =~ /^You can't target/ )
+                CharSettings['untargetable'].push(target.noun)
+            end
+        end
+        return false if CharSettings['untargetable'].include?(target.noun)
+        if( target.status !~ /dead|gone/ && @TARGETS == nil )
+            return true
+        elsif( target.status !~ /dead|gone/ &&
+            @TARGETS.keys.any? { |i| target.name =~ /^#{i}$/i or target.noun =~ /^#{i}$/i } )
+            return true
+        else
+            return false
+        end
+    end
+
+
+    def sort_npcs()
+		targets = @TARGETS
+			
+		npcs = GameObj.npcs
+		sorted = Array.new
+		
+		targets.keys.each { |target| sorted += npcs.find_all { |npc| (npc.name =~ /^#{target}$/i or npc.noun =~ /^#{target}$/i) }.to_a }
+		sorted.flatten
+    end
+
+	
+    def find_target( target, just_entered = false )
+        return target if valid_target?(target)
+		
+        sort_npcs.each { |i| return i if valid_target?( i, just_entered ) }
+        
+        # nothing valid
+        return nil
+    end
+
+
+    def rt?()
+        return checkrt()
+    end
+
+
+    def fried?()
+        if checkbounty =~ /suppress/i && @HUNT_SUPPRESS
+	    return false
+        elsif( percentmind() >= @FRIED )
+            return true
+        end
+        return false
+    end
+
+
+    def oom?()
+        if( percentmana() < @OOM )
+            return true
+        end
+        return false
+    end
+
+
+    def ammo_on_ground(ammo)
+        return GameObj.loot.find { |i| i.name =~ /^#{ammo}$/i or i.noun =~ /#{ammo}s?/i }
+    end
+
+
+    def gather_ammo()
+        ammo = @AMMO; container = @AMMO_CONTAINER; hide = @HIDE_FOR_AMMO;
+        return if ammo == nil || wounded?
+ 
+        while( ammo_on_ground(ammo) )
+        change_stance('defensive')
+			
+		    unless GameObj.right_hand.id.nil?
+			    line = dothistimeout "stow ##{GameObj.right_hand.id}", 3, /put|closed/
+			    if line =~ /closed/
+				    fput "open my #{@AMMO_CONTAINER}"
+				    fput "put ##{GameObj.right_hand.id} in my ##{@AMMO_CONTAINER}"
+			    end
+		    end
+			
+        result = dothistimeout(
+            "gather #{ammo}",
+            2,
+            /^You gather|^You pick up|^I could not|^What were you|^You may only|reach|on the ground/
+        )
+			
+		    if( result =~ /on the ground/)
+			    result = dothistimeout "get arrows", 3, /^You gather|^You pick up|^I could not|^What were you|^You may only|reach|on the ground/
+		    end
+
+        if( result =~ /^You gather|^You pick up/ )
+            dothistimeout(
+                "put my #{ammo} in my #{ammo} in my #{container}",
+                2,
+                /^I could not find|^You can't seem to|^You add|^You bundle|You cannot bundle/
+            )
+            bs_put "put my #{ammo} in my #{container}" if righthand?
+		    elsif( result =~ /You may only/ )
+			    return
+        elsif( result == false || result =~ /^I could not find|^What were you/ )
+            return
+        elsif( result =~ /reach/ )
+			    bs_put 'hide' if hide and not hidden?
+			    sleep 4
+        end
+    end
+end
+
+
+def wounded?()
+    if(@WOUNDED_EVAL)
+        return eval @WOUNDED_EVAL
+    else
+        return false
+    end
+end
+
+
+def should_hunt?()
+    if(wounded?)
+        $not_hunting_reason = 'Wounded.'
+        return false
+    end
+    if( percentencumbrance >= @ENCUMBERED )
+        $not_hunting_reason = 'Encumbered.'
+        return false
+    end
+    if( percenthealth < @HEALTH )
+        $not_hunting_reason = 'Health still below threshold.'
+        return false
+    end
+    if( @RESTING_SCRIPTS.any? { |i| running?(i) } )
+        $not_hunting_reason = 'Resting scripts still running.'
+        return false
+    end
+
+        followers_should = (leading? && !solo?) ? @followers.should_hunt? : true
+        if(followers_should)
+        if( percentmind() > @REST_TILL_EXP )
+            $not_hunting_reason = 'Mind still above threshold.'
+            return false
+        elsif( percentmana() < @REST_TILL_MANA )
+            $not_hunting_reason = 'Mana still below threshold.'
+            return false
+        elsif( percenthealth() < @HEALTH )
+            $not_hunting_reason = 'Health still below threshold.'
+            return false
+        elsif( checkspirit() < @REST_TILL_SPIRIT )
+            $not_hunting_reason = 'Spirit still below threshold.'
+            return false
+        end
+    else
+        $not_hunting_reason = 'Followers still need rest.'
+        return false
+    end
+	    $bigbounty_status = :Hunting
+    return true
+end
+
+
+def should_rest?()
+    if($bigbounty_should_rest)
+        $rest_reason = "$bigbounty_should_rest was set to true." unless $rest_reason
+		    $bigbounty_status = :Resting
+        return true
+    elsif(wounded?)
+        $rest_reason = "Wounded."
+		    $bigbounty_status = :Resting
+        return true
+    elsif( percentencumbrance >= @ENCUMBERED )
+        $rest_reason = "Encumbered."
+		    $bigbounty_status = :Resting
+        return true
+    elsif( percenthealth < @HEALTH )
+        $rest_reason = "Health is below the threshold."
+		    $bigbounty_status = :Resting
+        return true
+    elsif( leading? && !solo? && @followers.emergency_rest? )
+        $rest_reason = "Emergency rest."
+		    $bigbounty_status = :Resting
+        return true
+    end
+
+    followers_fried = (leading? && !solo?) ? @followers.should_rest? : true
+
+    if(followers_fried)
+        if(fried?)
+            $rest_reason = "Fried."
+			    $bigbounty_status = :Resting
+            return true
+        elsif(oom?)
+            wrack() if @USE_WRACKING
+            return false if !oom?
+                
+            $rest_reason = "Out of mana."
+			    $bigbounty_status = :Resting
+            return true
+        end
+    end
+        
+    $rest_reason = "none."
+    return false
+end
+     
+def cast_signs(single_cast = false)
+    @SIGNS.each do |i|
+        i = i.to_i
+		    next if [ 9903,9904,9905,9906,9907,9908,9909,9910,9912,9913,9914,9918 ].include?(i) and Spell[9012].active?
+        next if i == 9918
+        next if i == 9603 && Spell[9604].active?
+        next if i == 9605 && Spell[9606].active?
+        sign = Spell[i]
+        next unless sign.known?
+
+        # wrack?
+        mana_cost = sign.mana_cost > 1 ? sign.mana_cost : 0 # Many erroneously return 1
+        wrack() if !sign.affordable? and mana_cost > checkmana and @USE_WRACKING
+
+        if( !sign.active? && sign.affordable? )
+            if( i  == 9805 )
+                2.times { sign.cast }
+            else
+                while(1)
+                    result = sign.cast
+                    break if result !~ /Spell Hindrance/ || !sign.affordable? || dead?
+                end
+            end
+				
+			    break if single_cast
+        end
+    end
+end
+
+
+def loot()
+    dead_npcs = GameObj.npcs.find_all { |i| i.status == 'dead' }
+    dead_npcs.each { |i|
+        change_stance('defensive')
+       
+	if (@HOUSE_LOOTER)
+           wait_while { checkrt > 0 || checkcastrt > 0 }
+           search()
+           internal_looter()
+     
+	end
+        
+	if(@LOOT_SCRIPT)
+            wait_while { checkrt > 0 || checkcastrt > 0 }
+	    run_script( @LOOT_SCRIPT, true )
+            break
+        else
+            bs_put 'loot'
+        end
+    }
+end
+
+
+def prepare_for_movement()
+    change_stance('defensive')
+    if( leading? && !solo? )
+        wait_while { @followers.roundtime? }
+        sleep 1
+    end
+end
+
+
+def bs_wander()
+	    wander_last_room = nil
+		
+    wander = proc {
+        room = Room.current
+        next_room_options = room.wayto.keys - @HUNTING_BOUNDARIES
+        if next_room_options.length > 1
+            next_room_options.delete_if { |option| option == wander_last_room }
+        end
+        next_room = next_room_options[rand(next_room_options.length)]
+        way = room.wayto[next_room]
+        if way.class == String 
+            move(way)
+        else
+            way.call
+        end
+		    cast_signs(true)
+        wander_last_room = room.id.to_s
+    }
+    if GameObj.npcs.size > 0 # last chance to find a target
+        sort_npcs.each { |i| return i if valid_target?( i, false ) }
+    end
+		
+    loop { # wander until we find a valid target
+        group = checkpcs.to_a
+        wander.call
+        sleep 0.1
+        next unless (checkpcs.to_a - group).empty?
+        next if GameObj.loot.find { |obj| (obj.noun == 'disk') and (obj.name !~ /#{group.join('|')}/) }
+        start_npcs = npcs = GameObj.npcs
+        npcs.delete_if { |npc| (npc.status =~ /dead|gone/) }
+        next if npcs.nil? or npcs.empty?
+        if npcs.size > 0 # we call this twice.... I don't like it either
+            sort_npcs.each { |i| return i if valid_target?( i, true ) }
+        end
+    }
+end
+
+
+def bs_put(message)
+    unless script = Script.self then respond('--- waitfor: Unable to identify calling script.'); return false; end
+    clear
+    put(message)
+
+    while string = get
+    if string =~ /(?:\.\.\.wait |Wait )[0-9]+/
+        hold_up = string.slice(/[0-9]+/).to_i
+        sleep(hold_up - 1) unless hold_up.nil? || hold_up == 1
+        clear
+        put(message)
+        next
+    elsif string =~ /struggle.+stand/
+        clear
+        bs_put("stand")
+        next
+    elsif string =~ /stunned|can't do that while|cannot seem|can't seem|don't seem|Sorry, you may only type ahead/
+        if dead?
+            echo("You're dead...! You can't do that!")
+            sleep 0.25
+            script.downstream_buffer.unshift(string)
+            return false
+        elsif checkstunned
+            while checkstunned
+                sleep("0.25".to_f)
+        end
+    elsif checkwebbed
+            while checkwebbed
+                sleep("0.25".to_f)
+        end
+    else
+            sleep(0.25)
+        end
+        clear
+        put(message)
+        next
+    else
+            script.downstream_buffer.unshift(string)
+            return string
+        end
+    end
+end
+
+
+   
+def self.setup
+    Gtk.queue {
+        $OP_WINDOW = Gtk::Window.new
+        $OP_WINDOW.title = "Bigbounty: v#{VERSION}"
+        $OP_WINDOW.set_border_width(10)
+        $OP_BOX = Gtk::VBox.new(false)
+        $OP_BOX.set_border_width(5)
+
+        $OP_VERTICAL_BOX1 = Gtk::VBox.new(false, 0)
+        $OP_VERTICAL_BOX2 = Gtk::VBox.new(false, 0)
+        $OP_VERTICAL_BOX3 = Gtk::VBox.new(false, 0)
+        $OP_VERTICAL_BOX4 = Gtk::VBox.new(false, 0)
+        $OP_VERTICAL_BOX5 = Gtk::VBox.new(false, 0)
+        $OP_VERTICAL_BOX6 = Gtk::VBox.new(false, 0)
+        $OP_VERTICAL_BOX7 = Gtk::VBox.new(false, 0)
+        $OP_VERTICAL_BOX8 = Gtk::VBox.new(false, 0)
+
+        $OP_WINDOW.add($OP_BOX)
+        $OP_NOTEBOOK = Gtk::Notebook.new
+        $OP_NOTEBOOK.set_show_border(true)
+        $OP_BOX.add($OP_NOTEBOOK)
+        $OP_NOTEBOOK.append_page($OP_VERTICAL_BOX1, Gtk::Label.new('Main Menu'))
+        $OP_NOTEBOOK.append_page($OP_VERTICAL_BOX2, Gtk::Label.new('Resting'))
+        $OP_NOTEBOOK.append_page($OP_VERTICAL_BOX3, Gtk::Label.new('Hunting'))
+        $OP_NOTEBOOK.append_page($OP_VERTICAL_BOX4, Gtk::Label.new('Targeting'))
+        $OP_NOTEBOOK.append_page($OP_VERTICAL_BOX5, Gtk::Label.new('Attacking'))
+        $OP_NOTEBOOK.append_page($OP_VERTICAL_BOX6, Gtk::Label.new('Bounties')) 
+        $OP_NOTEBOOK.append_page($OP_VERTICAL_BOX7, Gtk::Label.new('Death Options'))
+        $OP_NOTEBOOK.append_page($OP_VERTICAL_BOX8, Gtk::Label.new('Ammo/Wands')) 
+
+        $OP_ENTRY = Hash.new # For mapping entries to variables
+        $OP_TABLE_SIZE = Hash.new # For mapping table sizes
+    }
+
+    Gtk.queue {
+        $OP_TABLE1 = Gtk::Table.new(6, 3, false)
+        $OP_TABLE1.row_spacings=3
+        $OP_TABLE1.column_spacings=3
+        $OP_VERTICAL_BOX1.pack_start($OP_TABLE1, false, false, 0)
+
+        $OP_TABLE2 = Gtk::Table.new(6, 3, false)
+        $OP_TABLE2.row_spacings=3
+        $OP_TABLE2.column_spacings=3
+        $OP_VERTICAL_BOX2.pack_start($OP_TABLE2, false, false, 0)
+
+        $OP_TABLE3 = Gtk::Table.new(6, 3, false)
+        $OP_TABLE3.row_spacings=3
+        $OP_TABLE3.column_spacings=3
+        $OP_VERTICAL_BOX3.pack_start($OP_TABLE3, false, false, 0)
+
+        $OP_TABLE4 = Gtk::Table.new(6, 3, false)
+        $OP_TABLE4.row_spacings=3
+        $OP_TABLE4.column_spacings=3
+        $OP_VERTICAL_BOX4.pack_start($OP_TABLE4, false, false, 0)
+
+        $OP_TABLE5 = Gtk::Table.new(6, 3, false)
+        $OP_TABLE5.row_spacings=3
+        $OP_TABLE5.column_spacings=3
+        $OP_VERTICAL_BOX5.pack_start($OP_TABLE5, false, false, 0)
+
+        $OP_TABLE6 = Gtk::Table.new(6, 3, false)
+        $OP_TABLE6.row_spacings=3
+        $OP_TABLE6.column_spacings=3
+        $OP_VERTICAL_BOX6.pack_start($OP_TABLE6, false, false, 0)
+
+        $OP_TABLE7 = Gtk::Table.new(6, 3, false)
+        $OP_TABLE7.row_spacings=3
+        $OP_TABLE7.column_spacings=3
+        $OP_VERTICAL_BOX7.pack_start($OP_TABLE7, false, false, 0)
+
+        $OP_TABLE8 = Gtk::Table.new(6, 3, false)
+        $OP_TABLE8.row_spacings=3
+        $OP_TABLE8.column_spacings=3
+        $OP_VERTICAL_BOX8.pack_start($OP_TABLE8, false, false, 0)
+    }
+
+    def self.add_label_entry(table, label, variable)
+        size = $OP_TABLE_SIZE[table] || 0
+
+        label = Gtk::Label.new(label)
+        align = Gtk::Alignment.new 1, 0, 0, 0
+        align.set_padding(4, 0, 3, 4)
+        align.add(label)
+        table.attach(align, 0, 1, size, size + 1)
+
+        entry = Gtk::Entry.new
+        entry.text = UserVars.op[variable].to_s
+        entry.set_width_request(157)
+        table.attach(entry, 1, 2, size, size + 1)
+
+        $OP_ENTRY[variable] = entry
+        $OP_TABLE_SIZE[table] += 1
+    end
+
+    Gtk.queue {
+        $OP_ENTRY = Hash.new
+        add_label_entry($OP_TABLE2, "Resting Room Id", 'resting_room_id')
+        add_label_entry($OP_TABLE2, "Resting Commands", 'resting_commands')
+        add_label_entry($OP_TABLE2, "Resting Scripts", 'resting_scripts')
+        add_label_entry($OP_TABLE2, "Refresh these spell numbers (Must enable spellup utility)", 'rest_spells')
+        add_label_entry($OP_TABLE2, "If minutes remaining on spell duration is <", 'spell_time')
+        add_label_entry($OP_TABLE2, "Rest when percentmind >", 'fried')
+        add_label_entry($OP_TABLE2, "Rest when percentmana <", 'oom')
+        add_label_entry($OP_TABLE2, "Rest when percentencumbrance >", 'encumbered')
+        add_label_entry($OP_TABLE2, "Rest when wounded (wound eval)", 'wounded_eval')
+        add_label_entry($OP_TABLE3, "Start Hunting in this Room Id", 'hunting_room_id')
+        add_label_entry($OP_TABLE3, "Hunting Boundary Room Id's:", 'hunting_boundaries')
+        add_label_entry($OP_TABLE3, "Pre-hunting Commands", 'hunting_prep_commands')
+        add_label_entry($OP_TABLE3, "Fried hunting commands", 'disable_commands')
+        add_label_entry($OP_TABLE3, "Optional external looting script:", 'loot_script')       
+        add_label_entry($OP_TABLE3, "Activate these hunting scripts:", 'hunting_scripts')
+        add_label_entry($OP_TABLE3, "While hunting maintain these spells and abilities", 'signs')
+        add_label_entry($OP_TABLE3, "Hunt when percentmind <", 'rest_till_exp')
+        add_label_entry($OP_TABLE3, "Hunt when percentmana >", 'rest_till_mana')
+        add_label_entry($OP_TABLE3, "Hunt when percenthealth >", 'health')
+        add_label_entry($OP_TABLE3, "Hunt when CHECKSPIRIT ==", 'rest_till_spirit')
+        add_label_entry($OP_TABLE4, "Target List", 'targets')
+        add_label_entry($OP_TABLE4, "Flee Count (Max-Critters) >", 'flee_count')
+        add_label_entry($OP_TABLE4, "Ignore These Critters", 'invalid_targets')
+        add_label_entry($OP_TABLE4, "Flee From These Critters", 'always_flee_from')
+        add_label_entry($OP_TABLE4, "Spirit to wrack at (If wracking) >", 'wracking_spirit')
+        add_label_entry($OP_TABLE5, "Attacking Stance", 'hunting_stance')
+        add_label_entry($OP_TABLE5, "Primary Attack Commands", 'hunting_commands')
+        add_label_entry($OP_TABLE5, "Attack Commands (b)", 'hunting_commands_b')
+        add_label_entry($OP_TABLE5, "Attack Commands (c)", 'hunting_commands_c')
+        add_label_entry($OP_TABLE5, "Start my attack with this spell", 'attack_spell')
+        add_label_entry($OP_TABLE5, "Cast spell only if inactive and percent mana > ", 'attack_percent')
+        add_label_entry($OP_TABLE6, "Cancel These Critters", 'cancel_list')
+        add_label_entry($OP_TABLE6, "Stockpile selling script", 'stockpile_script')
+        add_label_entry($OP_TABLE6, "Turn in bounties when percent mind >", 'bounty_mind')
+        add_label_entry($OP_TABLE8, "Ammo Container:", 'ammo_container')
+        add_label_entry($OP_TABLE8, "Ammo Type", 'ammo')
+        add_label_entry($OP_TABLE8, "Charged Wand Container", 'fresh_wand_container')
+        add_label_entry($OP_TABLE8, "Empty Wand Container", 'dead_wand_container')
+        add_label_entry($OP_TABLE8, "Use Wand Type (wand or rod)?:", 'wand')
+    }
+
+    def self.add_checkbox(table, x_pos, label, variable, default = false)
+        size = $OP_TABLE_SIZE[table] || 0
+        checkbox = Gtk::CheckButton.new label
+        value = UserVars.op[variable].nil? ? default : UserVars.op[variable]
+        checkbox.set_active(value)
+        table.attach(checkbox, x_pos, x_pos + 1, size, size + 1)
+        $OP_ENTRY[variable] = checkbox
+        $OP_TABLE_SIZE[table] += 1 if x_pos == 1
+    end
+ 
+    Gtk.queue {
+        add_checkbox($OP_TABLE1, 1, "Cure poison if poisoned and spell known", 'cure_poison')
+        add_checkbox($OP_TABLE1, 1, "Cure disease if diseased and spell known", 'cure_disease')
+        add_checkbox($OP_TABLE1, 1, "Cure muscles if popped (empaths only)", 'cure_muscles')
+        add_checkbox($OP_TABLE1, 1, "Heal safely if stunned or bleeding (empaths only)", 'combat_heal')
+        add_checkbox($OP_TABLE1, 1, "Remove web if webbed and spell known", 'remove_web')
+        add_checkbox($OP_TABLE1, 1, "Monitor interaction", 'monitor_interaction')
+        add_checkbox($OP_TABLE1, 1, "Flee from clouds", 'flee_clouds')
+        add_checkbox($OP_TABLE2, 1, "Use spellup utility during rest?", 'cast_rest_spells')
+        add_checkbox($OP_TABLE2, 1, "Heal yourself during rest? (Empaths Only)", 'rest_heal')
+        add_checkbox($OP_TABLE2, 1, "If spell known, make and eat mana bread during rest?", 'make_bread') 
+        add_checkbox($OP_TABLE3, 1, "Use internal looter (no cursed or uncommon)", 'house_looter')
+        add_checkbox($OP_TABLE4, 1, "Attack single targets only", 'lone_targets_only', false)
+        add_checkbox($OP_TABLE4, 1, "Use sign of wracking/sigil of power", 'use_wracking')
+        add_checkbox($OP_TABLE5, 1, "Spam attacks (recommended)", 'spam', true)
+        add_checkbox($OP_TABLE6, 1, "Complete critter,gem & heirloom bounties", 'do_bounties')
+	add_checkbox($OP_TABLE6, 1, "Check if you stockpile gems", 'stockpile')
+	add_checkbox($OP_TABLE6, 1, "If fried hunt until suppress bountys are completed", 'hunt_suppress')
+        add_checkbox($OP_TABLE7, 1, "Depart/rerun if dead", 'depart_switch')
+        add_checkbox($OP_TABLE7, 1, "Engage deadmans switch", 'dead_man_switch')
+        add_checkbox($OP_TABLE8, 1, "Hide while waiting to pick up ammo", 'hide_for_ammo')
+        add_checkbox($OP_TABLE8, 1, "Use wands when out of mana", 'wand_if_oom')
+    }
+        
+    Gtk.queue {
+        $OP_WINDOW.signal_connect("delete_event") {
+            $OP_SETUP_COMPLETED = true
+        }
+    }
+        
+    Gtk.queue {
+        $OP_TOOLTIPS = Gtk::Tooltips.new
+        $OP_TOOLTIPS.enable
+
+        label = Gtk::Label.new
+        label.set_markup("<i> Hi #{Char.name},welcome to Bigbounty.\nThe all-in-one hunting, looting, healing, spellup and bounty script.\nAll critter, heirloom and gem bounties are supported.\n\n\n***Complete your settings before you begin.***</i>")
+        align = Gtk::Alignment.new(1, 0, 0, 0)
+        align.set_padding(50, 0, 0, 40)
+        align.add(label)
+        $OP_TABLE1.attach(align, 1, 2, 8, 9)
+
+        commands_tip =  "Example 1: 413 target(x1), 903 target(xx)\nExample 2: stance def and 1615 target, kill target(xx)\nExample 3: 903 target(xx)\nExample 4: incant 240(m50) and 1106 target(xx)\n\nSeparate all commands with commas. List all targets with nouns in the targets field\n\nUse the letter(b) or (c) to create up to three different attacks.\nFor example: targets griffin, initiate(b), scout(c). The griffin uses Attack Commands, initiate uses Attack Commands(b) and the scout would use Attack Commands(c)."
+        $OP_TOOLTIPS.set_tip($OP_ENTRY['hunting_commands'], commands_tip, "")
+        $OP_TOOLTIPS.set_tip($OP_ENTRY['g_hunting_commands'], commands_tip, "")
+        $OP_TOOLTIPS.set_tip($OP_ENTRY['g_disable_commands'], commands_tip, "")
+
+        signs_tip = "Combat Movement - 9601\nCombat Focus - 9602\nShadow Mastery - 9603\nSurge of Strength - 9605\n\nSigil of Contact - 9703\nSigil of Resolve - 9704\nSigil of Minor Bane - 9705\nSigil of Defense - 9707\nSigil of Offense - 9708\nSigil of Minor Protection - 9710\nSigil of Focus - 9711\nSigil of Mending - 9713\nSigil of Concentration - 9714\nSigil of Major Bane - 9715\nSigil of Major Determination - 9716\nSigil of Major Protection - 9719\n\nSign of Warding - 9903\nSign of Striking - 9904\nSign of Thought - 9906\nSign of Defending - 9907\nSign of Smiting - 9908\nSign of Staunching - 9909\nSign of Deflection - 9910\nSign of Swords - 9912\nSign of Shields - 9913\nSign of Dissipation - 9914\nSign of Madness - 9916\n\nSymbol of Courage - 9805\nSymbol of Protection - 9806\n You could also put a spell number you wish to keep active here."
+        $OP_TOOLTIPS.set_tip($OP_ENTRY['signs'], signs_tip, "")
+
+
+	size = $OP_TABLE_SIZE[$OP_TABLE3]
+        label = Gtk::Label.new
+        label.set_markup("<i>Tip: Enter the room id where you want the hunt to start. Enter surrounding boundary room id's to create your hunting area.\nChoose the optional internal looter or enter an external looter script of your choice.\nEnter the percents to start hunting. Seperate all commands with commas.\nMouse over spells and abilities for examples.</i>")
+        align = Gtk::Alignment.new(1, 0, 0, 0)
+        align.set_padding(75, 0, 0, 4)
+        align.add(label)
+        $OP_TABLE3.attach(align, 1, 2, size, size + 1)
+
+        size = $OP_TABLE_SIZE[$OP_TABLE4]
+        label = Gtk::Label.new
+        label.set_markup("<i>Tip: Use nouns for targets. Flee count is the maximun amount of critters to be allowed before leaving the room.\nYou can choose to ignore a specific critter which will not count towards your flee count.\nYou can choose to wrack or approach single targets only to start the fight.</i>")
+        align = Gtk::Alignment.new(1, 0, 0, 0)
+        align.set_padding(0, 0, 0, 4)
+        align.add(label)
+        $OP_TABLE4.attach(align, 1, 2, size, size + 1)
+
+        size = $OP_TABLE_SIZE[$OP_TABLE5]
+        label = Gtk::Label.new
+        label.set_markup("<i>Tip: Mouse over primary attack commands for examples.\nYou can choose up to three different attack routines placing (b) and (c) next to your targets in target list field.\nThe preattack spell is not a targeted spell or ability. Meant for using spirit strike, haste, web or the like .\nEnter the percent mana remainding for the preattack spell or skill used.</i>")
+        align = Gtk::Alignment.new(1, 0, 0, 0)
+        align.set_padding(0, 0, 0, 4)
+        align.add(label)
+        $OP_TABLE5.attach(align, 1, 2, size, size + 1)
+
+        $OP_WINDOW.show_all
+    }
+        
+    $OP_SETUP_COMPLETED = false
+    until($OP_SETUP_COMPLETED)
+        sleep 1
+    end
+       
+    UserVars.op ||= Hash.new
+    $OP_ENTRY.keys.each { |key|
+        if( $OP_ENTRY[key].class.to_s =~ /CheckButton/ )
+            value = $OP_ENTRY[key].active?
+            UserVars.op[key] = $OP_ENTRY[key].active?
+        else
+            if(key == 'wounded_eval')
+                UserVars.op[key] = $OP_ENTRY[key].text
+            else
+                UserVars.op[key] = $OP_ENTRY[key].text.strip.downcase
+            end
+        end
+    }
+    UserVars.save()
+        
+    Gtk.queue {
+        $OP_WINDOW.destroy
+    }
+    end
+end
+
+
+if( script.vars[1].nil? || script.vars[1] =~ /solo|(bounty)/i )
+    bounty_mode = $1
+
+    bs = Bigbounty.new(bounty_mode)
+    bs.croak('Requires Lich V4') unless defined?(Gtk.queue)
+    bs.croak('Requires a mapped room.') if( Room.current.id.nil? || Room.current.id == 4 )
+    bs.lead()
+
+elsif( script.vars[1] =~ /setup/i )
+    Bigbounty.setup()
+
+elsif( script.vars[1] =~ /display/i )
+    echo "Version: #{VERSION}"
+    UserVars.op.each_pair { |k, v|
+        echo "#{k}: #{v}" unless v.nil? || v.class.to_s == 'Array' || v =~ /^\s*$/
+    }
+
+elsif( script.vars[1] =~ /head/i )
+    # launch DRb server
+    DRb.start_service( nil, Group.new )
+    uri = DRb.uri
+    Thread.new { DRb.thread.join }
+
+    # launch DRb client
+    DRb.start_service()
+    bs = Bigbounty.new()
+
+    # set leader
+    my_group = DRbObject.new( nil, uri )
+    my_group.set_leader(bs)
+
+    # announce/go
+    (1..RALLY_TIME).each { |i| fput "whisper group Bigbounty rallying at #{uri}"; sleep 1; }
+    bs.lead(my_group)
+
+elsif( script.vars[1] =~ /tail/i )
+    # Watch for rally
+    group = nil
+    bs = nil
+    while( group.nil? && bs.nil? )
+        if( get =~ /rallying at (.*)\."$/ )
+
+            # create group
+            DRb.start_service()
+            group = DRbObject.new( nil, $1 )
+
+            # create Bigbounty
+            bs = Bigbounty.new()
+            group.add_member(bs)
+            bs.keep_awake()
+        end
+    end
+
+    # Participate
+    bs.message("Joined group")
+    leader = group.leader.name
+
+    while(!dead?)
+        begin
+            bs.change_stance('defensive')
+            bs.stand()
+            sleep 0.25
+            
+            # grab event
+            event = bs.event_stack.size == 0 ? nil : bs.grab_event
+            next if event.nil?
+            
+            # kertwang!
+            until( checkpcs.include?(leader) )
+                start_script( 'go2', [ group.room_id, '_disable_confirm_' ] )
+                wait_while { running?('go2') }
+                fput "join #{leader}"
+                sleep 1
+            end
+    
+            # process event
+            bs.message("event: " + event.type.to_s)
+            if( event.type == :HUNTING_PREP_COMMANDS )
+                bs.HUNTING_PREP_COMMANDS.each { |i| fput(i) }
+    
+            elsif( event.type == :CAST_SIGNS )
+                bs.cast_signs()
+    
+            elsif( event.type == :HUNTING_SCRIPTS_START )
+                bs.run_scripts( bs.HUNTING_SCRIPTS, false )
+    
+            elsif( event.type == :ATTACK )
+                if( event.stale? ) # consider timestamp and room_id
+                    bs.message("skipping attack because it's stale")
+                    next
+                end
+
+                target = nil
+                while( target = bs.find_target(target) )
+                    break if event.room_id != Room.current.id # only consider room_id
+                    bs.attack(target)
+                end
+    
+            elsif( event.type == :HUNTING_SCRIPTS_STOP )
+                bs.croak_scripts(bs.HUNTING_SCRIPTS)
+    
+            elsif( event.type == :RESTING_PREP_COMMANDS )
+                $bigbounty_should_rest = nil # need to reset this
+                bs.RESTING_COMMANDS.each { |i| fput(i) }
+    
+            elsif( event.type == :RESTING_SCRIPTS_START )
+                bs.run_scripts( bs.RESTING_SCRIPTS, true )
+    
+            elsif( event.type == :DISPLAY_WATCH )
+                if( event.stale? )
+                    bs.message("skipping display_watch because it's stale")
+                    next
+                end
+                bs.message( "BIGBOUNTY last rested because: #{$rest_reason}" ) if $rest_reason
+                bs.message( "BIGBOUNTY isn't hunting because: #{$not_hunting_reason}" ) if $not_hunting_reason
+                sleep( REST_INTERVAL / 10 )
+            end
+
+        rescue
+            fput 'leave group'
+            if( bs.RESTING_ROOM_ID && bs.RESTING_ROOM_ID != 4 )
+                start_script( 'go2', [ bs.RESTING_ROOM_ID, '_disable_confirm_' ] )
+                wait_while { running?('go2') }
+            end
+            echo "Fatal exception!"
+            echo $!.to_s
+            echo $!.backtrace.join("\n")
+            Script.self.kill
+        end
+    end
+end 
+

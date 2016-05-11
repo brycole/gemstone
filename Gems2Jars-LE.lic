@@ -1,0 +1,403 @@
+## Around 9053 - border 9033, 1481 remain
+=begin
+Gems2Jars-LE (Locker Edition)- Move loose gems into jars.  Use partially filled jars if possible. Start filling
+            a new empty jar if necessary.  This version is designed to be used inside a Premium locker and thus sheds some use of "my" in the commands.  Not recommended for use outside your locker.
+
+Try setting your empty jars container to your bin, partial jars to chest, and full jars to wardrobe.
+
+Modified by Ceilia, 23 Mar 2011, all credit to original author!
+
+=end
+
+=begin
+Settings strings.
+
+;setting add Gems2Jars-LE gems=<loose gem location>
+;setting add Gems2Jars-LE emptyjars=<empty jar container>
+;setting add Gems2Jars-LE partjars=<partially filled jars container>
+;setting add Gems2Jars-LE fulljars=<filled jars container>"
+=end
+
+# Author:   Jymamon (gs4-jymamon@hotmail.com)
+#
+# History:
+#   2009.11.20.01 More gem updates.
+#
+#   2009.11.18.01 Update some gem patterns
+#
+#   2009.11.17.02 Change to 3-word gem names.
+#
+#   2009.11.17.01 Initial version. Works on my limited sample set, but need to get
+#                 many more gem types tested yet.  In particular, gems that have
+#                 three words in their shortest name (seen when waved or rubbed)
+#                 as frequently the middle word needs removed.
+# Todo:
+#   - More testing on the assorted gem types
+#   - May be able to make this more efficient. Currently, it will always try to
+#     take out 1 more gem of each type than is present.  Maybe don't condense the
+#     gem list and take an exact count out?  One less server command per gem-type
+#     iteration could add up.
+
+# -----------------------------------------------------------------------------
+# Regular expressions to match the assorted gems we're able to handle.  Thanks to
+# Craig who wrote jargems.lic which I used as a reference for creating the initial
+# list of these.
+# NOTE: THIS MAY NEED MOVED TO A COMMON CONFIG/SETTING FILE FOR BETTER SHARING.
+# -----------------------------------------------------------------------------
+gem_patterns = [ #"((?:banded|lace blue|chameleon|cloud|fire|frost|moss|mottled|tigereye) agate)",
+                 "(golden amber)",
+                 "(deep purple amethyst)",
+                 "(azurite)",
+                 "((?:azure|crimson|golden|emerald) blazestar)",
+#                 "(blood(?:jewel|stone))",
+                 "(bright bluerock)",
+                 "(red carbuncle)",
+                 "(chalcedony)",
+                 "((?:black|blue|pink|red|flower) coral)", # Blue ridge and cat's (paw|eye) coral doesn't seem to go in jars?!
+                 "(blue cordierite)",
+                 "(corestone)",
+#                 "((?:cinnabar|glaesine|dragonmist|tigerfang) crystal)",
+##                 "((?:cinnabar|glaesine|quartz|rock|dragonmist|tigerfang) crystal)",
+                 "(deathstone)",
+                 "(scarlet despanal)",
+                 "((?:blue|dragon\'s-tear|dwarf-cut|black|yellow|uncut(?: star-of-Tamzyrr)?) diamond)",
+##                 "(star diopside)",
+                 "(doomstone)",
+                 "((?:black|blue|green|pink|red|yellow|white) dreamstone)",
+                 "(gold dust)",
+                 "((?:dragonfire|dragon\'s-tear|dwarf-cut|uncut|eye-of-Koar|star) emerald)",
+                 "(blue eostone)",
+##                 "(olivine faenor-bloom)",
+                 "((?:bronze|copper|gold|iron|mithril|platinum|silver|steel|urglaes) fang)",
+                 "((?:violet|periwinkle) feystone)",
+                 "(firestone)",
+##                 "((?:almandine|blood red|green|spessartine|wyrm\'s eye) garnet)",
+                 "((?:blood red|green|spessartine|wyrm\'s eye) garnet)",
+                 "((?:ametrine|aquamarine|chrysoberyl|blue|red|beryl|chrysoprase) gem)",
+                 "((?:lilac|cerulean|clear|golden|green|peach|smoky|ultramarine) glimaerstone)",
+                 "(petrified haon)",
+                 "(yellow heliodor)",
+                 "(yellow hyacinth)",
+                 "(polished ivory)",
+                 "(fiery jacinth)",
+                 "((?:brown|green|white|yellow) jade)",
+                 "((?:black|red|yellow) jasper)",
+                 "((?:black|green|pink|white) marble)",
+                 "(mica)",
+##                 "(mithril-bloom)",
+                 "((?:pale blue|cats-eye|golden|opaline|pale green|silvery) moonstone)",
+                 "(mother-of-pearl)",
+#                 "((?:gold|platinum) nugget)",
+                 "((?:spiderweb )?obsidian)",
+                 "((?:banded|black) ?onyx)",
+                 "((?:aster|black|boulder|dragonfire|fire|moonglae|white|frost|purple) opal)",
+##                 "(green ora-bloom)",
+                 "((?:firemote|shadowglass) orb)",
+                 "((?:black|fire|grey|iridescent|pink|white) pearl)",
+                 "(peridot)",
+                 "(pyrite)",
+                 "((?:citrine|smoky) quartz)",
+##                 "((?:blue|carnelian|citrine|milky|rose|rainbow|tangerine|smoky) quartz)",
+                 "(rose quartz)",
+##                 "((?:blue|carnelian|citrine|milky|rainbow|tangerine|smoky) quartz)",
+                 "(cat's eye quartz)", # This is special cased below. Need a better regexp
+##                 "(golden rhimar-bloom)",
+##                 "(rift(?:shard|stone))",
+                 "(rosespar)",
+##                 "((?:dragon\'s-tear|dwarf-cut|star|uncut|sylvarraend) ruby)",
+                 "((?:star|uncut) ruby)",
+##                 "(sandsilver)",
+##                 "((?:blue|green|pink|star|violet|yellow|white|(?:blue|lavender) shimmarglin|clear|dragonsbreath|mermaid's-tear|dragonseye|dwarf-cut|pale water) sapphire)",
+                 "((?:blue|green|pink|star|violet|yellow|white) sapphire)",
+##                 "((?:blue|green|pink|star|violet|yellow|white|(?:blue|lavender) shimmarglin|dragonsbreath|mermaid's-tear|dragonseye|dwarf-cut|pale water) sapphire)",
+##                 "(umber sard)",
+##                 "(shimmertine shard)",
+##                 "(viridian soulstone)",
+##                 "((?:black|brown|white|yellow) sphene)",
+##                 "(spherine)",
+                 "((?:blue|pink|red|violet) spinel)",
+                 "((?:sardonyx|alexandrite|aventurine|malachite|labradorite|morganite|rhodochrosite|turquoise) stone)",
+#                "(jet stone)",
+##                 "(sunstone)",
+##                 "(sapphire talon)",
+##                 "(purple thunderstone)",
+##                 "((?:blue|clear|golden|errisian|imperial|pink|smoky) topaz)",
+                 "((?:blue|golden|errisian|imperial|pink|smoky) topaz)",
+                 "((?:black|blue|clear|green|pink) tourmaline)",
+##                 "(spiderweb turquoise)",
+##                 "(argent vultite-bloom)",
+##                 "(wyrdshard)",
+##                 "((?:brown|clear|green|snowflake|yellow) zircon)",
+                 "((?:green|yellow) zircon)",
+                 "(blue lapis) lazuli",
+##                 "(?:Kezmonian )(honey beryl)",
+                 "(sardonyx)"
+         ]
+
+# -----------------------------------------------------------------------------
+# Get item into get_location. Return true if the item is now in hand or false
+# if it was not.
+# -----------------------------------------------------------------------------
+GetItem = proc { |item, get_location|
+    put "get " + item + " from my " + get_location
+
+    response = waitfor("You remove", "cannot", "closed", "full", "Get what?")
+
+    if response =~ /closed/
+        # Container closed. Attempt only once to open it and stow
+        # the item.  If opening or stowing afterwards fails, we'll
+        # abandon the attempt and just return false.
+        put "open " + stow_location
+        response = waitfor("can't", "You open")
+
+        if ( response =~ /You open/ )
+            put "get " + item + " in my " + get_location
+            response = waitfor("You remove", "cannot", "closed", "Get what?"	)
+        end
+    end
+
+    if ( response =~ /You remove/ )
+        true
+    else
+        false
+    end
+}
+
+# -----------------------------------------------------------------------------
+# Stow a item into stow_location. Return true if the item was stowed or false
+# if it was not.
+# -----------------------------------------------------------------------------
+StowItem = proc { |item, stow_location|
+    put "put my " + item + " in " + stow_location
+
+    response = waitfor("You put", "cannot", "full", "closed")
+
+    if response =~ /closed/
+        # Container closed. Attempt only once to open it and stow
+        # the item.  If opening or stowing afterwards fails, we'll
+        # abandon the attempt and just return false.
+        put "open " + stow_location
+        response = waitfor("can't", "You open")
+
+        if ( response =~ /You open/ )
+            put "put my " + item + " in " + stow_location
+            response = waitfor("You put", "cannot", "full", "closed")
+        end
+    end
+
+    if ( response =~ /You put/ )
+        true
+    else
+        false
+    end
+}
+
+# -----------------------------------------------------------------------------
+# Get a partially/completely full container for the given gemtype from the
+# specified container of jars. Return either the noun for the container found
+# or nil if no container was found.
+# -----------------------------------------------------------------------------
+GetExistingJar = proc { |gem_type, rummage_container|
+    put "rummage in " + rummage_container + " ingredient " + gem_type
+
+    response = waitfor("jar",
+                       "bottle",
+                       "beaker",
+                       "but can't seem to locate any ingredient",
+                       "hands are full")
+
+    if response =~ /(jar|bottle|beaker)/
+        container_name = $1
+    elsif response =~ /your hands are full/
+        echo "Unexpected items in hands. Aborting."
+        exit
+    else
+        container_name = nil
+    end
+
+   container_name
+}
+
+# -----------------------------------------------------------------------------
+# Get a (presumed empty) jar-like object from the named container. Return either
+# the noun for the container found or nil if no container was found.
+# -----------------------------------------------------------------------------
+GetFreshJar = proc { |fresh_location|
+    jarTypes      = ["jar", "beaker", "bottle"]
+    new_container = nil
+
+    jarTypes.each{|jar_type|
+        if GetItem.call(jar_type, fresh_location)
+            new_container = jar_type
+            break
+        end
+    }
+    new_container
+
+}
+
+# -----------------------------------------------------------------------------
+# Get a partially/completely full container for the given gemtype from the
+# specified container of jars. Return value is meaningless.
+# -----------------------------------------------------------------------------
+MoveGemTypeToJars = proc { |gem_type,
+                            source_container,
+                            jar_container,
+                            fresh_container,
+                            full_container|
+    done     = false
+    jar_type = nil
+
+    begin
+        put "get " + gem_type + " from my " + source_container
+
+        result = waitfor("You remove", "Get what", "free hand")
+
+        if ( result =~ /Get what/ )
+            done = true
+        elsif ( result =~ /free hand/ )
+            echo "Unexpected items in hands. Aborting."
+            exit
+        else
+            # Get a jar/bottle/beaker if we don't have one already
+            if jar_type.nil?
+                jar_type = GetExistingJar.call(gem_type, jar_container)
+
+                if jar_type.nil?
+                    jar_type = GetFreshJar.call(fresh_container)
+                end
+            end
+
+            if ! jar_type.nil?
+                put "put " + gem_type + " in my " + jar_type
+
+                result = waitfor("into your",
+                                 "to the contents of",
+                                 "full",
+                                 "better of mixing",
+                                 "holding the")
+
+                if result =~ /full/
+                    # Put the gem back so we're in a clean state
+                    if ! StowItem.call(gem_type, source_container)
+                        echo "Unable to gem back into " + source_container
+                        echo "Aborting"
+                        done = true
+                        exit
+                    end
+
+                    if StowItem.call(jar_type, full_container)
+                        # This will cause us to get a new jar at the
+                        # top of the loop.
+                        jar_type = nil
+                    else
+                        echo "Unable to stow full jar in " + full_container
+                        echo "Aborting"
+                        done = true
+                        exit
+                    end
+                end # jar full
+            else
+                echo "Unable to get a container for " + gem_type
+                echo "Aborting"
+                done = true
+                exit
+            end
+        end # Got gem
+    end while (! done)
+
+    if ! jar_type.nil? # do we have a jar in hand?
+        put "put my " + jar_type + " in " + jar_container
+
+        response = waitfor("you put", "full")
+
+        if ( response =~ /full/ )
+            echo "No more room in " + jar_container
+            exit
+        end
+    end
+}
+
+# -----------------------------------------------------------------------------
+# Main code loop.  Determine every unique gem-string present in the source
+# container and call MoveGemTypeToJars() for that gem type.
+# -----------------------------------------------------------------------------
+if script.vars.find { |val| val =~ /\bhelp\b/i }
+    respond "Summary: Moves lose gems into jars.
+Requires the following settings:
+    ;setting add Gems2Jars-LE gems=<loose gem location>
+    ;setting add Gems2Jars-LE emptyjars=<empty jar container>
+    ;setting add Gems2Jars-LE partjars=<partially filled jars container>
+    ;setting add Gems2Jars-LE fulljars=<filled jars container>"
+    exit
+end
+
+# Load character settings
+settings        = Lich.Gems2Jars-LE.nil? ? "" : Lich.Gems2Jars
+gem_container   = $1 if Lich.Gems2Jars-LE=~/gems=([^,]*)/
+part_container  = $1 if Lich.Gems2Jars-LE=~/partjars=([^,]*)/
+empty_container = $1 if Lich.Gems2Jars-LE=~/emptyjars=([^,]*)/
+full_container  = $1 if Lich.Gems2Jars-LE=~/fulljars=([^,]*)/
+
+# Open the containers.
+put "open my " + gem_container
+put "open " + part_container
+put "open " + empty_container
+put "open " + full_container
+
+# We could do better here, but I'm being lazy at the moment.
+put "open my " + gem_container
+waitfor("You open", "That is already open.")
+
+# Let's see what's in the container to make the list of gems to
+# work upon.
+put "look in my " + gem_container
+response = waitfor("There is nothing in there.",
+                   "I could not find what you were referring to.",
+                   "In the .+ you see").gsub(/ and (?:an|a|some)/, ',')
+
+if response =~ /I could not find what you were referring to./
+    echo "No " + gem_container + " found. Did you configure the script?"
+    exit
+elsif response =~ /There is nothing in there./
+    echo "Your " + gem_container + " is empty. Go hunt!"
+    exit
+else # By speculative implication, there's gems to process. I suspect there's
+     # more error cases to handle, but we're doing good so far.
+
+    # Process the response line turning it into an array of arrays of items found.
+    # BUGBUG: Is this the optimal order or would it be more efficient to uniq.
+    #         then compact? I suspect yes.
+    gems = response.scan(/\b(?:#{gem_patterns.join('|')})(?=,|\.)/).
+           # then into a single array of strings
+           flatten.
+           # then remove the nils
+           compact.
+           # then remove the duplicates
+           uniq
+
+end
+
+# We would've exited above if we didn't think we had a valid gems array. Worst case
+# we should have an empty array and execute never.
+gems.each{|gem|
+    # Special cases until we get the regexps fixed
+    gem_words = gem.split(" ")
+
+    if gem_words.length==3
+        gem = gem_words[0] + " " + gem_words[2]
+    end
+
+    MoveGemTypeToJars.call(gem,
+                           gem_container,
+                           part_container,
+                           empty_container,
+                           full_container)
+}
+
+put "close my " + gem_container
+put "close " + part_container
+put "close " + empty_container
+put "close " + full_container
+echo ("And we're done!  Exiting.")
+exit

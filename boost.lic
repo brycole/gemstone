@@ -1,0 +1,45 @@
+=begin
+
+For use with bounty boosts.
+
+v.01 by Kalros
+
+=end
+
+
+start_script 'go2', [ 'advguild' ]
+wait_while { running?('go2') }
+
+$gemtask = false
+$uncut = false
+
+ start_exec_script( <<-eos
+        while(line = get);
+            break unless running?('boost');
+            $gemtask = true if line =~ /The local gem dealer, .*, has an order/;
+            $uncut = true if line =~ /in purchasing an uncut (diamond|ruby|emerald)/;
+        end;
+        eos
+        )
+
+while line = get
+	fput "ask rhe about bounty"
+	sleep 0.2
+	if $gemtask == false
+		fput "ask rhe about removal"
+		fput "ask rhe about removal"
+		sleep 5
+	else
+		start_script 'go2', [ 'gemshop' ]
+		wait_while { running?('go2') }
+		fput "ask dealer for bounty"
+		sleep 0.2
+		if $uncut == true
+			break
+		else
+			$gemtask == false
+			start_script 'go2', [ 'advguild' ]
+			wait_while { running?('go2') }
+		end
+	end
+end

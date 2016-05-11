@@ -1,0 +1,27 @@
+
+# The Timing for Newsby's TownCrier Channel Census that should go into the log, right?
+# This is completely optional
+# Place in your lich/scripts folder
+$delay = 3600
+
+# Method for the delay
+def censustime(seconds)
+  last_tick = Time.now
+  loop do
+    sleep 0.1
+    if Time.now - last_tick >= seconds
+      last_tick += seconds
+      yield
+    end
+  end
+end
+
+# set number in parentheses to num of seconds
+# 3600 seconds = 60 min
+# censustime(3600)
+
+censustime(3600) do
+
+send_to_script 'lnet', 'who towncrier'
+end
+

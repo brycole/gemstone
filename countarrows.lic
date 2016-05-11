@@ -1,0 +1,7 @@
+
+
+
+result = dothistimeout "inspect my arrows", 5, /You carefully count the arrows and find/
+arrow_count = result.match(/\d+/)
+exit if arrow_count < 40
+buy_arrows_here
