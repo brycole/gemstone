@@ -1,0 +1,27 @@
+
+trash_container = /crate|barrel|wastebarrel|casket|bin|receptacle|basket/i
+
+
+trash_container = GameObj.loot.find { |trash| trash.name =~ trash_container }
+trash_items = "vor'taz horn|steel spring|(copper|steel|silver) lockpick|giant rat leg|needle|jaws|vial|sphere"
+trash_herbs = "pansy blossom|clematis|freesia|gardenia|hydrangea|lavender|orchil lichen|wild orchid|wingstem root|mustard seeds"
+trash_items = trash_items + "|" + trash_herbs
+@junk = Array.new
+
+## ** Moving items into safe containers
+#GameObj[/dark cocobolo case/].contents.find_all{|i| i.name =~ /coral/}.each{|i| put "_drag ##{i.id} ##{GameObj[/sack/].id}";wait}
+##GameObj[/sack/].contents.find_all{|i| i.type == 'gem' && i.name !~ /coral/}.each{|i| put "_drag ##{i.id} ##{GameObj[/dark cocobolo case/].id}";wait}
+GameObj[/sack/].contents.find_all{|i| i.type == 'herb'}.each{|i| put "_drag ##{i.id} ##{GameObj[/satchel/].id}";wait}
+
+## ** Dumping items into the trash
+GameObj[/shawl/].contents.find_all{|i| @junk << i if (i.type == 'food' or i.type == 'herb' or i.type == 'junk' or i.name =~ /wedge/ or i.name =~ /#{trash_items}/)}
+if @junk
+  @junk.each {|i|
+    GSC.bput "get ##{i.id}", "You remove|You grab"
+    if trash_container != nil
+      GSC.bput "put ##{i.id} in ##{GameObj[/#{trash_container}/].id}", "^As you place|^You put"
+    else
+      GSC.bput "drop ##{i.id}", "^You drop"
+    end
+  }
+end

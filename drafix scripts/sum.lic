@@ -1,0 +1,13 @@
+=begin
+	Calculates and show summation chart
+	
+	Usage: ;sum <seed>
+=end
+seed = script.vars[1].to_i
+echo " *** Seed #{seed} *** "
+bonus = 1
+while (rank = ((bonus.to_f/2) * (bonus + (2*seed) - 1)).to_i) <= 303
+	echo "Bonus #{bonus}: #{rank}"
+	bonus += 1
+end
+echo "Bonus #{bonus}: #{rank}"

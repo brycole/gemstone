@@ -1,0 +1,836 @@
+##### quiet
+=begin
+  Suggestions and contributions are welcome: https://github.com/rpherbig/dr-scripts
+
+  A large set of helper functions for common actions shared by many scripts
+
+  Script was branched from Dragonrealms as of 01/18/2016 and brought to Gemstone.
+
+  Gemstone Branch: Kalros
+  v. 01
+
+  Changelog:
+  Removed methods that will never be usable in gemstone.
+
+
+=end
+
+require 'yaml'
+
+$fwiTP = 'emblem' if Char.name == 'Kalros'
+$fwiTP = 'red wristcuff' if Char.name == 'Iloru'
+
+$time_since_last_deposit = Time.now
+$enhancive_container = 'spidersilk satchel'
+$no_emblem = true
+$lmas_audience_fwi = false
+$pick_room = 19
+$no_tpick = false
+#start_script "checkemail" if !running? "checkemail"
+$FAILED_COMMAND = '*FAILED*'
+$ORDINALS = %w(first second third fourth fifth sixth seventh eighth ninth tenth eleventh twelfth thirteenth)
+$combat_enhancives = ['XXX']
+#$combat_enhancives = ['alum-bound ironwood badge', 'soulstone inset silver armband']
+#$combat_enhancives = ['etched glaes aventail', 'garnet-set gold earring', 'alum-bound ironwood badge', 'malachite and dragonfire opal torc']
+$tpick_remove_enhancives = ['etched glaes aventail', 'garnet-set gold earring', 'alum-bound ironwood badge', 'malachite and dragonfire opal torc']
+$exp_enhancives = ['coral and emerald crownXXXX']
+$skin_enhancives = ['plain star ruby bracelet', 'coral and emerald crownXXXX', 'marquise-cut chrysoberyl stickpin']
+$lock_enhancives = ['pearl studded bronze clasp', 'gem-encrusted mithril alloy neckchain', 'carved red dreamstone torc', 'twisted-wire vaalin bracelet', 'lapis-inlaid gold barrette', 'elegant gold pin', 'enruned mithril alloy pin', 'filigreed sterling silver earcuff', 'smoky topaz brooch']
+$zone_now = "Ta'Illistim"
+$armors = {'some electrum-edged plate' => 'electrum plate', 'imflass-winged golden rolaren greathelm' =>'rolaren greathelm'}
+$armorshort = 'plate'
+
+delayed_start_script = <<-eos
+  sleep 5
+  wait_while { running?("repository")}
+  sleep 5
+  start_script 'map_mod'
+eos
+
+#ExecScript.start(delayed_start_script, :quiet => false)
+
+# blocking put
+# bput is designed to be a more robust version of fput in situations where you know the desired response from the game
+# unlike fput which will resend the same command repeatedly until it sees the desired message first from the game, bput only
+# sends a given command one time (unless round time or type ahead errors occur) and then waits for the desired response.
+# if the desired response isn't seen bput will eventually time out and echo debugging information.
+
+# fput "forage grass", 'Roundtime' < This would never work because the game sends a response line "You search around..." before "Roundtime" is encountered.
+
+# Similarly a command that can only succeed once can cause fput to hang.
+# fput "get box", 'you pick up', 'get what?' < You have to deal with the failure case and just spam
+# the command until failure in a noisy room with fput.
+# bput "get box", 'you pick up', 'get what?' < lets you know with confidence if a box was picked up or if the item was missing.
+
+module GSC
+
+  def bput(message, *matches)
+    waitrt?
+    timer = Time.now
+    log = []
+    matches.flatten!
+    matches.map! { |item| item.is_a?(Regexp) ? item : /#{item}/i }
+      clear
+      put message
+      while Time.now - timer < 5
+        response = get?
+
+        if response.nil?
+          pause 0.1
+          next
+        end
+
+        log += [response]
+
+        case response
+        when /((?:\.\.\.wait |Wait |\.\.\. wait )([0-9]+)|^You are still stunned)/
+        pause Regexp.last_match(1).to_i
+        put message
+        timer = Time.now
+        next
+      when /Sorry, you may only type ahead/
+          pause 1
+          put message
+          timer = Time.now
+          next      
+      end
+
+          matches.each do |match|
+            if (result = response.match(match))
+              waitrt?
+              return result.to_a.first
+            end
+          end
+        end
+        echo '*** No match was found after 15 seconds, dumping info'
+        echo "messages seen length: #{log.length}"
+        log.each { |message| echo "message: #{message}" }
+        echo "checked against #{matches}"
+        $FAILED_COMMAND
+      end
+      module_function :bput
+
+      def vaalin_lockpick(swap_pick)
+        vaalin_error = false
+        if GameObj.inv.find {|i| i.name =~ /twisted-wire vaalin bracelet/} and swap_pick == 'get'
+          bput 'rub my vaalin bracelet', 'Your vaalin bracelet begins'
+        elsif swap_pick == 'get'
+          vaalin_error = 'get_error' if GameObj.right_hand.name != 'vaalin lockpick' and GameObj.left_hand.name != 'vaalin lockpick'
+        end
+        if GameObj.right_hand.name == 'vaalin lockpick' or GameObj.left_hand.name == 'vaalin lockpick' and swap_pick == 'stow'
+          bput 'pull my vaalin lockpick', 'As you pull on your vaalin'
+        elsif swap_pick == 'stow'
+          vaalin_error = 'wear_error' if GameObj.inv.find {|i| i.name =~ /twisted-wire vaalin bracelet/}.nil?
+        end
+        if vaalin_error == 'get_error' or vaalin_error == 'wear_error'
+          echo "Error in vaalin lockpick script. Attempting to recover."
+          bput 'get my vaalin lockpick', "^You (get|reach|grab|already|remove)|^Get what"
+          bput 'get my vaalin bracelet', "^You (get|reach|grab|already|remove)|^Get what"
+            if GameObj.right_hand.name == 'vaalin lockpick' or GameObj.left_hand.name == 'vaalin lockpick'
+              return if swap_pick == 'get'
+              bput 'pull my vaalin lockpick', 'As you pull on your vaalin'
+            elsif GameObj.right_hand.name == 'vaalin bracelet' or GameObj.left_hand.name == 'vaalin bracelet'
+              bput 'wear my vaalin bracelet', "^You (attach|are)"
+              return if swap_pick == 'stow'
+              bput 'rub my vaalin bracelet', 'Your vaalin bracelet begins'
+            else
+              echo 'Could not recover from errior, vaalin lockpick could not be located.'
+              echo 'Pausing tpick until user returns.'
+              pause_script 'tpick'
+            end
+        end
+      end
+      module_function :vaalin_lockpick
+
+  def pauseScript(script)
+    if Script.running?(script) and !Script.paused?(script)
+      Script.pause(script)
+      return true
+    end
+    return false
+  end
+  module_function :pauseScript
+
+  def SBOUNTY_CLEAN_TARGETS(targets)
+    targets.collect { |target| target.strip.gsub(/\(\w+\)/, '') }
+    return targets
+  end
+  module_function :SBOUNTY_CLEAN_TARGETS
+
+  def track_deposit(deposit_reason)
+    $silvers = 0
+
+    wait_while { running?('go2')}
+    $check_silvers = <<-eos
+    while line = get
+      break unless Room.current.id.to_s =~ /\\b(11|4686|3672)\\b/
+      if line =~ /You deposit (\\d+) silvers into your account|says, "That's a total of (\\d+) silvers|They add up to (\\d+) silvers/
+        echo "inside silver line"
+        echo line
+        echo $silvers += $1.to_i if $1
+        echo $silvers += $2.to_i if $2
+        echo $silvers += $3.to_i if $3
+      end
+    end
+    eos
+
+    ExecScript.start($check_silvers, :quiet => true)
+    put 'deposit all'
+
+    sleep 1
+    fput 'wealth'
+
+    #silvers = $silvers_from_coins.to_i + $silvers_from_notes.to_i
+    time_since_start = ((Time.now - $time_since_last_deposit) / 60.0).round(2)
+    silvers_per_hour = ($silvers / (time_since_start/60.0)).round
+    if deposit_reason !~ /loot/
+      $monster_silvers = silvers_per_hour 
+      UserVars.creature_index += 1 if $monster_silvers < 150000
+      echo "Creature_index: #{UserVars.creature_index}" if $switch_hunting_debug
+    end
+
+    echo "Reason for deposit: #{deposit_reason}"
+    echo "Silvers: #{$silvers}"
+    echo "Time since last deposit: #{time_since_start} minutes."
+    echo "Silvers per hour: #{silvers_per_hour}"
+
+    File.open("silvers_per_hour.txt", 'a') { |file|
+      file.puts deposit_reason
+      file.puts "Per_hour: #{silvers_per_hour} Silvers: #{$silvers} Total_time: #{time_since_start}"
+      file.puts "-------"
+    }
+    $time_since_last_deposit = Time.now
+  end
+  module_function :track_deposit
+
+  def hook_squelch(remove_lines, downstream_add_name)
+    action = proc { |server_string|
+      if server_string =~ /#{remove_lines}/
+        nil
+      else
+        server_string
+      end
+    }
+    DownstreamHook.add(downstream_add_name, action)
+  end
+  module_function :hook_squelch
+
+  def open_satchel
+    return if Char.name != 'Kalros'
+    $satchel_open = true
+    squelch_line = "title='Satchel'"
+    downstream_add_name = "hook_satchel"
+    hook_squelch(squelch_line, downstream_add_name)
+    bput 'open my spidersilk satchel', '^You open|^That is already'
+    DownstreamHook.remove(downstream_add_name)
+  end
+  module_function :open_satchel
+
+  def close_satchel
+    return if Char.name != 'Kalros'
+    if $satchel_open
+      bput 'close my spidersilk satchel', '^You close|^That is already'
+      $satchel_open = false
+    end
+  end
+  module_function :close_satchel
+
+  def remove_enhancive(find_item)
+    @remove_items = Array.new
+    @container_id = GameObj[/#{$enhancive_container}/].id
+    find_item.each {|enhancive_name|
+      @container_id = GameObj[/#{"sack"}/].id if enhancive_name =~ /#{$armorshort}/
+      GameObj.inv.find {|i| @remove_items << i if i.name =~ /#{enhancive_name}/}
+    }
+    redo_loop = 0
+    @remove_items.each{ |i|
+      @item = i 
+      put "_drag ##{i.id} ##{@container_id}"
+      waitfor "You"
+      sleep 0.5
+      waitrt?
+      if GameObj.right_hand.name != "Empty" or GameObj.left_hand.name != "Empty"
+        redo_loop += 1
+        if redo_loop > 5
+          fput 'put my plate in sack' if GameObj.right_hand.name =~ /#{$armorshort}/ or GameObj.left_hand.name =~ /#{$armorshort}/
+          fput 'stow right'
+          fput 'stow left'
+        end
+        sleep 1
+        sleep 1
+        waitrt?
+        waitrt?
+        redo
+      end
+    }
+  end
+  module_function :remove_enhancive
+
+  def wear_enhancive(find_item)
+    @wear_items = Array.new
+    @container_id = GameObj[/#{$enhancive_container}/].id
+    find_item.each {|enhancive_name|
+      @container_id = GameObj[/#{"sack"}/].id if enhancive_name =~ /#{$armorshort}/
+      GameObj[@container_id].contents.find{|z| @wear_items << z if z.name =~ /#{enhancive_name}/ }
+    }
+    @wear_items.each{ |i| put "_drag ##{i.id} wear";sleep 0.2;waitrt?}
+  end
+  module_function :wear_enhancive
+
+  def can_cast?(check_spell)
+    return true if Spell[check_spell].known? and Spell[check_spell].affordable?
+    return false
+  end
+  module_function :can_cast?
+
+  def find_teleport_setting
+    GSC.hook_squelch(".+", "find_setting")
+    silence_me
+    put 'tap my veniom band'
+    @start_time = Time.now
+    while line = get
+      break if Time.now > @start_time + 0.5
+      if line =~ /->  ?(\d+)/
+        UserVars.current_ring_setting = $1.to_i
+        break
+      end
+    end
+    DownstreamHook.remove("find_setting")
+    silence_me
+  end
+  module_function :find_teleport_setting
+
+  def goto_teleport_setting(goal)
+    max_settings = 12
+    goal = goal.to_i
+    echo UserVars.current_ring_setting
+    
+    distance = (UserVars.current_ring_setting - goal)%max_settings
+    echo distance
+    command = 'pull'
+    if distance > max_settings / 2
+        distance = max_settings - distance
+        command = 'push'
+    end
+    
+    (distance / 2).times {
+      bput "#{command} my veniom band", 'The band'
+      bput "#{command} my veniom band", 'The band'
+    }
+    (distance % 2).times {bput "#{command} my veniom band", 'The band'}
+    UserVars.current_ring_setting = goal
+
+    result = ""
+    tries = 0
+    while result !~ /^Obvious/
+      result = bput "rub my veniom band", "^Obvious|^You get a sense|^You feel|^Something about|^Your band sends you"
+      tries += 1
+      if result =~ /^You get a sense/
+        find_teleport_setting
+      elsif result =~ /^Your band sends you/
+        echo "Exiting goto_teleport module, already at destination."
+        echo "Possible error."
+        return
+      end
+      if tries > 3
+        echo "Error in gold ring teleporter, quitting."
+        5.times {put 'quit'}
+      end
+    end
+    #move_teleport_setting(distance, command)
+  end
+  module_function :goto_teleport_setting
+
+  def checkspells(guild)
+    if guild == 'wizard'
+      #fput 'get my vultite spear'
+      Spell[506].cast if Spell[506].timeleft < 0.01
+      if Char.name == 'Lumino'
+        Spell[9903].cast if Spell[9903].timeleft < 0.01 and mana > 12
+        Spell[9904].cast if Spell[9904].timeleft < 0.01 and mana > 12
+        Spell[9907].cast if Spell[9907].timeleft < 0.01 and mana > 12
+        Spell[9908].cast if Spell[9908].timeleft < 0.01 and mana > 12
+        Spell[9910].cast if Spell[9910].timeleft < 0.01 and mana > 12
+        Spell[9912].cast if Spell[9912].timeleft < 0.01
+        Spell[9913].cast if Spell[9913].timeleft < 0.01
+      end
+      waitcastrt?
+    end
+    if guild == 'monk'
+      Spell[9805].cast if Spell[9805].timeleft < 4
+      Spell[9805].cast if Spell[9805].timeleft < 8
+      Spell[9805].cast if Spell[9805].timeleft < 8
+      Spell[9806].cast if Spell[9806].timeleft < 8
+      Spell[9806].cast if Spell[9806].timeleft < 8  
+      Spell[9620].cast if Spell[9620].timeleft < 30  
+    end
+    if guild == 'bard'
+      #Spell[9805].cast if Spell[9805].timeleft < 4
+      #Spell[9805].cast if Spell[9805].timeleft < 8
+      #Spell[9805].cast if Spell[9805].timeleft < 8
+      #Spell[9806].cast if Spell[9806].timeleft < 8
+      #Spell[9806].cast if Spell[9806].timeleft < 8 
+    end
+  end
+  module_function :checkspells
+
+  def run_wait_script(script, var1)
+    start_script "#{script}", ["#{var1}"] if var1 !~ /xx/
+    start_script "#{script}" if var1 =~ /xx/
+    sleep 1
+    wait_while { running?("#{script}")}
+    waitrt?
+    sleep 1
+  end
+  module_function :run_wait_script
+
+  def delete_rooms_gold_ring
+    for rooms in [$last_room, 990, 1016, 10815, 11813]
+      Map[rooms].wayto.delete_if { |wayto_destination_id, current_wayto|
+        current_wayto.inspect =~ /goto_teleport/}
+      Map[rooms].timeto.delete_if { |timeto_destination_id, current_timeto|
+        current_timeto.inspect =~ /.033/}
+      next
+    end
+    exit
+  end
+  module_function :delete_rooms_gold_ring
+
+  def set_ring_waytos(wayto_list, room_id)
+  wayto_list.each {|ring_setting, room_destination|
+    timeto_destination = (Map.dijkstra(room_id, room_destination.to_i)[1][room_destination.to_i] / 2).round + 0.033
+    timeto_destination = 10 + 0.033 if timeto_destination > 50
+    next if Map[room_id].wayto.inspect =~ /"#{room_destination}"=>/
+    next if room_destination.to_i == room_id
+    new_wayto = "GSC.goto_teleport_setting(#{ring_setting})"
+    Room[room_id].wayto[room_destination] = StringProc.new(%{#{new_wayto}})
+    Room[room_id].timeto[room_destination] = timeto_destination
+  }
+  end
+  module_function :set_ring_waytos
+
+  def do_waytos
+    find_teleport_setting
+
+    ring_zones = { 
+      'zoneTI' => {
+        1 => '26', # Random room in TI
+        #2 => '188', # Town square in TI - Dais
+        6 => '24696', # Red Forest, Ta'Vaalor
+        7 => '10815', # Pool outside OTF
+        10 => '990', # Room outside Zul, TI side
+        11 => '9686', # Cysaegir, outside furrier
+        12 => '10216', # Apple Orchard in Ta'Vaalor
+      },
+      'zoneOTF' => {
+        8 => '11813', # OTF, portal
+        9 => '11915', # OTF, east woods
+      },
+      'zoneWL' => {
+        3 => '1016', # WL, Room outside Zul Cart, WL Side
+        4 => '218', # WL, room outsid WL gate
+        5 => '2421', # WL, Icemule
+      }
+    }
+  $last_room = Room.current.id # record room.id to delete room waytos after use
+
+  ring_zones.each {|zone_name, ring_settings|
+  # Setting waytos based on zone
+    case zone_name
+    when 'zoneTI'
+      set_ring_waytos(ring_settings, 990) # Permanent ring path
+      set_ring_waytos(ring_settings, 10835)
+      next if Room.current.id != 990 && Room.current.image =~ /en-zul_logoth/ and Room.current.image[0..1] == "en"
+      if Room.current.image.inspect !~ /red_forest|en-/ ||
+        Room.current.title.inspect =~ /Ta'Illistim Keep/ ||
+        Room.current.location == "Old Ta'Faendryl"
+        #Room.current.id =~ /\b(10817|10818|10819|10820|10832|10833|10834|10835)\b/ # Gyldemar Road after swimming pool.
+        next
+      end
+    when 'zoneOTF'
+      set_ring_waytos(ring_settings, 11813)
+      next unless Room.current.location == "Old Ta'Faendryl"
+    when 'zoneWL'
+      set_ring_waytos(ring_settings, 1016) # Permanent ring path
+      set_ring_waytos(ring_settings, 2637) # Permanent ring path
+      next if Room.current.title[0] == '[The Rift]'
+      next unless Room.current.image[0..1] =~ /\b(wl|im|vo)\b/ or (Room.current.image[0..1] == "en" and Room.current.id == 1016)
+    end
+    set_ring_waytos(ring_settings, Room.current.id)
+    }
+  end  
+  module_function :do_waytos
+  
+  def startDR(room, tokenType)
+    if tokenType == 'booklet'
+      token = 'slip'
+      entrance = 'entrance'
+      tokenVerb = 'tear'
+      containerJar = 'bag' if Char.name == 'Lumino' || Char.name == 'Iloru'
+      containerJar = 'harness' if Char.name == 'Atilio'
+    else
+      token = 'booklet'
+      totenType = 'booklet'
+      entrance = 'grate'
+      tokenVerb = 'tear'
+    end
+    run_wait_script("go2", room)
+  
+    tokenType = 'slip'
+    tokenType = 'booklet' if Char.name == 'Atilio' || Char.name == 'Luminoxxx'
+    tokenType = 'slip' if Char.name == 'Lumino' || Char.name == 'Iloru'
+    GSC.bput "get my #{tokenType}", '^You reach|^Get what|^You remove|^You get|^You grab'
+    #if righthand != token
+    #  GSC.bput "get my #{token}", '^You reach|^Get what|^You remove'
+    #  if righthand != token
+    #    GSC.bput "get my #{tokenType}", '^You reach|^Get what|^You remove'
+    #    GSC.bput "#{tokenVerb} my #{tokenType}", "^You tear"
+    #    GSC.bput "put my #{tokenType} in my #{containerJar}", '^You put|^You toss|^I could not'
+    #  end
+    #end
+
+  if lefthand != tokenType and righthand != tokenType
+    echo 'No token in hand, exiting.'
+    exit
+  end
+
+  GSC.bput 'stand', '^You stand|^You are' if !standing?
+  GSC.bput "go #{entrance}", "^Obvious"
+
+  GSC.bput "put my #{tokenType} in my #{containerJar}", '^You put|^You toss|^I could not|You absent' if !righthand.nil? || !lefthand.nil?
+  end
+  module_function:startDR
+
+  #def move_teleport_setting(steps, command)
+  #  # break up steps by blocks of 2 for type ahead
+  #  (steps / 2).times {
+  #    put "#{command} band"
+  #    put "#{command} band"
+  #    waitfor "The band"
+  #  }
+  #  (steps % 2).times {put "#{command} band"}
+  #end
+  #module_function :move_teleport_setting
+
+
+      def wait_for_script_to_complete(name, args = [])
+        success = start_script(name, args)
+        if success
+          pause 2
+          pause 1 while Script.running?(name)
+        end
+        success
+      end
+      module_function :wait_for_script_to_complete
+
+      def remove_armor(armors)
+        @remove_items = Array.new
+        armors.each_key {|armor_long|
+          GameObj.inv.find {|i| @remove_items << i if i.name =~ /#{armor_long}/}
+        }
+        @remove_items.each{ |i| 
+          container = 'spidersilk satchel'
+          container = 'pack' if i.name =~ /#{$armorshort}/
+          put "_drag ##{i.id} ##{GameObj[/#{container}/].id}";sleep 0.5;waitrt?
+          (put "_drag ##{i.id} ##{GameObj[/#{container}/].id}";sleep 0.5;waitrt?) if righthand == i.noun or lefthand == i.noun
+        }
+      end
+      module_function :remove_armor
+
+      def wear_armor(armors)
+        @wear_items = Array.new
+        armors.each_key {|long|
+          ## armors[long] hash calls the noun(value) of the armor
+          armor_noun = armors[long]
+          @wear_items << armor_noun if GameObj.inv.find_all{|z| z.name =~ /#{long}/}.empty?
+        }
+        @wear_items.each{ |i| fput "get my #{i}";fput "wear my #{i}";sleep 0.5;waitrt?}
+      end
+      module_function :wear_armor
+
+      def forage(item)
+        snapshot = "#{checkright}#{checkleft}"
+        while "#{checkright}#{checkleft}" == snapshot
+          case bput("forage #{item}", 'Roundtime', 'The room is too cluttered to find anything here', 'You really need to have at least one hand free to forage properly')
+          when 'The room is too cluttered to find anything here'
+            fput('kick pile')
+          when 'You really need to have at least one hand free to forage properly'
+            empty_hands
+          end
+          waitrt?
+        end
+      end
+      module_function :forage
+
+      def hand_over(items, person)
+        items.each do |item|
+          fput("get my #{item}")
+          bput("give #{item} to #{person}", '^You offer your .* to')
+          waitfor('has accepted your offer')
+        end
+      end
+      module_function :hand_over
+
+      def rummage(parameter, container)
+        result = DRC.bput("rummage /#{parameter} my #{container}", 'but there is nothing in there like that\.', 'looking for .* and see .*', 'While it\'s closed', 'I don\'t know what you are referring to')
+
+        case result
+        when 'but there is nothing in there like that.', 'While it\'s closed', 'I don\'t know what you are referring to'
+          return []
+        end
+
+        text = extract_rummage_text(result)
+
+        list_to_nouns(text)
+      end
+      module_function :rummage
+
+      def extract_rummage_text(raw)
+        raw.match(/looking for .* and see (.*)\.$/).to_a[1]
+      end
+      module_function :extract_rummage_text
+
+      def get_boxes(container)
+        rummage('B', container)
+      end
+      module_function :get_boxes
+
+      def get_skins(container)
+        rummage('S', container)
+      end
+      module_function :get_skins
+
+      def get_gems(container)
+        rummage('G', container)
+      end
+      module_function :get_gems
+
+      def get_materials(container)
+        rummage('M', container)
+      end
+      module_function :get_materials
+
+      # Take a game formatted list "an arrow, silver coins and a deobar strongbox"
+      # And return an array ["an arrow", "silver coins", "a deobar strongbox"]
+      # is this ever useful compared to the list_to_nouns?
+      def list_to_array(list)
+        list.strip.split(/,|\sand\s/)
+      end
+      module_function :list_to_array
+
+      # Take a game formatted list "an arrow, silver coins and a deobar strongbox"
+      # And return an array of nouns ["arrow", "coins", "strongbox"]
+      def list_to_nouns(list)
+        list_to_array(list)
+        .map { |long_name| get_noun(long_name) }
+        .compact
+        .select { |noun| noun != '' }
+      end
+      module_function :list_to_nouns
+
+      def get_noun(long_name)
+        long_name.strip.scan(/[a-z\-]+$/i).first
+      end
+      module_function :get_noun
+
+      def empty_hands
+        fput 'stow right' until checkright.nil?
+
+        fput 'stow left' until checkleft.nil?
+      end
+      module_function :empty_hands
+
+      def walk_to(target_room, restart_on_fail = true)
+        return if target_room.nil?
+        room_num = target_room.to_i
+        return if room_num == Room.current.id.to_i
+        fput('stand') unless checkstanding
+
+        if Room.current.id.nil?
+          echo "In an unknown room, manually attempting to navigate to #{room_num}"
+          rooms = Map.list.select { |room| room.description.include?(XMLData.room_description.strip) && room.title.include?(XMLData.room_title) }
+          if rooms.empty? || rooms.length > 1
+            echo 'failed to find a matching room'
+            return
+          end
+          room = rooms.first
+          return if room_num == room.id
+          if room.wayto["#{room_num}"]
+            move room.wayto["#{room_num}"]
+            return
+          end
+          path = Map.findpath(room, Map[room_num])
+          move room.wayto["#{path.first}"]
+          walk_to(room_num)
+          return
+        end
+
+        start_script 'go2', ["#{room_num}"]
+        timer = Time.now
+        while Script.running?('go2')
+          if (Time.now - timer) > 30
+            kill_script 'go2'
+            timer = Time.now
+            start_script 'go2', ["#{room_num}"]
+          end
+          timer = Time.now if Script.running?('escort')
+          pause 0.5
+        end
+
+        # Consider just returning this boolean and letting callers decide what to do on a failed move.
+        if room_num != Room.current.id.to_i && restart_on_fail
+          echo "Failed to navigate to room #{room_num}, attempting again"
+          walk_to room_num
+        end
+        room_num == Room.current.id.to_i
+      end
+      module_function :walk_to
+
+      # Items class. Name is the noun of the object. Leather/metal boolean. Is the item worn (defaults to true). Does it hinder lockpicking? (false)
+      # full description is the line you would see if you looked at your inventory output.
+      # Item.new(name:'gloves', is_leather:true, is_worn:true, hinders_locks:true, description:'some coarse gargoyle-hide gloves with fitted seams')
+      class Item
+        attr_accessor :name, :is_leather, :is_worn, :hinders_lockpicking, :description, :container, :swappable, :tie_to
+
+        def initialize(name:nil, leather:nil, worn:true, hinders_locks:nil, description:nil, container:nil, swappable:false, tie_to:nil)
+          @name = name
+          @is_leather = leather
+          @is_worn = worn
+          @hinders_lockpicking = hinders_locks
+          @description = description
+          @container = container
+          @swappable = swappable
+          @tie_to = tie_to
+        end
+
+        def is_leather?
+          @is_leather
+        end
+
+        def is_worn?
+          @is_worn
+        end
+
+        attr_reader :name
+
+        def hinders_lockpicking?
+          @hinders_lockpicking
+        end
+
+        attr_reader :description
+
+        attr_reader :tie_to
+      end
+
+      class SpellData
+        attr_accessor :name, :abbrev, :min_prep, :cyclical, :after, :needs_moon, :cast, :expire, :skill, :cast_message, :before, :prep_message
+
+        def initialize(name:nil, abbrev:nil, min_prep:nil, cyclical:nil, after:nil, needs_moon:nil, cast:nil, expire:nil, skill:nil, cast_message:nil, before:nil, prep_message:nil)
+          @name = name
+          @abbrev = abbrev
+          @min_prep = min_prep
+          @cyclical = cyclical
+          @after = after
+          @needs_moon = needs_moon
+          @cast = cast
+          @expire = expire
+          @skill = skill
+          @cast_message = cast_message
+          @before = before
+          @prep_message = prep_message
+        end
+      end
+
+      @@Spells = {
+        'EY' => SpellData.new(name: 'Essence of Yew')
+      }
+
+     class SpellXXX
+        attr_accessor :mana, :cambrinth, :snap, :symbiosis
+
+        def initialize(abbrev:nil, spell_data:nil, mana:nil, cambrinth:nil, snap:false, symbiosis:nil)
+          if abbrev
+            @data = DRC.Spells[abbrev.upcase] || DRC.Spells.find { |key, _val| /^#{abbrev}/i =~ key }.last
+              else
+                @data = spell_data
+              end
+              fail(ArgumentError, 'Spell requires a known name or spell data object') unless @data
+              end
+
+              def method_missing(method, *args, &block)
+                @data.__send__ method, *args, &block
+              end
+              end
+
+              # windows only I believe.
+              def beep
+                echo("\a")
+              end
+              module_function :beep
+
+              def dispose_trash(item)
+                return if item.nil?
+                trashcan = DRRoom.room_objs
+                .map { |long_name| get_noun(long_name) }
+                .find { |obj| UserVars.trash_storage.include?(obj) }
+                if trashcan == 'gloop'
+                  trashcan = 'bucket' if DRRoom.room_objs.include? 'bucket of viscous gloop'
+                  trashcan = 'cauldron' if DRRoom.room_objs.include? 'small bubbling cauldron of viscous gloop'
+                end
+
+                if trashcan
+                  bput("put my #{item} in #{trashcan}", '^You drop')
+                else
+                  fput "drop my #{item}"
+                end
+              end
+              module_function :dispose_trash
+
+              def bind_wound(part, person = 'my')
+                bput("tend #{person} #{part}", 'You work carefully at tending', 'That area has already been tended to', 'That area is not bleeding')
+                waitrt?
+              end
+              module_function :bind_wound
+
+              def unwrap_wound(part)
+                waitrt?
+                case bput("unwrap my #{part}", 'You unwrap your bandages') # Are there other messages?
+                when $FAILED_COMMAND
+                  pause 5
+                  bind_wound(part)
+                end 
+                waitrt?
+              end
+              module_function :unwrap_wound
+
+              def get_wealth
+                fput 'wealth'
+                wealth = matchfind '\\(? copper Kronars\\)\\.', 'No Kronars?'
+                wealth == '.' ? 0 : wealth.to_i
+              end
+              module_function :get_wealth
+
+              def ensure_copper_on_hand(copper)
+                wealth = get_wealth
+                return if wealth >= copper
+                walk_to 1900
+                withdrawals = minimize_coins(copper)
+                withdrawals.each { |amount| fput "withdraw #{amount}" }
+              end
+              module_function :ensure_copper_on_hand
+
+              def find_empty_room(search_rooms, idle_room, predicate = true)
+                loop do
+                  search_rooms.each do |room_id|
+                    walk_to(room_id)
+                    return if checkpcs.nil? && predicate.call
+                  end
+
+                  walk_to(idle_room)
+                  pause 30
+                end
+              end
+              module_function :find_empty_room
+              end
+
+              UserVars.trash_storage = %w(bin gloop barrel bucket)

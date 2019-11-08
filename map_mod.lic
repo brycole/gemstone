@@ -1,0 +1,125 @@
+=begin
+
+v.02 by Kalros
+Script to replace/modify string procs inside the mapdb.
+Assumes the only change we are making is with a StringProc
+Credit to Tillmen for better child wait code.
+
+To do:
+    Make more modular so it can take multiple rooms
+    Swap out replace messages for variables
+    Add better initial room loops to support more rooms
+    Adjust make_change method to support more then string_procs
+
+Changelog-
+  4.1.2016:
+    Swapped code to methods, removed most variables
+  4.6.2016:
+    Swapped child wait code for Tillmen's version
+    Removed UserVars, no longer needed
+=end
+
+$map_changes_debug = true
+
+# Adding portion for modular room changes
+@Maaghara_proc_find = 'move dir'
+@Maaghara_room_title = 'Maaghara'
+@Mag_room_list = []
+@skip_changes = "You have made contact"
+#@skip_changes = "zzz"
+@Mag_changes = {
+  "; loop " => "; if (bounty? =~ /^You have made contact with the child/);child = GameObj.npcs.find { |npc| npc.noun == 'child' }; else; child = nil; end; loop ",
+  "move dir" => "move dir; 50.times { break if GameObj.npcs.any? { |npc| npc.id == child.id }; sleep 0.1 } if child",
+}
+
+#Room.current.wayto["24715"] = "southwest"
+#Room.current.timeto["24715"] = 0.2
+
+## Dusk ruin removeals
+#for rooms in [751,10681]
+#    Map[rooms].wayto.delete_if { |wayto_destination_id, current_wayto|
+#      current_wayto.inspect =~ /Waiting for/}
+#    Map[rooms].timeto.delete_if { |timeto_destination_id, current_timeto|
+#      current_timeto.inspect =~ /0.02/}
+#    next
+#end
+
+def update_waytos(room_to_change_id, wayto_changes)
+  Map[room_to_change_id].wayto.each { |wayto_destination_id, current_wayto|
+    if current_wayto.class == Proc
+      new_wayto = current_wayto._dump
+      wayto_changes.each do |search_string, replace_string|
+        new_wayto.gsub!(/#{search_string}/, replace_string)
+      end
+      Room[room_to_change_id].wayto[wayto_destination_id] = StringProc.new(%{#{new_wayto}})
+    end
+  }
+end
+
+Map.list.each {|room|
+  @Mag_room_list << room.id if (room.wayto.inspect =~ /#{@Maaghara_proc_find}/ and room.title.inspect =~ /#{@Maaghara_room_title}/ and room.wayto.inspect !~ /#{@skip_changes}/)
+}
+
+## Cysaegir to Ta'Vaalor
+Room[9686].wayto["10168"] = StringProc.new("fput 'remove sun ring';fput 'wear sun ring'")
+Room[9686].timeto["10168"] = 1
+
+Room[10168].wayto["9686"] = StringProc.new("fput 'remove sun ring';fput 'wear sun ring'")
+Room[10168].timeto["9686"] = 1
+
+## Symbol Return Rift -> Pinefar
+Room[2636].wayto["2804"] = StringProc.new("fput 'sym return'")
+Room[2636].timeto["2804"] = 1
+
+## lake timeto
+Room[10119].timeto["27021"] = 300
+Room[27021].timeto["10119"] = 300
+
+if script.vars[0] == 'check'
+@Mag_room_list.each {|i|
+    echo Map[i].inspect
+  }
+  exit
+end
+
+@Mag_room_list.each {|room|
+  update_waytos(room, @Mag_changes)
+}
+
+## Old Code
+#UserVars.rescue_child = false if UserVars.rescue_child.nil?
+#new_wayto.gsub!(/; loop /, ";UserVars.rescue_child = true if GameObj.npcs.find {|i| i.noun == 'child'}; loop ")
+#new_wayto.gsub!(/move dir/, "move dir; echo 'waiting for child'; echo UserVars.rescue_child; waitfor('child') if UserVars.rescue_child")
+#new_wayto.gsub!(/standing\?; waitrt\?/, "standing?; waitrt?; UserVars.rescue_child = false")
+
+#new_wayto.gsub!(/; loop/, "; loop; if (bounty? =~ /^You have made contact with the child/);child = GameObj.npcs.find { |npc| npc.noun == 'child' };else;child = nil;end;")
+#new_wayto.gsub!(/move dir/, "move dir; echo 'waiting for child'; echo child; 50.times { break if GameObj.npcs.any? { |npc| npc.id == child.id }; sleep 0.1 } if child")
+ 
+## This process replaces the old wayto with the new wayto
+#Room[room_to_change_id].wayto[wayto_destination_id] = StringProc.new(%{#{new_wayto}})
+
+#def test_wayto_updates(room_to_change_id, wayto_destination_id, new_wayto)
+  ## for testing the wayto_updates
+#  echo "Room to change: #{room_to_change_id}"
+#  echo "Destination room for new way_to: #{wayto_destination_id}"
+#  echo "New way_to being applied: #{new_wayto}"
+#end
+
+  # Make gsub changes based on variables defined above
+      #new_wayto = gsub_waytos(old_wayto, wayto_changes)
+      #echo new_wayto
+
+      ## For echos and testing
+      #test_wayto_updates(room_to_change_id, wayto_destination_id, new_wayto) if $map_changes_debug
+
+
+
+#def gsub_waytos(old_wayto, wayto_changes)
+#  echo 'inside gsub_waytos'
+#  wayto_changes.each do |search_string, replace_string|
+#    old_wayto.gsub!(/#{search_string}/, replace_string)
+#  end
+#  return old_wayto.inspect
+#end
+
+#"; loop {" => "; loop { if (bounty? =~ /^You have made contact with the child/);child = GameObj.npcs.find { |npc| npc.noun == 'child' };else;child = nil;end;",

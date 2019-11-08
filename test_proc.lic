@@ -1,0 +1,32 @@
+
+child = nil
+
+test1 = StringProc.new("GameObj.npcs.find {|i| i.noun == 'child'}")
+test2 = StringProc.new("50.times { break if GameObj.npcs.any? { |npc| npc.id == child.id }; sleep 0.1 } if UserVars.rescue_child")
+test3 = StringProc.new("next_exit = { 9823 => [ 'southeast', 'southwest', 'southwest', 'east', 'southwest', 'southeast', 'south' ], 9818 => [ 'east', 'southwest', 'west', 'west', 'northeast', 'northeast', 'northwest' ], 9808 => [ 'east', 'east', 'east', 'northeast', 'west' ], 9788 => [ 'southwest', 'southeast', 'southwest' ], 9784 => [ 'southeast', 'south', 'northeast', 'north', 'west', 'west', 'west' ] }; if (bounty? =~ /^You have made contact with the child/); child = GameObj.npcs.find { |npc| npc.noun == 'child' }; else; child = nil; end; loop { if move 'go root'; nil until get == '[Maaghara Tower, Refuse Heap]'; fput 'stand' unless standing?; waitrt?; break; else; if dir_list = next_exit[Room.current.id]; dir_list.each { |dir| move dir; 50.times { break if GameObj.npcs.any? { |npc| npc.id == child.id }; sleep 0.1 } if UserVars.rescue_child }; else; echo 'error: out of cheese'; break; end; end }")
+
+
+echo test1.inspect
+echo test2.inspect
+
+while line = get
+  test1.call
+  test2.call
+  test3.call
+end
+
+
+[map_mod: @wayto={"9822"=>"southeast", "9734"=>StringProc.new("next_exit = { 9823 => [ 'southeast', 'southwest', 'southwest', 'east', 'southwest', 'southeast', 'south' ], 9818 => [ 'east', 'southwest', 'west', 'west', 'northeast', 'northeast', 'northwest' ], 9808 => [ 'east', 'east', 'east', 'northeast', 'west' ], 9788 => [ 'southwest', 'southeast', 'southwest' ], 9784 => [ 'southeast', 'south', 'northeast', 'north', 'west', 'west', 'west' ] }; if (bounty? =~ /^You have made contact with the child/);child = GameObj.npcs.find { |npc| npc.noun == 'child' }; else; child = nil; end; loop { if move 'go root'; nil until get == '[Maaghara Tower, Refuse Heap]'; fput 'stand' unless standing?; waitrt?; break; else; if dir_list = next_exit[Room.current.id]; dir_list.each { |dir| move dir; 50.times { break if GameObj.npcs.any? { |npc| npc.id == child.id }; sleep 0.1 } if child }; else; echo 'error: out of cheese'; break; end; end }"), "9824"=>"southwest"}
+@paths=["Obvious exits: southeast, southwest"]
+@image_coords=[1070, 465, 1080, 475]
+@terrain=nil
+@description=["A small pool of water has collected in a depression upon the ground, a thick root hanging from the ceiling dripping water into it constantly.  The narrow walls descend to meet the floor in a sharp angle, their surfaces smooth and featureless except for the occasional small rock or root breaking the monotony of packed earth."]
+@image="en-tower-1264234799.png"
+@climate=nil
+@title=["[Maaghara Labyrinth]"]
+@check_location=nil
+@timeto={"9822"=>0.2, "9734"=>100.0, "9824"=>0.2}
+@id=9823
+@location="the Maaghara Tower"
+@tags=[]
+@links=[]]

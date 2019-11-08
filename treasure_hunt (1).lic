@@ -1,0 +1,60 @@
+## Treasure Hunt
+## v.1 by Kalros
+## Controls sbounty and bigshot
+## injects different creatures via switch_hunting
+
+## Put treasure_hunt at the end of sbounty!
+
+$exp_min = 0
+$sellnow = false
+
+exit if percentmind <= $exp_min and $current_favor == 1
+
+def sell_skins(container)
+	GSC.bput "remove #{container}", "^You slip|^You take|^As you remove|^You remove|^You carefully"
+	GSC.bput "sell #{container}", "^You ask|^There is no"
+	GSC.bput "wear #{container}", "^Draping|^You put|^As you put|^You attach|^You securely"
+end
+
+GSC.run_wait_script('start_hunt', 'xx')
+
+start_script 'switch_hunting'
+sleep 1
+#travel("#{$to_hunt_zone}") if $to_hunt_zone != "Ta'Illistim"
+
+sleep 1
+start_script 'bigshot'
+force_start_script 'transcend'
+
+wait_while { running?('go2')}
+wait_until { (percentmind <= $exp_min and $current_favor == 1) or percentencumbrance >= 20 or $sellnow == true}
+wait_while { running?('loot-be-gone')}
+GSC.run_wait_script('sloot', 'xx')
+
+pause_script 'bigshot' if running? 'bigshot'
+pause_script 'transcend' if running? 'transcend'
+
+sleep 5
+pause_script 'bigshot' if running? 'bigshot'
+pause_script 'transcend' if running? 'transcend'
+
+#travel('home') if $zone_now != "Ta'Illistim"
+
+GSC.run_wait_script('go2', '9687')
+GSC.run_wait_script('useherbs', 'xx')
+sell_skins('sack')
+sell_skins('grey satchel')
+#sell_skins('cloak')
+
+GSC.run_wait_script('go2', '4686')
+GSC.track_deposit("#{$global_creature_name}")
+#GSC.run_wait_script('tpick', 'xx')
+
+GSC.run_wait_script('loot-be', 'xx')
+GSC.run_wait_script('go2', '20')
+GSC.run_wait_script('waggle', 'xx')
+
+kill_script 'bigshot' if running? 'bigshot'
+kill_script 'transcend' if running? 'transcend'
+
+force_start_script 'treasure_hunt'

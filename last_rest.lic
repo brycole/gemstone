@@ -1,0 +1,27 @@
+fput 'hide' until hidden?
+
+#GSC.open_satchel
+#GSC.bput 'get my paingrip', '^You remove|^You get|^You draw'
+#GSC.close_satchel
+
+exit
+
+start_script 'go2', [ '5716' ]
+wait_while { running?('go2') }
+
+dothistimeout 'go elyina table', 5, /^Elyina/
+dothistimeout 'go elyina table', 5, /^Obvious/
+
+sleep 10
+
+start_script 'save_boxes'
+wait_while { running?('save_boxes') }
+
+start_script 'waggle'
+wait_while { running?('waggle') }
+
+dothistimeout 'out', 5, /^Obvious/
+
+start_script 'go2', [ '1572' ]
+wait_while { running?('go2') }
+

@@ -1,0 +1,18 @@
+## Move from one container to second container
+## v.01 by Haldrik
+
+start_container = script.vars[1]
+end_container = script.vars[2]
+item_type = script.vars[3]
+
+start_container = GameObj.inv.find{|item| item.name =~ /#{start_container}/}
+end_container = GameObj.inv.find{|item| item.name =~ /#{end_container}/}
+
+dothistimeout "look in #{start_container}", 1, /In|I could/
+sleep 1
+
+  items = GameObj["#{start_container}"].contents.find_all {|i| i.type =~ /#{item_type}/}
+  items.each {|i| 
+    dothistimeout "_drag ##{i.id} ##{end_container.id}", 5, /^You/
+    #dothistimeout "put #{i.noun} in my #{end_container}", 1, /You|I could/
+  }

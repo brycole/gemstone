@@ -1,0 +1,27 @@
+#!/usr/bin/env ruby
+#
+# calculates how valuable of a gem you need to get a deed in the landing temple
+#
+# it uses the formula 101 + level * 100 + deeds * 100 = cost of deed
+# and assumes that the temple values your gem at 3x what Murdos Burdos will pay for it.
+#
+# This script was written by Brute, and probably sucks.
+#
+#
+
+fput "exp"
+
+myline=matchwait("Deeds")
+
+level=myline.split(":")[1].split("\t")[0].to_i
+deedcount=myline.split(":")[2].to_i
+deedprice=deedcount * 100 + level * 100 + 101
+
+
+
+gemMinVal=deedprice / 3 + 101
+
+echo "silver values: #{deedprice}"
+respond "you need a gem worth at least #{gemMinVal} silvers."
+
+#;e deeds = 2; echo deedcost = (Char.exp / 500) + ((((deeds * (deeds + 1)) / 2) - 1) * 40) - ((deeds - 1) * 20) + 100)

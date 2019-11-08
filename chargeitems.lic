@@ -1,0 +1,55 @@
+## Charge items v.01
+## by Kalros/Haldrik
+
+if Char.name == 'Kalrosxx' 
+  itemList = [
+  'onyx-inlaid imflass buckle',
+  'malachite and dragonfire opal torc',
+  'alum-bound ironwood badge',
+  'garnet-set gold earring',
+  'etched glaes aventail',
+  'moonstone studded bronze medallion',
+  'elegant platinum pin',
+  'some vultite arm greaves', 
+  'glittering platinum ring',
+  'long-cut beryl pin', 
+  'soulstone inset silver armband',]
+end
+
+if Char.name == 'Iloru'
+  itemList = [
+  'silver and blue tourmaline bracelet',  # ok
+  'a jade-inlaid star emerald buckle', #ok
+  'elegant platinum pendant', #ok
+  'engraved silver torc', #ok
+  'trilliant-cut blue diamond pin', #ok
+  'some mithril arm greaves',  # ok
+  'hammered gold alloy armband',] # ok
+end
+
+if Char.name == 'Vlaggen'
+  itemList = [
+  'some gleaming imflass arm greaves',  # ok
+  'moonstone studded bronze medallion', #ok
+  'topaz-inset gold brooch', #ok
+  'jade-inlaid imflass earcuff', #ok
+  'hammered gold alloy armband', #ok
+  'long-cut beryl pin',  # ok
+  'vaalin-bound ironwood badge',] # ok
+end
+
+@chargeItems = Array.new
+itemList.each {|item|
+  GameObj.inv.find {|i| @chargeItems << i if i.name =~ /#{item}/}
+}
+
+coinIndex = 1
+@chargeItems.each {|item|
+  GSC.bput "remove ##{item.id}", "^You"
+  GSC.bput "simucoin deliver", "Index"
+  GSC.bput "simucoin deliver #{coinIndex} confirm", "Hearing"
+  #GSC.bput "simucoin deliver #{coinIndex} confirm", "Hearing"
+  GSC.bput "pour my #{lefthand} on ##{item.id}", "You tent"
+  GSC.bput "pour my #{lefthand} on ##{item.id}", "Roundtime"
+  GSC.bput "wear ##{item.id}", "^You"
+}

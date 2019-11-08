@@ -1,0 +1,89 @@
+
+@guild = 'wizard' if Char.name == 'Lumino'
+@guild = 'monk' if Char.name == 'Atilio'
+@guild = 'bard' if Char.name == 'Iloru'
+@container = 'cloak' if Char.name == 'Iloru'
+@container = 'cloak' if Char.name == 'Lumino'
+@container = 'cloak' if Char.name == 'Atilio'
+
+def waggleCheck()
+  waggle_check = <<-eos
+  sleep 5 until running?("waggle")
+  sleep 10
+  kill_script 'waggle' if running? 'waggle'
+  eos
+
+  ExecScript.start(waggle_check, :quiet => true)
+end
+
+def clearPackage()
+  
+  GSC.bput "open my package", "You"
+  GSC.bput "get my blood", "You"
+  GSC.bput "look my blood", "bloodscrip"
+  GSC.bput "put my blood in my pouch", "You"
+  GSC.bput "remove my #{@container}", "You"
+  GSC.bput "empty package in #{@container}", "You"
+  res = GSC.bput "drop package", "You toss"
+
+  if res != "You toss"
+    echo "script error"
+    exit
+  end
+  GSC.bput "wear my #{@container}", "You"
+
+end
+
+waggleCheck()
+
+while true
+  clearPackage() if righthand == 'package' or lefthand == 'package'
+  GSC.checkspells(@guild)
+
+  if Char.name == 'Lumino'
+    GSC.bput "prep 902", "^You trace"
+    GSC.bput "remove my gloves", "^You remove|Tugging"
+    GSC.bput "evoke", "^A bright"
+    GSC.bput "wear my gloves", "^You slip|As you slide"
+    waitcastrt?
+    GSC.bput "prep 902", "^You trace"
+    GSC.bput "remove my boot", "^You remove"
+    GSC.bput "evoke", "^A bright"
+    GSC.bput "wear my boot", "^As you slide"
+    waitcastrt?
+  end
+  GSC.run_wait_script('go2', '23782')
+  if Char.name == 'Iloru'
+    matchtimeout(180, "joins your")
+    matchtimeout(180, "joins your")
+    GSC.bput "renew all", "Your"
+    matchtimeout(180, "You suddenly start moving light-footedly")
+  end
+  if Char.name == 'Lumino'
+    sleep 0.3 until checkpcs.join('|') =~ /Iloru/
+    GSC.bput "follow iloru", "^You join"
+    matchtimeout(180, "Iloru renews")
+    sleep 1
+    sleep 0.3 until checkpcs.join('|') =~ /Atilio/
+    GSC.bput "prep 506", "^You recite"
+    GSC.bput "cast atilio", "^You gesture"
+    GSC.bput "prep 506", "^You recite"
+    GSC.bput "cast iloru", "^You gesture"
+  end
+  if Char.name == 'Atilio'
+    sleep 0.3 until checkpcs.join('|') =~ /Iloru/
+    GSC.bput "follow iloru", "^You join"
+    matchtimeout(180, "Iloru renews")
+    matchtimeout(180, "You suddenly start moving light-footedly")
+    Spell[9605].cast if Spell[9605].timeleft < 0.01 and GSC.can_cast?(9605)
+    Spell[9625].cast if Spell[9625].timeleft < 0.01 and GSC.can_cast?(9625)
+    sleep 0.3 until Spell[506].timeleft > 0
+  end
+  GSC.startDR(23780, 'booklet')
+  waitcastrt?
+  GSC.run_wait_script('duskruinArena', 'xx')
+
+  waitfor "Stygian Annex"
+  kill_script 'waggle' if running? 'waggle'
+  clearPackage()
+end

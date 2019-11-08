@@ -1,0 +1,70 @@
+#start_script "monitor" if !running? "monitor"
+start_script "transcend" if !running? "transcend"
+kill_script "powersong" if running? "powersong"
+GSC.bput "stop singing 1018", "You stop" if Spell[1018].active
+
+sonicWeapon = true
+sonicShield = false
+sonicArmor = false
+
+$sonicWeapon = "rune staff"
+$sonicShield = "shield" 
+$sonicArmor = 15
+#Spell[1010].cast if !Spell[1010].activ
+
+#GSC.bput "put my sword in my harn", "Reaching" if righthand == 'sword' or lefthand == 'sword'
+
+GSC.bput "stance d", "^You are now|Cast Round"
+GSC.run_wait_script('go2', '20')
+
+if spirit < 9
+  fput 'hide' until hidden
+end
+
+wait_until { mana >= 200 }
+GSC.run_wait_script('waggle', 'xx')
+
+Spell[1003].cast if !Spell[1003].active
+GSC.bput "renew all", "Your songs"
+
+while righthand != "staff" and lefthand != "staff" and sonicWeapon == true
+  if mana > 12
+    GSC.bput "prep 1012", "You change|^You begin|^Clawing its" if checkprep == "None"
+    GSC.bput "sing #{$sonicWeapon}", "You begin|^Your armor prevents" if checkprep == "Sonic Weapon Song"
+  else sleep 5.0
+  end
+end
+
+while sonicArmor == true and !Spell[1014].active
+  if mana > 12
+    GSC.bput "prep 1014", "You change|^You begin|^Clawing its" if checkprep == "None"
+    GSC.bput "sing #{$sonicArmor}", "You begin|^Your armor prevents" if checkprep == "Sonic Armor"
+  else sleep 5.0
+  end
+end
+
+while righthand != $sonicShield and lefthand != $sonicShield and sonicShield == true
+  if mana > 12
+    GSC.bput "prep 1009", "You change|^You begin|^Clawing its" if checkprep == "None"
+    GSC.bput "sing medium", "You begin|^Your armor prevents" if checkprep == "Sonic Shield Song"
+  else sleep 5.0
+  end
+end
+
+#GSC.bput "get my vultite hammer", "You" until righthand == 'hammer'
+#GSC.bput "get my shield", "You"
+#GSC.bput "remove my shield", "You"
+
+Spell[1006].cast if !Spell[1006].active
+#Spell[1007].cast if !Spell[1007].active
+Spell[1010].cast if !Spell[1010].active
+Spell[1018].cast if !Spell[1018].active
+Spell[1019].cast if !Spell[1019].active
+
+start_script "powersong" if !running? "powersong"
+
+if spirit < 9
+  fput 'hide' until hidden
+end
+
+wait_until { mana >= 250 }

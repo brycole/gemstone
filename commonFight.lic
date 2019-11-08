@@ -1,0 +1,203 @@
+
+
+# Attack by Kalros 1/2/2015
+=begin
+  
+Script should be supplied with an argument. Can either be ran with a #mob.id or mob.name. 
+=end
+
+## 119 - 73 stamina = mstrike
+## 9005 mstrike cooldown
+
+$current_script_name = script.name
+#(echo "Missing target from source script. Exiting."; exit) if script.vars.length == 0 and !$bandits
+$pause_lines = /^A calm washes over|^You are unable to muster the will/
+$unpause_lines = /^You are enraged/
+
+$pause_combat = false
+$manual_target = false
+$new_vaesp = false
+$max_npc = 2
+$max_npc = 3 if running? 'bigshot'
+$monsterGone = false
+
+
+module GSF
+  def commonFightInit()
+    $uac = 'jab' if Char.name == 'Atilio'
+    $uac = 'jab' if Char.name == 'Lumino'
+    $uac = 'jab' if Char.name == 'Iloru'
+    $position = 'decent'
+    $aim_location = ''
+    $aim_location = '' if Char.name == 'Iloru'
+    $aim_location = '' if Char.name == 'Lumino'
+    $champion = false
+    @guild = 'none'
+    @guild = 'wizard' if Char.name == 'Lumino' || Char.name == 'Iloru'
+    @guild = 'bard' if Char.name == 'Iloru'
+    @attackMsg = "^You attempt|^What were|^Try|^You make|^You cannot aim that high|already missing that"
+  end
+  module_function :commonFightInit
+
+  def monitor_uac(currentScript)
+    $current_script_name = currentScript
+    uac_line_checks = <<-eos
+    while line = get
+      break unless running?($current_script_name)
+      if line =~ /^You have (decent|good|excellent) positioning/
+        $position = $1
+        if (($position == 'excellent') || ($position != 'excellent' && (Char.name == 'Lumino' || Char.name == 'Iloru')))
+          if $champion 
+            ($uac = 'punch'; $aim_location = '') if Char.name == 'Atilio'
+            ($uac = 'kick'; $aim_location = '') if Char.name == 'Lumino'
+            ($uac = 'punch'; $aim_location = '') if Char.name == 'Iloru'
+          else
+            ($uac = 'punch'; $aim_location = 'head') if Char.name == 'Atilio'
+            ($uac = 'kick'; $aim_location = 'head') if Char.name == 'Lumino' 
+            ($uac = 'punch'; $aim_location = 'head') if Char.name == 'Iloru'
+            ($uac = 'punch'; $aim_location = '') if $position != 'excellent' && Char.name == 'Iloru'
+          end
+        end
+        $uac = 'jab' if $position == 'good' && Char.name == 'Atilio'
+        $uac = 'jab' if $position == 'good' && Char.name == 'Lumino'
+        $uac = 'jab' if $position == 'good' && Char.name == 'Iloru'
+      end
+      $uac = $1 if line =~ /^  Strike leaves foe vulnerable to a followup (.*) attack/
+      $pause_combat = true if line =~ /#{$pause_lines}/
+      $pause_combat = false if line =~ /#{$unpause_lines}/
+      $aim_location = "right leg" if line =~ /^The .+ does not have a chest|^You cannot aim that/
+      $aim_location = "head" if line =~ /already missing that/
+      $new_vaesp = true if line =~ /^A vaespilon drags/
+      $monsterGone = true if line =~ /A gornar-shackled ogre lumbers in/
+    end
+    eos
+
+    ExecScript.start(uac_line_checks, :quiet => true)
+  end
+  module_function :monitor_uac
+
+  def arenaWatch()
+    $watchAgain = false
+    waitrt?
+    res = GSC.bput "watch", "You appraise|You glance around|You survey|You've already"
+    matchtimeout(2, "You set yourself|^You've already spotted") if res == "You appraise"
+    #res = GSC.bput "watch", "You appraise|^You've already|^You glance around"
+    #end
+    #res = "You glance around"
+    #while res == "You glance around"
+    #GSC.bput "#{$trapCommand.to_s}", "You"
+    #waitfor "You set yourself"
+  end
+  module_function :arenaWatch
+
+  def loot()
+    dead_npcs = GameObj.npcs.find_all { |i| i.status == 'dead' }
+    dead_npcs.each { |i| start_script ('sloot') if !running?('sloot')
+    wait_while { running?('sloot') }}
+  end
+  module_function :loot
+
+  def attack?(status)
+    if $duskRuin
+      returnTemp = true
+      returnTemp = false if (GameObj.npcs.size < 1 || status =~ /dead|gone/)
+    else
+      returnTemp = (!bleeding? and health > 0 and !stunned?) and GameObj.npcs.size <= $max_npc and status !~ /dead|gone/ and (running? 'bigshot' or $manual_target)
+    end
+    return returnTemp
+    #while GameObj.npcs.size <= $max_npc and target.status !~ /dead|gone/ and (running? 'bigshot' or $manual_target)
+  end
+  module_function :attack?
+
+  def checkStatus()
+    fput "stand" unless standing?
+    if $duskRuin
+      if stunned?
+        sleep 0.3 until !stunned?
+        $watchAgain = true
+        fput 'surrender' if health < 50
+      end
+      arenaWatch() if $watchAgain
+      GSC.checkspells(@guild) if @guild == 'wizard' 
+      if Spell[506].timeleft < 0.01 && Spell[1035].timeleft < 0.01 && @guild == 'bard'
+        fput "pray" if mana < 59
+        Spell[1035].cast if mana >= 59
+      end 
+      #Spell[506].cast if Spell[506].timeleft < 0.01 && @guild == 'wizard'
+    else
+      sleep 0.5 while $pause_combat
+      fput "hide" if !hidden? and $bandits == true and @guild == 'rogue'
+      if $new_vaesp
+        fput 'sym holi vaesp'
+        fput 'sym holi second vaesp'
+        fput 'sym holi third vaesp'
+        $new_vaesp = false
+      end
+    end
+  end
+  module_function :checkStatus
+
+  def doAttack(target)
+    waitrt?
+    waitcastrt?
+    if $position != 'decent' and $bandits != true and Spell[9699].timeleft < 0.01
+      #echo $champion
+      if $champion && !Spell[506].active && ((Spell[9005].timeleft < 0.01 and stamina > 200) or stamina > 106)
+        if Spell[9005].timeleft < 0.01
+          GSC.bput "mstrike kick ##{target.id}", "^You concentrate" 
+        else 
+          GSC.bput "mstrike punch ##{target.id}", "^You concentrate"
+        end
+      else
+        #GSC.bput "kick", "#{@attackMsg}" if Char.name == 'Lumino' || Char.name == 'Iloru'
+        GSC.bput "#{$uac} ##{target.id} #{$aim_location}", "#{@attackMsg}"
+      end
+    else
+      #GSC.bput "kick", "#{@attackMsg}" if Char.name == 'Lumino' || Char.name == 'Iloru'
+      GSC.bput "#{$uac} ##{target.id} #{$aim_location}", "#{@attackMsg}"
+    end
+  end
+  module_function :doAttack
+  
+  def findTarget(target)
+    if target == "duskRuin"
+      sleep 0.3 while GameObj.npcs.size.nil?
+      #echo "Duskruin Targeting"
+      GameObj.npcs.find {|i| target = i}
+      #echo "New target id is: ##{target.id}"
+      #echo target.name
+      $champion = true if target.name =~ /champion|automaton/
+      #echo $champion
+    else
+      if "#{script.vars[1]}"[0] != "#" and !$bandits
+        echo "Detected manual targeting."
+        $manual_target = true
+        GameObj.npcs.find {|i| target = i if i.noun =~ /^#{script.vars[1]}/}
+        echo "New target id is: ##{target.id}"
+      elsif $bandits
+        echo "Inside bandit loop"
+        GameObj.npcs.find {|i| target = i if i.name =~ /thief|bandit|thug|marauder|mugger|outlaw|rogue|highwayman|robber|brigand/}
+      else
+        # [1..-1] removes the first letter from script.vars. In this case "#"
+        GameObj.npcs.find {|i| target = i if i.id =~ /^#{script.vars[1][1..-1]}/}
+      end
+    end
+    return target
+  end
+  module_function :findTarget
+
+  def attackDriver()
+    commonFightInit()
+    monitor_uac('duskruinArena')
+    fput 'stance offensive' unless percentstance == 0
+    target = findTarget("duskRuin")
+    while attack?(target.status)
+      #echo "inside attack loop"
+      checkStatus()
+      doAttack(target)
+    end
+    sleep 0.3 until $monsterGone
+    $monsterGone = false
+  end
+  module_function :attackDriver
+end

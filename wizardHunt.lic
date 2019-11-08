@@ -1,0 +1,6 @@
+start_script "monitor" if !running? "monitor"
+start_script "transcend" if !running? "transcend"
+
+
+GSC.bput "put my rune in my harn", "Reaching" if righthand == 'runestaff' or lefthand == 'runestaff'
+GSC.bput "stance d", "^You are now"

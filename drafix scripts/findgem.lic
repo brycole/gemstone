@@ -1,0 +1,163 @@
+=begin
+	
+	A script that searches your bag for a perfect combination of gems matching a certain total value
+	Warning: not my fault if it doesn't work right, it's completely in beta test mode!!!
+	
+	usage: 
+	- 1) go2 gemshop then do ;findgem scan (container)
+	- 2) assuming you are within Wehnimers Landing ;findgem (value)
+	- 3) ;unpause if you think it's right
+	
+	Technical details:
+	
+		it's a recursive function that uses backtracking to find a solution
+		it's a greedy algorithm, working backwards until it finds something within a certain leeway
+		you can set the leeway variable within the script
+		
+		If you have about say 40 small gems, it will call itself so many times that you'll run out of
+		stack space so that's too bad. If you had enough stack space it would've eventually just picked
+		the next biggest gem instead.
+
+=end
+scan = proc {|container|
+	CharSettings['gemlist'] = {}
+	$findgem_container = GameObj.inv.find{|item| item.noun == container}
+	fput "look in ##{$findgem_container.id}" if $findgem_container.contents.nil?
+	$findgem_container.contents.each{|item|
+		if item.type =~ /gem|valuable/ && item.name !~ /aster opal/
+			put "get ##{item.id} in ##{$findgem_container.id}"
+			put "appraise ##{item.id}"
+			while line = get
+				if line =~ /I'll give you (\d+) for it if you want to sell/
+					CharSettings['gemlist'][item.id] = $1.to_i
+					put "put ##{item.id} in ##{$findgem_container.id}"
+					break
+				elsif line =~ /That's not quite my field/
+					put "put ##{item.id} in ##{$findgem_container.id}"
+					break
+				end
+			end
+		end
+	}
+}
+
+
+def find_gem_valued (desired_value, visited=[])
+	CharSettings['gemlist'].each {|key, value|
+		if (desired_value - value).abs <= @leeway && !visited.include?(key)
+			return key, value
+			break
+		end
+	}
+	return nil
+end
+
+def find_more_than(desired_value)
+	temp = 30000
+	result = CharSettings['gemlist'].first[0]
+	CharSettings['gemlist'].each{|id, value|
+		if value >= desired_value && value < temp
+			temp = value 
+			result = id
+		end
+	}
+	return result, temp
+end
+
+def find_less_than(desired_value, visited=[])
+	temp = 0
+	result = nil
+	CharSettings['gemlist'].each{|id, value|
+		if value <= desired_value && value > temp && !visited.include?(id)
+			temp = value 
+			result = id
+		end
+	}
+	return result, temp
+end
+
+def findgems(desired_value, path=[], visited=[])
+	#echo "desired_value:"+desired_value.to_s
+	if (desired_value - @leeway) <= 0
+		echo "Successfully found a combo"
+		return path
+	end
+	
+	gemid, value = find_less_than(desired_value, visited)
+	visited.push(gemid)
+	#echo " value:" + value.to_s
+	
+	if gemid.nil?
+		#echo 'backtracking'
+		#no gems found
+		#backtrack
+		if path.empty?
+			echo "No gems found, choosing bigger value"
+			return [find_more_than(desired_value)[0]]
+		end
+		p=path.pop
+		v = visited.pop until v == p
+		visited.push(v)
+		return findgems(desired_value + CharSettings['gemlist'][p], path, visited)
+	else
+		path.push(gemid)
+		return findgems(desired_value - value, path, visited)
+	end
+end
+
+def deed(gems)
+	start_room = Room.current.id
+	start_script 'go2', ['4045']
+	wait_while{running? 'go2'}
+
+	put 'ring chime with mallet'
+	put 'ring chime with mallet'
+	put 'kneel'
+	gems.each{|gem|
+		fput "_drag ##{gem} drop"
+		CharSettings['gemlist'].delete(gem)
+	}
+	put 'ring chime with mallet'
+	start_script 'go2', [start_room]
+	return
+end
+
+
+if script.vars[1] == 'scan'
+	scan.call(script.vars[2])
+elsif script.vars[1] =~ /^(\d+)$/
+	target_value = $1.to_i
+	@leeway=100
+	echo gems = findgems(target_value)
+	echo "Total value: #{gems.inject(0){|result, gem| result + CharSettings['gemlist'][gem]}}"
+	echo 'unpause to start deed process'
+	pause_script
+	deed(gems)
+elsif script.vars[1] =~ /print/
+	cloak = GameObj.inv.find{|i| i.noun == 'cloak'}
+	temp = []
+	total = 0
+	CharSettings['gemlist'].sort_by{|a,b| b}.each{|i|
+		total += (i[1].to_i * 1.06 * 2).ceil
+		temp.push("<d cmd='_drag ##{i[0]} drop'>#{temp.length+1}: #{(i[1].to_i * 1.06 * 2).ceil} - #{$findgem_container.contents.find{|j| j.id == i[0]}.name}</d>")
+		# if i[1] < 9500
+		# 	put "_drag ##{i[0]} ##{cloak.id}"
+		# 	sleep 0.03
+		# end
+	}
+	temp.each{|i| puts i}
+	echo temp.length
+	echo total
+elsif script.vars[0] =~ /drop (\d+)/
+	amt = $1.to_i
+	cloak = GameObj.inv.find{|i| i.noun == 'cloak'}
+	counter = 0
+	CharSettings['gemlist'].sort_by{|a,b| b}.each{|i|
+		counter+=1
+		put "_drag ##{i[0]} drop"
+		break if counter >= amt
+	}
+else
+	echo "*** Usage: .findgem (scan) (container) ***"	
+	echo "*** Usage: .findgem (value) ***"	
+end

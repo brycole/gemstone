@@ -1,0 +1,63 @@
+## Todays flavor is Modulo!
+
+=begin
+def find_teleport_setting
+  GSC.hook_squelch(".+", "find_setting")
+  silence_me
+  fput 'tap band'
+  while line = get
+    if line =~ /->  ?(\d+)/
+      @start = $1.to_i
+      break
+    end
+  end
+  DownstreamHook.remove("find_setting")
+  silence_me
+end
+=end
+
+def move_teleport_setting(steps, command)
+    # break up steps by blocks of 2 for type ahead
+    (steps / 2).times {
+      put "#{command} band"
+      put "#{command} band"
+      waitfor "The band"
+    }
+    (steps % 2).times {put "#{command} band"}
+end
+
+def goto_teleport_setting(goal)
+  max_settings = 12
+  goal = goal.to_i
+  UserVars.current_ring_setting = goal
+
+  distance = (@start - goal)%max_settings
+  command = 'pull'
+  if distance > max_settings / 2
+      distance = max_settings - distance
+      command = 'push'
+  end
+  
+  move_teleport_setting(distance, command)
+end
+
+#find_teleport_setting
+goto_teleport_setting(script.vars[1])
+
+
+def get_distance(start, goal)
+    dist = (start-goal)%12
+    command = "pull"
+    if dist > 6
+    dist = 12 - dist
+    command = "push"
+    end
+ 
+    puts "#{command}:#{dist}"   
+end
+ 
+get_distance(1,12)
+get_distance(8,2)
+get_distance(2,8)
+get_distance(12,1)
+get_distance(7,5)

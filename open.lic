@@ -1,0 +1,55 @@
+## Quick Open
+
+$put_msg = /^You tuck|^You put|^Your .+ won't/
+$get_msg = /^You grab|^You get|^You remove/
+
+script_var1 = script.vars[1]
+script_var2 = script.vars[2]
+
+script_var1.prepend('ground' ? '' : 'my ')
+script_var2.prepend('ground' ? '' : 'my ')
+echo script_var2
+
+before_dying{
+  echo $ground_index
+  $ground_boxes = $ground_boxes.drop($ground_index + 1)
+}
+
+if $ground_boxes.nil? or $ground_boxes.empty? or $ground_index.nil?
+  $ground_boxes = GameObj.loot.find_all {|i| i.id if i.noun =~ /strongbox|box|chest|trunk|coffer/}.collect{|i| i.id}
+  $ground_index = 0
+end
+$ground_boxes = GameObj[/#{script_var2}/].contents.find_all {|i| i.id if i.noun =~ /strongbox|box|chest|trunk|coffer/}.collect{|i| i.id} if script_var2 != 'ground'
+
+$ground_boxes.each_with_index {|box_id, index|
+$ground_index = index
+GSC.bput "get ##{box_id} from my #{script_var2}", "#{$get_msg}" if script_var2 != 'ground'
+GSC.bput "get my caliper", "#{$get_msg}"
+GSC.bput "lmas measure ##{box_id}", "^Roundtime:"
+line = get until line =~ /lock:/
+(lockpick = $1; cast_403 = $2; pick_type = $3) if line =~ /lock: (.+) (.+) (.+)/
+GSC.bput "put my caliper in my tool", "#{$put_msg}"
+if lockpick =~ /vaalin/
+  GSC.vaalin_lockpick
+else 
+  GSC.bput "get my #{lockpick} lock from my tool", "#{$get_msg}"
+end
+fput 'incant 403' if cast_403 == '403'
+
+pick_type = pick_type == "aud" ? "lmas ptrick flip ##{box_id}" : "pick ##{box_id}"
+until /CLICK|It does not appear|gives off an audible/ =~ GSC.bput("#{pick_type}", "CLICK|It does not appear|^Roundtime|gives off an audible"); end
+
+if lockpick =~ /vaalin/
+  GSC.vaalin_lockpick
+else 
+ GSC.bput "put lock in my tool", "#{$put_msg}"
+end
+GSC.bput "get my caliper", "#{$get_msg}"
+GSC.bput "lmas cali my cali", "^Roundtime:|^(These|Those) calipers"
+GSC.bput "drop ##{box_id}", "^You drop" if pick_type !~ /aud/ and script_var2 != 'ground'
+GSC.bput "put my caliper in my tool", "#{$put_msg}"
+GSC.bput "stop 403", "^Stop what|^With a" if Spell[403].timeleft > 0.1
+#break
+line = get until line =~ /lock:/
+break if line =~ /lock: stop/
+}

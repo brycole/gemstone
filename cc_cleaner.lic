@@ -1,0 +1,25 @@
+# Cleans River's Rest Commons community containers 
+# People leave trash that Sal doesn't take
+# author: daid
+
+public_containers = [ "herbal crate" , "community chest" , "treat bag" ]
+
+public_containers.each do |container|
+
+	status_tags
+	result = dothistimeout "look in #{container}", 10, /<container id='\-?[0-9]+'/
+	status_tags
+	container_id = result.match(/<container id='(\-?[0-9]+)'/).captures.first
+	#echo container_id
+	GameObj.containers[container_id].find_all do |item|
+		if item.name =~ /block of salt|(corroded|dented|polished|rusty|scratched|shiny|tarnished) anklet|moldy bone|(corroded|polished|rusty|scratched|shiny|tarnished) bracelet|(bent|corroded|polished|rusty|scratched|shiny|tarnished) coin|(bent|corroded|polished|rusty|scratched|shiny|tarnished) cup|(corroded|polished|rusty|scratched|shiny|tarnished) earring|(bent|corroded|polished|rusty|scratched|shiny|tarnished) fork|(bent|corroded|dented|polished|rusty|scratched|shiny|tarnished) horseshoe|(corroded|polished|rusty|scratched|shiny|tarnished) medallion|(bent|corroded|polished|rusty|scratched|shiny|tarnished) nail|(belt|corroded|polished|rusty|scratched|shiny|tarnished) plate|(corroded|dented|polished|rusty|scratched|shiny|tarnished) ring|(corroded|dented|polished|rusty|scratched|shiny|tarnished) spoon|rusty doorknob|some tattered cloth/
+			multifput("get ##{item.id} from ##{container_id}","put ##{item.id} in barrel")
+		end
+	end
+end
+
+#fput "look in ##{crate_id}" # works
+#crate_contents = GameObj.containers[crate_id]
+#crate_contents.find_all { |obj| obj.noun =~ /doorknob|fork/}.each { |junk|
+#	echo " #{junk}"
+#}

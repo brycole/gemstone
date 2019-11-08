@@ -1,0 +1,24 @@
+=begin
+	For all the times you type something stupid like:
+	Soandso says, ";waggle." <-- FAIL
+	
+	Should replace '; or "; chat fails :) enjoy.
+	By: Drafix
+	
+=end
+begin
+	action = proc { |client_string|
+		if client_string =~ /^(?:<c>)?',agoc/
+			send_to_script 'infomon', ';magic'
+			nil
+		else
+			client_string.sub!(/^(?:<c>)?(?:'|")\s*(chat)/, ';,')
+			client_string.sub!(/^(?:<c>)?(?:'|")\s*(;|,)/, ';')
+			client_string
+		end
+	}
+	UpstreamHook.add('chatfail', action)
+	loop { sleep 1 }
+ensure
+	UpstreamHook.remove('chatfail')
+end

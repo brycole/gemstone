@@ -1,0 +1,2108 @@
+##quiet
+=begin
+SpiffyBounty by SpiffyJr (SpiffyJr@gmail.com)
+ Description: The bounty script to rule them all!
+ Changelog
+	- 9/13/2010
+		* Bug fixes
+=end
+
+@@version = 2.09132010
+
+################################################################################
+# Common variables
+################################################################################
+# Verify bigshot fried amount
+fried_percent 			= UserVars.op['fried']
+fried_percent 			= 100 if fried_percent.to_i > 100
+UserVars.op['fried'] 	= fried_percent
+hunting_script			= 'bigshot'
+sbounty_startup_time	= Time.now.to_f
+hunter_start_time		= nil
+hunter_end_time			= nil
+
+default_location 		= '-- Default --'
+loot_script 			= 'sloot2'
+
+paused_scripts 			= Array.new
+no_pause 				= [ Script.self.name, 'keepalive', 'narost', 'voodoo', 'deathrecover', 'go2' ]
+
+regex = {
+	'creature_problem' 	=> 'It appears they have a creature problem they\'d like you to solve\.',
+	'child_contact'		=> '^You have made contact with the child',
+	'child_failed' 		=> 'The child you were tasked to rescue is gone and your task is failed\.',
+	'help_resident' 	=> 'It appears that a local resident urgently needs our help in some matter\.',
+	'track_heirloom'	=> 'It appears they need your help in tracking down some kind of lost heirloom\.',
+	'help_dealer'		=> 'The local gem dealer, .*, has an order to fill and wants our help\.',
+	'help_herbalist'	=> 'local herbalist|local healer|local alchemist',
+	'help_furrier'		=> 'The local furrier',
+	'notask' 			=> '^You are not currently assigned a task\.',
+	'succeeded_heirloom'=> '^You have located the heirloom and should bring it back .*\.$',
+	'succeeded' 		=> '^You have succeeded in your task and can return to the Adventurer\'s Guild to receive your reward\.$',
+	'succeeded_guard' 	=> '^You succeeded in your task and should report back to',
+	'dangerous' 		=> 'You have been tasked to hunt down and kill a particularly dangerous (.*) that has established a territory (?:in|on) (?:the )?(.*) (?:near|between|under)',
+	'dangerous_provoked'=> 'You have been tasked to hunt down and kill a particularly dangerous (.*) that has established a territory (?:in|on) (?:the )?(.*) (?:near|between|under).*\.  You have provoked',
+	'kill' 				=> 'You have been tasked to suppress (.*) activity (?:in|on) (?:the )?(.*) (?:near|between|under)',
+	'gem' 				=> '^The gem dealer',
+	'herb' 				=> 'concoction that requires (?:a|an|some) (.*) found (?:in|on|near) (?:the )?(.*) (?:near|between|under).*\.  These samples must be in pristine condition\.  You have been tasked to retrieve (\d+) samples\.',
+	'heirloom' 			=> 'unfortunate citizen lost after being attacked by (?:a|an) (.*) (?:in|on) (?:the )?(.*) (?:near|between|under)',
+	'heirloom_search' 	=> 'SEARCH the area',
+	'heirloom_found'	=> 'You have located the heirloom',
+	'rescue' 			=> 'A local divinist has had visions of the child fleeing from (?:a|an) (.*) (?:in|on) (?:the )?(.*) (?:near|between|under)',
+	'skin' 				=> '^You have been tasked to retrieve (\d+|\w+)s? (.*) of at least .*\.  You can SKIN them off the corpse of (?:a|an) (.*) or '
+}
+
+regex['cull'] 			= regex['dangerous'] + '|' + regex['kill']
+
+# go2_targets for determining shortest path
+go2_targets = {
+	'gemshop' 			=> [ 3845, 1439, 1776, 5719, 2422, 1890, 10935, 9475, 10327, 686, 9268, 2786, 4655, 9662, 17436 ],
+	'furrier'			=> [ 12285, 4019, 405, 13054, 2466, 1886, 10934, 9471, 10329, 10081, 9271, 2781, 9687, 9654, 17437 ],
+	'herbalist' 		=> [ 3824, 1851, 10396, 640, 5722, 2406, 11002 ],
+	'advguild' 			=> [ 13048, 3785, 12805, 3778, 12511, 10992, 9445, 10332 ],
+	'advguard' 			=> [ 37, 420, 5576, 3424, 1957, 10915, 9411, 5907, 5827, 5906 ],
+	'advguard2' 		=> [ 3809, 2487 ]
+}
+
+script_running = proc { |script|
+	Script.running.any? { |s| s.name == script }
+}
+
+# Keep track of bounty information
+$sbounty_accepted		= false
+hunter_running			= false
+force_rest				= false
+paused					= false
+rested					= false
+saved_room				= nil
+state					= :wait
+
+buffs					= UserVars.op['signs']
+wounded 				= UserVars.op['wounded_eval']
+
+settings								  = CharSettings.to_hash
+#settings								  = Hash.new
+settings['hunter'] 						||= Hash.new
+settings['locations'] 					||= Hash.new
+settings['locations'][default_location] ||= Hash.new
+settings['last_bounty_start']			||= nil
+settings['last_bounty_end']				||= nil
+
+# TODO: Move these to GUI setup
+searcher_ready_commands	= 'gird'
+searcher_stow_commands 	= 'store all'
+
+sbounty_start_time		= Time.now.to_f
+
+cur_area				= nil
+cur_critter				= nil
+cur_herb				= nil
+$last_search_attempt	= 0
+cur_herb_count			= nil
+cur_hunting_area		= nil
+cur_hunting_options		= nil
+cur_location 			= nil
+cur_skin				= nil
+cur_skin_count			= nil
+
+# Only run if trusted
+unless $SAFE == 0
+	respond "#{Script.self.name}: This script requires trust permission", :bold
+	respond "#{Script.self.name}: Type #{$lich_char}trust #{Script.self.name}"
+	exit
+end
+
+################################################################################
+# Procedures
+################################################################################
+write_log = proc { |msg| Script.log("[#{Time.now.strftime('%Y-%m-%d %I:%M:%S %p')}] (#{Char.name}) #{msg}\n") }
+
+refresh_buffs = proc {
+	buffs.split(',').collect { |s| Spell[s.strip] }.each { |buff|
+		buff.cast if buff.known? and not buff.active? and buff.affordable?
+	}
+}
+
+kill_hunter = proc {	
+	return unless script_running.call(hunting_script)
+	hunter_end_time = Time.now.to_f
+	echo "killing #{hunting_script}"
+	
+	waitrt?
+
+	kill_script(hunting_script)
+	wait_while { script_running.call(hunting_script) }
+	
+	start_script(loot_script) unless Room.current.id.to_s == UserVars.op['resting_room_id'].to_s or script_running.call(loot_script)
+	wait_while { script_running.call(loot_script) }
+	
+	wait_while { script_running.call('go2') }
+	
+	UserVars.op['hunting_scripts'].split(',').each { |hs|
+		hs = hs.strip
+		kill_script(hs) if script_running.call(hs)
+		wait_while { script_running.call(hs) }
+	}
+	
+	UserVars.op['resting_scripts'].split(',').each { |rs|
+		rs = rs.strip
+		kill_script(rs) if script_running.call(rs)
+		wait_while { script_running.call(rs) }
+	}
+	
+	UserVars.op['fried'] = fried_percent
+}
+
+turn_in_ready = proc {
+	bounty? =~ /#{regex['succeeded']}|#{regex['succeeded_heirloom']}|#{regex['succeeded_guard']}/ and percentmind >= settings['turn_in_percent'].to_i and not saturated?
+}
+
+new_bounty_ready = proc {
+	return false if (bounty? =~ /#{regex['succeeded_heirloom']}|#{regex['succeeded_guard']}|#{regex['succeeded']}/)
+	!Spell['Next Bounty'].active? and (
+		(
+			(bounty? =~ /#{regex['notask']}/) or
+			(bounty? =~ /#{regex['creature_problem']}/ and not settings['kill_enable']) or
+			(bounty? =~ /#{regex['track_heirloom']}/ and not settings['heirloom_enable']) or
+			(bounty? =~ /#{regex['help_resident']}/ and not settings['dangerous_enable']) or
+			(bounty? =~ /#{regex['help_dealer']}/ and not settings['gem_enable']) or
+			(bounty? =~ /#{regex['help_furrier']}/ and not settings['skin_enable']) or
+			(bounty? =~ /#{regex['help_herbalist']}/ and not settings['herb_enable']) or
+			(bounty? =~ /#{regex['gem']}/ and not settings['gem_enable']) or
+			(bounty? =~ /#{regex['herb']}/ and not settings['herb_enable']) or
+			(bounty? =~ /#{regex['dangerous']}/ and not settings['dangerous_enable']) or
+			(bounty? =~ /#{regex['kill']}/ and not settings['kill_enable']) or
+			(bounty? =~ /#{regex['heirloom']}/ and not settings['heirloom_enable']) or
+			(bounty? =~ /#{regex['heirloom_search']}/ and not settings['heirloom_search_enable']) or
+			(bounty? =~ /#{regex['rescue']}/ and not settings['rescue_enable']) or
+			(bounty? =~ /#{regex['child_failed']}/) or
+			(bounty? =~ /A certain client has hired/)
+		) or not $sbounty_accepted
+	)
+}
+
+start_hunter = proc {
+	return if new_bounty_ready.call
+	hunter_start_time = Time.now.to_f
+	echo "starting #{hunting_script}"
+	
+	go2(UserVars.op['resting_room_id'])
+	
+	# Do we want to hunt until the bounty is complete?
+	if settings['force_complete'] and cur_area == cur_hunting_options['area'] and $sbounty_accepted
+		valid = false
+		
+		valid = true if bounty? =~ /#{regex['kill']}}/ and settings['kill_enable']
+		valid = true if bounty? =~ /#{regex['dangerous']}/ and settings['dangerous_enable']
+		#valid = true if bounty? =~ /#{regex['gem']}/ and settings['gem_enable']
+		valid = true if bounty? =~ /#{regex['heirloom']}/ and settings['heirloom_enable']
+		valid = true if bounty? =~ /#{regex['rescue']}/ and settings['rescue_enable']
+		valid = true if bounty? =~ /#{regex['skin']}/ and settings['skin_enable']
+		
+		if valid
+			echo '  ... hunting until bounty is complete'
+			UserVars.op['fried'] = 101
+		end
+	else
+		echo '  ... hunting until fried'
+		UserVars.op['fried'] = fried_percent
+	end
+	
+	start_script(hunting_script)
+	wait_until { script_running.call(hunting_script) }
+}
+
+restart_hunter = proc {
+	kill_hunter.call
+	start_hunter.call
+}
+
+resume_scripts = proc {
+	return unless paused
+	echo 'resuming scripts'
+		
+	wait_while { script_running.call('go2') }
+	
+	go2(saved_room) unless saved_room.nil?
+	wait_while { script_running.call('go2') }
+	
+	paused_scripts.each { |s| unpause_script(s) }
+	paused_scripts = Array.new
+	
+	if hunter_running
+		start_hunter.call
+		hunter_running = false
+	end
+	
+	paused = false
+}
+	
+pause_scripts = proc {
+	return if paused
+	echo 'pausing scripts'
+	
+	if script_running.call(loot_script)
+		echo '-- ... waiting on loot script'
+		wait_while { script_running.call(loot_script) }
+	end
+	
+	for s in Script.running
+		unless s.paused
+			next if no_pause.include?(s.name)
+			echo "-- ... pausing #{s.name}"
+			paused_scripts << s.name
+			
+			pause_script(s.name)
+		end
+	end
+	
+	echo '   ... complete'
+	
+	paused = true
+}
+
+shortest_path_from_list = proc { |target_list,start_room|
+	least_time = nil
+	least_target = nil
+	previous, shortest_distances = Map.dijkstra(start_room.id)
+	for target in target_list
+		target = target.to_i
+		return target if start_room.id == target
+		est_time = shortest_distances[target]
+		if !est_time.nil? and (least_time.nil? or least_time > est_time)
+			least_target = target
+			least_time = est_time
+		end
+	end				
+	return least_target
+}
+
+# Finding people procedures
+closest_target = proc { |target|
+	shortest_path_from_list.call(go2_targets[target], Room[UserVars.op['resting_room_id'].to_i])
+}
+
+find_dealer = proc {
+	echo 'finding gem dealer'
+	go2(closest_target.call('gemshop'))
+	
+	return 'areacne' if Room.current.id.to_i == 10327
+	unless npc = GameObj.npcs.last.noun
+		echo 'unable to find gem dealer! Send a log to spiffyjr@gmail.com'
+		echo "#{npc.inspect}"
+		write_log.call('failed to find gem dealer')
+		return
+	end
+	
+	npc
+}
+
+find_furrier = proc {
+	echo 'finding furrier'
+	go2(closest_target.call('furrier'))
+	
+	return 'areacne' if Room.current.id.to_i == 10327
+	unless npc = GameObj.npcs.last.noun
+		echo 'unable to find furrier! Send a log to spiffyjr@gmail.com'
+		echo "#{npc.inspect}"
+		write_log.call('failed to find furrier')
+		return
+	end
+	
+	npc
+}
+
+find_herbalist	= proc {
+	echo 'finding herbalist'
+	go2(closest_target.call('herbalist'))
+	
+	return 'maraene' if Room.current.id.to_i == 10396
+	unless npc = GameObj.npcs.last.noun
+		echo 'unable to find herbalist! Send a log to spiffyjr@gmail.com'
+		echo "#{npc.inspect}"
+		write_log.call('failed to find herbalist')
+		return
+	end
+	
+	npc
+}
+
+find_guard = proc {
+	echo 'finding guard'
+	go2(closest_target.call('advguard'))
+	
+	return 'purser' if Room.current.id == 10915
+	unless npc = GameObj.npcs.last.noun
+		go2(closest_target.call('advguard2'))
+		npc = GameObj.npcs.last.noun
+	end
+	
+	if npc.nil?
+		echo 'unable to find guard! Send a log to spiffyjr@gmail.com'
+		echo "#{npc.inspect}"
+		write_log.call('failed to find guard')
+		return
+	end
+	
+	npc
+}
+
+find_taskmaster = proc {
+	echo 'finding taskmaster'
+	go2(closest_target.call('advguild'))
+	
+	unless npc = GameObj.npcs.last.noun
+		echo 'unable to find taskmaster! Send a log to spiffyjr@gmail.com'
+		echo "#{npc.inspect}"
+		
+		write_log.call('failed to find taskmaster')
+		return
+	end
+	
+	npc
+}
+
+# Hunting procedures
+change_targets = proc {
+	return unless settings['bounty_critter_only']
+	echo 'changing targets'
+	
+	if bounty? =~ /#{regex['dangerous_provoked']}/
+		cur_critter = $1.strip
+		cur_area = $2.strip
+		
+		if UserVars.op['targets'].scan(/grizzled|ancient/).size == 0
+			tmp_target = cur_critter
+		else
+			tmp_target = cur_hunting_options['targets'].split(',').find { |target| target =~ /(?:ancient|grizzled).*#{cur_critter}/ }
+		end
+		
+		tmp_target = tmp_target.split(' ')
+		if tmp_target.size > 2
+			tmp_target = "(?:ancient|grizzled).*#{tmp_target[1]} #{tmp_target[2]}"
+		else
+			tmp_target = "(?:ancient|grizzled).*#{tmp_target.join(' ')}"
+		end
+		
+		UserVars.op['targets'] = tmp_target
+	elsif cur_critter.nil? or bounty? =~ /#{regex['succeeded']}|#{regex['succeeded_guard']}|#{regex['succeeded_heirloom']}/
+		UserVars.op['targets'] = cur_hunting_options['targets'].strip
+	else
+		if target = cur_hunting_options['targets'].split(',').find { |target| target =~ /#{cur_critter}/ }			
+			UserVars.op['targets'] = target.strip
+		else
+			echo 'failed to change to specific target'
+			UserVars.op['targets'] = cur_hunting_options['targets'].strip
+		end
+	end
+		
+	UserVars.save
+	
+	echo "   ... targets set to \"#{UserVars.op['targets']}\""
+}
+
+change_hunting_ground = proc { |hunt|
+	return unless settings['locations'].keys.include?(hunt)
+	echo 'changing hunting ground'
+	
+	cur_hunting_area = hunt
+	cur_hunting_options = settings['locations'][cur_hunting_area]
+	
+	echo "   ... hunting ground set to \"#{cur_hunting_area}\""
+	
+	# Set hunter settings
+	settings['hunter'].each_pair { |key,value| UserVars.op[key.to_s] = value }
+	settings['locations'][hunt].each_pair { |key, value| UserVars.op[key.to_s] = value }
+	change_targets.call
+	
+	UserVars.save
+}
+
+#change_hunting_ground.call('(VO) Coastal Cliffs')
+#exit
+
+get_primary = proc {
+	hunting_ground = nil
+	settings['locations'].each_pair { |area, options|
+		if options['primary'] == true
+			hunting_ground = area
+			break
+		end
+	}
+	
+	hunting_ground = settings['locations'].keys.first if hunting_ground.nil?
+	hunting_ground = settings['locations'].keys.last if hunting_ground == default_location
+	echo "error setting primary hunting ground... I'm probably fucked!" if hunting_ground == default_location
+	
+	hunting_ground
+}
+
+change_to_primary_hunting_ground = proc {
+	#echo 'switching to primary hunting ground'
+		
+	change_hunting_ground.call(get_primary.call)
+}
+
+graceful_shutdown = proc {
+	echo 'gracefully shutting down'
+	change_to_primary_hunting_ground.call
+	kill_hunter.call
+	saved_room = nil
+	go2(UserVars.op['resting_room_id'])
+	Script.self.kill
+}
+
+reset = proc {	
+	echo 'reseting status'
+	cur_area				= nil
+	cur_location 			= nil
+	cur_critter 			= nil
+	cur_herb 				= nil
+	cur_herb_count			= nil
+	cur_hunting_area		= nil
+	cur_hunting_options		= nil
+	$last_search_attempt	= 0
+	cur_skin				= nil
+	cur_skin_count			= nil
+	$sbounty_accepted 		= false
+	force_rest				= false
+	
+	change_to_primary_hunting_ground.call
+}
+
+# States
+state_escort_child = proc { |target|
+	# The child you were tasked to rescue is gone and your task is failed.
+	echo 'escorting child to guard'
+	write_log.call('started escorting child')
+	
+	waitrt?
+	
+	fput 'stance defensive' unless checkstance == 'defensive' or checkstance == 'guarded'
+	
+	destination = closest_target.call(target)
+	
+	check_time = Time.now.to_f
+	failed = false
+	done = false
+	loop {
+		break if bounty? =~ /failed/
+		if Room.current.id.to_s == destination.to_s
+			done = true
+		end
+		
+		check_time = Time.now.to_f if stunned?
+		if (Time.now.to_f - check_time) > 20
+			echo 'failed to escort child'
+			failed = true
+			break
+		end
+		
+		if GameObj[/\bchild\b/i]
+			break if done
+			check_time = Time.now.to_f
+			go_next_room(destination)
+		end
+		sleep 0.25
+	}
+	
+	if failed or bounty? =~ /#{regex['child_failed']}/
+		echo 'failed to escort child or child was killed'
+		return
+	end
+	
+	guard = find_guard.call
+	if guard
+		write_log.call('finished escorting child')
+		fput "ask #{guard} for bounty"
+	else
+		if target == 'advguard' or target.nil?
+			return state_escort_child.call('advguard2')
+		else
+			echo 'failed to locate guard, exiting...'
+			graceful_shutdown.call
+		end
+	end
+}
+
+state_remove_bounty = proc {
+	return if Spell['Next Bounty'].active?
+		
+	log = "removed bounty "
+	if bounty? =~ /#{regex['rescue']}/
+		log += "\"rescue child\" [#{$1} at #{$2}]"
+	elsif bounty? =~ /#{regex['dangerous']}/
+		log += "\"dangerous creature\" [#{$1} at #{$2}]"
+	elsif bounty? =~ /#{regex['kill']}/
+		log += "\"creature problem\" [#{$1} at #{$2}]"
+	elsif bounty? =~ /#{regex['gem']}/
+		log += "\"gems\""
+	elsif bounty? =~ /#{regex['herb']}/
+		log += "\"foraging\" [#{$1} at #{$2}]"
+	elsif bounty? =~ /#{regex['heirloom']}/
+		log += "\"heirloom\" [#{$1} at #{$2}]"
+	elsif bounty? =~ /#{regex['skin']}/
+		log += "\"skinning\" [#{$1} #{$2} from #{$3}]"
+	end
+	
+	write_log.call(log)
+	echo 'removing bounty, you have five seconds to kill me'
+	sleep 5.00
+	
+	npc = find_taskmaster.call
+		
+	ask_result = dothistimeout "ask #{npc} about remove", 5, /^#{npc}.*?want to be removed|Trying to sneak/	
+	if ask_result =~ /Trying to sneak/
+		fput "ask #{npc} about bounty"
+	else
+		dothistimeout "ask #{npc} about remove", 5, /^#{npc}.*?have removed you/
+	end
+		
+	reset.call
+ }
+
+state_get_new_bounty = proc {
+	echo 'getting new bounty'
+
+	write_log.call('getting new bounty')
+	state_remove_bounty.call unless bounty? =~ /#{regex['notask']}/
+
+	npc = find_taskmaster.call
+	
+	settings['last_bounty_start'] = Time.now.to_f
+	
+	res = dothistimeout "ask #{npc} for bounty", 5, /^#{npc}.*?(?:protective escort|creature problem|local gem dealer|local furrier|lost heirloom|local healer|local herbalist|local resident|bandit problem|I'm kind of busy right now)/
+	if res =~ /I'm kind of busy right now/
+		Spell['Next Bounty'].putup
+		Spell['Next Bounty'].timeleft = 5.0
+	elsif res =~ /bandit/
+		dothistimeout "ask #{npc} about remove", 5, /^#{npc}.*?want to be removed/
+		dothistimeout "ask #{npc} about remove", 5, /^#{npc}.*?have removed you/
+		write_log.call('removed bounty "bandits"')
+	end
+	
+	reset.call
+}
+
+# Proc for movement
+last_room = nil
+wander = proc {		
+	last_room ||= nil
+	room = Room.current
+	next_room_options = room.wayto.keys - settings['locations'][cur_hunting_area]['hunting_boundaries'].split(',')
+	if next_room_options.length > 1
+		next_room_options.delete_if { |option| option == last_room }
+	end
+	next_room = next_room_options[rand(next_room_options.length)]
+	way = room.wayto[next_room]
+	if way.class == String
+		move(way)
+	else
+		way.call
+	end
+	last_room = room.id.to_s
+}
+
+run_searcher_ready_commands = proc {
+	searcher_ready_commands.split(',').each { |com| fput com }
+}
+
+run_searcher_stow_commands = proc {
+	searcher_stow_commands.split(',').each { |com| fput com }
+}
+
+state_search_heirloom = proc {
+	done = false
+	
+	write_log.call("started searching for heirloom [#{cur_hunting_area}]")
+	
+	run_searcher_ready_commands.call
+	
+	go2(settings['locations'][cur_hunting_area]['hunting_room_id'])
+	
+	idle_time = Time.now.to_f
+	loop {
+		break if done
+		
+		refresh_buffs.call
+		
+		# If we haven't performed a forage action in 30 seconds assume we're stuck 
+		# and then exit on out
+		if Time.now.to_f - idle_time > 30
+			$last_search_attempt = Time.now.to_f
+			echo 'failed to find heirloom before timeout! Resting...'
+			break
+		end
+		
+		# Are we wounded?
+		done = true if (eval(wounded.to_s) == true)
+		
+		fput "stand" until standing?
+		fput "stance defensive" unless checkstance == 'defensive'
+		
+		wander.call
+		
+		# NPC check
+		npcs = GameObj.npcs.find_all { |i| i.status !~ /dead|gone/ }
+		invalid_targets = settings['locations'][cur_area]['invalid_targets']
+		npcs.delete_if { |npc| (invalid_targets.include?(npc.name) or invalid_targets.include?(npc.noun)) }
+		if npcs.size == 0 or npcs.nil?
+			fput "kneel" until kneeling?
+			
+			run_searcher_stow_commands.call
+			
+			idle_time = Time.now.to_f
+			dothistimeout "search", 1, /You intently search the area/
+		
+			run_searcher_ready_commands.call
+			fput "stand" until standing?
+			
+			if bounty? =~ /#{regex['heirloom_found']}/
+				start_script(loot_script)
+				wait_while { script_running.call(loot_script) }
+				done = true
+			end
+		end
+	}
+}
+
+state_forage = proc {
+	beneficial_spells = [ 506, 402, 603, 9704 ]
+	done = false
+	
+	kill_hunter.call
+		
+	# Start the foraging process
+	get_location = proc {
+		loc = nil
+		
+		line = dothistimeout 'location', 1, /You carefully survey/
+		if line =~ /^You carefully survey your surroundings and guess that your current location is (?:the )?(.*) or somewhere close to it./
+			loc = $1.strip
+		end
+		
+		loc
+	}
+	
+	# Proc for checking herbs
+	find_herbs = proc {
+		contents = get_inventory(UserVars.herbsack).contents
+		contents.find_all { |item| item.name =~ /#{cur_herb.gsub(/s?$/,'')}/ }
+	}
+
+	# Initialize the valid/invalid rooms
+	settings['locations'][cur_area][cur_herb] ||= Hash.new
+	settings['locations'][cur_area][cur_herb]['valid'] ||= Array.new
+	settings['locations'][cur_area][cur_herb]['invalid'] ||= Array.new
+	
+	# Rooms that are valid but have been foraged out
+	empty_valid = Array.new
+	valid_rooms = settings['locations'][cur_area][cur_herb]['valid']
+	
+	# Check herbs
+	herbs = find_herbs.call
+	
+	write_log.call("started foraging [#{herbs.size}/#{cur_herb_count} of #{cur_herb} at #{cur_area}]")
+	
+	refresh_beneficial = proc {
+		beneficial_spells.each { |spell|
+			spell = Spell[spell]
+			if spell.known? and not spell.active? and spell.affordable?
+				spell.cast
+				waitrt?
+				waitcastrt?
+			end
+		}
+		
+		if Spell[650].known? and Spell[650].affordable? and not Spell[650].active?
+			Spell[650].cast
+		end
+		
+		if Spell[650].active? and not Spell[9039].active?
+			fput "assume yierka"
+		end
+	}
+	
+	refresh_beneficial.call
+	refresh_buffs.call
+	
+	run_searcher_ready_commands.call
+	
+	# Do we have them already?
+	if find_herbs.call.size >= cur_herb_count
+		done = true
+	else
+		go2(settings['locations'][cur_area]['hunting_room_id'])
+	end
+	
+	idle_time = Time.now.to_f
+	loop {
+		refresh_buffs.call
+		
+		# If we haven't performed a forage action in 30 seconds assume we're stuck 
+		# and then exit on out
+		if Time.now.to_f - idle_time > 30
+			$last_search_attempt = Time.now.to_f
+			echo 'failed finding all herbs before timeout! Resting...'
+			break
+		end
+		
+		break if done
+		
+		valid_rooms -= empty_valid
+		if (valid_rooms).size > 0
+			go2(valid_rooms.shift)
+		else
+			valid_rooms = settings['locations'][cur_area][cur_herb]['valid'] if valid_rooms.size == 0
+			wander.call
+		end
+		
+		loop {
+			refresh_buffs.call
+			
+			# Are we wounded?
+			done = true if (eval(wounded.to_s) == true)
+						
+			# Check for the proper count
+			herbs = find_herbs.call
+			if herbs.size >= cur_herb_count
+				done = true
+			end
+			
+			waitrt?
+			
+			break if done
+			
+			# Stance defensive
+			fput "stance defensive" unless checkstance == 'defensive'
+			
+			# Has this room been previously marked as invalid?
+			room = Room.current.id.to_s
+			break if settings['locations'][cur_area][cur_herb]['invalid'].include?(room) or empty_valid.include?(room)
+			
+			# Verify location matches
+			cur_location = get_location.call
+			unless cur_location == settings['locations'][cur_area]['area']
+				settings['locations'][cur_area][cur_herb]['valid'].delete(room)
+				settings['locations'][cur_area][cur_herb]['invalid'] << room unless settings['locations'][cur_area][cur_herb]['invalid'].include?(room)
+				break
+			end
+			
+			# Verify magiks
+			refresh_beneficial.call
+			
+			# NPC check
+			npcs = GameObj.npcs.find_all { |i| i.status !~ /dead|gone/ }
+			invalid_targets = settings['locations'][cur_area]['invalid_targets']
+			npcs.delete_if { |npc| (invalid_targets.include?(npc.name) or invalid_targets.include?(npc.noun)) }
+			break if npcs.size > 0
+			
+			# Put up beneficial spells
+			if Spell[402].known? and not Spell[402].active? and Spell[402].affordable?
+				Spell[402].cast
+				waitcastrt?
+			end
+			
+			# Attempt forage
+			idle_time = Time.now.to_f
+			fput "kneel" until kneeling?
+			res = dothistimeout "forage #{cur_herb}", 1, /not even positive|it could be|it could even be found|and manage to find|Roundtime|In order to forage|foraging here recently/
+			
+			if res =~ /it could be|it could even be found|not even positive/
+				settings['locations'][cur_area][cur_herb]['invalid'] << room unless settings['locations'][cur_area][cur_herb]['invalid'].include?(room)
+				break
+			elsif res =~ /and manage to find/
+				settings['locations'][cur_area][cur_herb]['valid'] << room unless settings['locations'][cur_area][cur_herb]['valid'].include?(room)
+				put_item(checkleft, UserVars.herbsack) if cur_herb.split(' ').any? { |h| h == checkleft }
+				put_item(checkright, UserVars.herbsack) if cur_herb.split(' ').any? { |h| h == checkright }
+				
+				echo "found #{herbs.size + 1} of #{cur_herb_count} #{cur_herb}"
+			elsif res =~ /In order to forage/
+				fput "stow #{checkright}"
+			elsif res =~ /foraging here recently/
+				settings['locations'][cur_area][cur_herb]['valid'] << room unless settings['locations'][cur_area][cur_herb]['valid'].include?(room)
+				empty_valid << room
+				break
+			else
+				echo "found #{herbs.size} of #{cur_herb_count} #{cur_herb}"
+			end
+		}
+	}
+	
+	herbs = find_herbs.call
+	unless herbs.size < cur_herb_count
+		go2('herbalist')
+		npc = find_herbalist.call
+		unless npc.nil?
+			write_log.call('finished foraging bounty')
+			empty_hands
+			herbs.each { |herb|
+				get_item(herb.id.to_i, UserVars.herbsack)
+				fput "give ##{herb.id} to #{npc}"
+			}
+			fill_hands
+			reset.call
+			saved_room = UserVars.op['resting_room_id']
+		end
+	end
+	
+	go2(settings['locations'][get_primary.call]['resting_room_id'])
+}
+
+state_set_hunting_ground_critter = proc {
+	echo "changing hunting ground based on #{cur_critter}"
+		
+	area = nil
+	settings['locations'].each { |loc, options|
+		if options['area'].strip.downcase == cur_area.downcase and options['targets'].include?(cur_critter)
+			$sbounty_accepted = true
+			area = loc
+			break
+		end
+	}
+	
+	if area.nil?
+		echo "  ... no hunting location set for \"#{cur_critter}\" around \"#{cur_area}\""
+		return
+	end
+	
+	echo "  ... found area \"#{area}\""
+	
+	$sbounty_accepted = true
+	
+	change_hunting_ground.call(area)
+}
+
+state_set_hunting_ground_skin = proc {
+	echo 'changing hunting ground based on skin'
+	
+	area = nil
+	settings['locations'].each { |loc, options|
+		if options['skins'].include?(cur_skin.downcase)	
+			$sbounty_accepted = true
+			area = loc
+			break
+		end
+	}
+		
+	cur_area = settings['locations'][area]['area']
+	
+	if area.nil?
+		echo "no skin location set for \"#{cur_critter}\" with \"#{cur_skin}\" and around \"#{cur_area}\""
+		return
+	end
+	
+	$sbounty_accepted = true
+	
+	change_hunting_ground.call(area)
+}
+ 
+state_talk_to_gemdealer = proc {
+	echo 'talking to gem dealer'	
+	
+	npc = find_dealer.call
+	
+	ask_result = dothistimeout "ask #{npc} about bounty", 5, /Yes, I do have a task for you/
+	if ask_result =~ /interested in purchasing an? (.*?)\. .* go round up ([0-9]+) of them/
+		gem_name = $1
+		gem_count = $2.to_i
+		write_log.call("received bounty from gem dealer [#{gem_count} #{gem_name}]")
+	end
+}
+ 
+state_talk_to_herbalist = proc {
+	echo 'talking to herbalist/healer'
+	
+	npc = find_herbalist.call
+			
+	ask_result = dothistimeout "ask #{npc} about bounty", 5, /Yes, I do have a task for you/
+	write_log.call("received bounty from herbalist")
+	# TODO: Update this for better log information
+}
+
+state_talk_to_furrier = proc {
+	echo 'talking to furrier'
+	
+	npc = find_furrier.call
+	
+	ask_result = dothistimeout "ask #{npc} about bounty", 5, /I've recently received an order for [0-9]+/
+	if ask_result =~ /I've recently received an order for ([0-9]+) (.*?)\./
+		write_log.call("accepted skinning task #{$1} #{$2}")
+	else
+		log_bounty.call("unmatched response from furrier: #{ask_result}")
+	end
+}
+
+state_talk_to_guard = proc {
+	echo 'talking to guard'
+	
+	npc = find_guard.call
+	
+	ask_result = dothistimeout "ask #{npc} about bounty", 5, /Yes, we do have a task for you/
+	if ask_result =~ /troubling increase in (.*?) activity/
+		creature = $1
+		write_log.call("kill #{ask_result.slice(/[0-9]+/)} #{creature}")
+	elsif ask_result =~ /particularly dangerous (.*?) has been attacking/
+		creature = $1
+		write_log.call("kill a dangerous #{creature}")
+	elsif ask_result =~ /child fleeing from an? (.*?)/
+		creature = $1
+		write_log.call("rescue child from #{creature}")
+	elsif ask_result =~ /attacked by an? (.*) (?:in|on) (?:the )?(.*) (?:near|between|under).*\.  .*retrieve the heirloom/
+		creature = $1
+		area = $2
+		write_log.call("loot heirloom [#{creature} @ #{area}]")
+	else
+		write_log.call("unknown response from guard: #{ask_result}")
+	end
+}
+ 
+state_turn_in = proc {
+	echo 'turning in bounty'
+	
+	npc = find_taskmaster.call
+	
+	settings['last_bounty_end'] = Time.now.to_f
+	
+	exp_before = Char.exp
+	ask_result = dothistimeout "ask #{npc} about bounty", 5, /^#{npc}.*?done with that assignment/
+	10.times {
+		if (line = get?) and (line =~ /You have earned ([0-9]+) bounty points?, ([0-9]+) experience points, and ([0-9]+) silver\./)
+			write_log.call("finished task (#{$1} points, #{$2} exp, #{Char.exp-exp_before} instant exp, #{$3} silver)")
+			break
+		end
+		sleep 0.1
+	}
+	
+	change_to_primary_hunting_ground.call
+	reset.call
+}
+ 
+state_turn_in_guard = proc {
+	echo 'turning into guard'
+	state_talk_to_guard.call
+}
+
+state_turn_in_heirloom = proc {
+	echo 'turning in heirloom'
+	
+	npc = find_guard.call
+	
+	empty_hands
+	
+	sacks = [ get_inventory(UserVars.jewelrysack), get_inventory(UserVars.uncommonsack), get_inventory(UserVars.wandsack), get_inventory(UserVars.lootsack) ].uniq
+		
+	found = false
+	check_heirloom = proc { |item|
+		res = dothistimeout "look ##{item.id}", 3, /^Engraved .* initials|^You see nothing unusual\.$|^The ring appears|^It takes you a moment|^It is difficult to see/
+		if res =~ /^Engraved .* initials/
+			found = true
+			write_log.call("gave heirloom to guard [#{item.name}]")
+			fput "get ##{item.id}"
+			fput "give ##{item.id} to #{npc}"
+		end
+	}
+	
+	close = false
+	sacks.each { |sack|
+		if sack.contents.nil?
+			open_result = dothistimeout "open ##{sack.id}", 5, /^You open|^That is already open\.$/
+			if open_result =~ /^You open/
+				close = true
+			else
+				dothistimeout "look in ##{sack.id}", 5, /In .*? you see/
+				if sack.contents.nil?
+					echo 'fixme'
+					Script.self.kill
+				end
+			end
+		end
+		
+		sack.contents.each { |item| check_heirloom.call(item); break if found }
+		
+		fput "close ##{item.id}" if close
+		break if found
+	}
+	
+	unless found
+		echo 'failed to find heirloom for guard! Email spiffyjr@gmail.com with the log'
+		write_log.call("failed to locate heirloom for guard")
+		state_get_new_bounty.call
+	end
+	
+	fill_hands
+}
+
+# TODO: Move all location_ settings into another variable and cleanup save
+setup = proc {
+	gtk_generic = {}
+	gtk_hunter = {}
+	gtk_location = {}
+	gtk_sbounty = {}
+	
+	location = default_location
+	
+	# Locations
+	gtk_generic['new_hunting_ground'] = Gtk::Entry.new
+	gtk_generic['create'] = Gtk::Button.new('_Create')
+	gtk_generic['copy'] = Gtk::Button.new('Copy De_faults')
+	gtk_generic['delete'] = Gtk::Button.new('_Delete')
+	gtk_generic['autofill'] = Gtk::Button.new('_Auto-fill')
+	gtk_generic['primary'] = Gtk::Button.new('Show _Primary')
+	gtk_generic['hunting_area'] = Gtk::ComboBox.new(true)
+	
+	gtk_location['area'] = Gtk::Entry.new
+	gtk_location['skins'] = Gtk::Entry.new
+	gtk_location['herb'] = Gtk::CheckButton.new('(?) Herb location')
+	gtk_location['primary'] = Gtk::CheckButton.new('(?) Primary location')
+	gtk_location['bounty_critter_only'] = Gtk::CheckButton.new('(?) Bounty critters only')
+	
+	# Hunting
+	gtk_location['hunting_room_id'] = Gtk::Entry.new
+	gtk_location['hunting_boundaries'] = Gtk::Entry.new
+	gtk_location['targets'] = Gtk::Entry.new
+	gtk_location['hunting_stance'] = Gtk::Entry.new
+	gtk_location['hunting_commands'] = Gtk::Entry.new
+	gtk_location['hunting_commands_b'] = Gtk::Entry.new
+	gtk_location['hunting_commands_c'] = Gtk::Entry.new
+	gtk_location['disable_commands'] = Gtk::Entry.new
+	gtk_location['flee_count'] = Gtk::Entry.new
+	gtk_location['invalid_targets'] = Gtk::Entry.new
+	gtk_location['always_flee_from'] = Gtk::Entry.new
+	gtk_hunter['fried'] = Gtk::Entry.new.set_text(settings['hunter']['fried'])
+	gtk_hunter['oom'] = Gtk::Entry.new.set_text(settings['hunter']['oom'])
+	gtk_hunter['encumbered'] = Gtk::Entry.new.set_text(settings['hunter']['encumbered'])
+		
+	# Resting
+	gtk_hunter['wounded_eval'] = Gtk::Entry.new.set_text(settings['hunter']['wounded_eval'])
+	gtk_hunter['rest_till_exp'] = Gtk::Entry.new.set_text(settings['hunter']['rest_till_exp'])
+	gtk_hunter['rest_till_mana'] = Gtk::Entry.new.set_text(settings['hunter']['rest_till_mana'])
+	gtk_hunter['rest_till_spirit'] = Gtk::Entry.new.set_text(settings['hunter']['rest_till_spirit'])
+	gtk_hunter['resting_room_id'] = Gtk::Entry.new.set_text(settings['hunter']['resting_room_id'])
+	gtk_hunter['resting_commands'] = Gtk::Entry.new.set_text(settings['hunter']['resting_commands'])
+	gtk_hunter['resting_scripts'] = Gtk::Entry.new.set_text(settings['hunter']['resting_scripts'])
+	gtk_hunter['hunting_prep_commands'] = Gtk::Entry.new.set_text(settings['hunter']['hunting_prep_commands'])
+	gtk_hunter['hunting_scripts'] = Gtk::Entry.new.set_text(settings['hunter']['hunting_scripts'])
+	gtk_hunter['signs'] = Gtk::Entry.new.set_text(settings['hunter']['signs'])
+	gtk_hunter['loot_script'] = Gtk::Entry.new.set_text(settings['hunter']['loot_script'])
+	gtk_hunter['wracking_spirit'] = Gtk::Entry.new.set_text(settings['hunter']['wracking_spirit'])
+	gtk_hunter['use_wracking'] = Gtk::CheckButton.new('(?) Enable wracking/power').set_active(settings['use_wracking']['resting_room_id'])
+	gtk_hunter['spam'] = Gtk::CheckButton.new('(?) Spam commands').set_active(settings['hunter']['spam'])
+	
+	# Ammo & Wands
+	gtk_hunter['ammo_container'] = Gtk::Entry.new.set_text(settings['hunter']['ammo_container'])
+	gtk_hunter['ammo'] = Gtk::Entry.new.set_text(settings['hunter']['ammo'])
+	gtk_hunter['fresh_wand_container'] = Gtk::Entry.new.set_text(settings['hunter']['fresh_wand_container'])
+	gtk_hunter['dead_wand_container'] = Gtk::Entry.new.set_text(settings['hunter']['dead_wand_container'])
+	gtk_hunter['wand'] = Gtk::Entry.new.set_text(settings['hunter']['wand'])
+	gtk_hunter['hide_for_ammo'] = Gtk::CheckButton.new('(?) Hide to gather').set_active(settings['hunter']['hide_for_ammo'])
+	gtk_hunter['wand_if_oom'] = Gtk::CheckButton.new('(?) Use wands').set_active(settings['hunter']['wand_if_oom'])
+	
+	# Options
+	gtk_sbounty['dangerous_enable'] = Gtk::CheckButton.new('(?) Pwn dat biggun!').set_active(settings['dangerous_enable'])
+	gtk_sbounty['kill_enable'] = Gtk::CheckButton.new('(?) Kill em all!').set_active(settings['kill_enable'])
+	gtk_sbounty['heirloom_enable'] = Gtk::CheckButton.new('(?) Gets phat lewt!').set_active(settings['heirloom_enable'])
+	gtk_sbounty['skin_enable'] = Gtk::CheckButton.new('(?) Skin da bastiges!').set_active(settings['skin_enable'])
+	gtk_sbounty['rescue_enable'] = Gtk::CheckButton.new('(?) Save da keeds!').set_active(settings['rescue_enable'])
+	gtk_sbounty['gem_enable'] = Gtk::CheckButton.new('(?) My preciouses!').set_active(settings['gem_enable'])
+	gtk_sbounty['heirloom_search_enable'] = Gtk::CheckButton.new('(?) Search phat lewt!').set_active(settings['heirloom_search_enable'])
+	gtk_sbounty['herb_enable'] = Gtk::CheckButton.new('(?) Gather da weed!').set_active(settings['herb_enable'])
+	gtk_sbounty['force_complete'] = Gtk::CheckButton.new('(?) Force complete').set_active(settings['force_complete'])
+	gtk_sbounty['turn_in_percent'] = Gtk::Entry.new.set_text(settings['turn_in_percent'])
+	
+	window = window_action = nil
+
+	# Procs
+	clean_value = proc { |value|
+		if value.class == Gtk::Entry
+			value.text.strip
+		elsif value.class == Gtk::CheckButton
+			value.active?
+		end
+	}
+	
+	restore_value = proc { |object,value|
+		if object.class == Gtk::CheckButton
+			object.active = value
+		elsif object.class == Gtk::Entry
+			object.text = value
+		end
+	}
+	
+	save_settings = proc {
+		respond 'sbounty: settings saved'
+		
+		gtk_hunter['new_hunting_ground'].text = ''
+		
+		gtk_hunter.each_pair { |key,value|
+			settings['hunter'][key] = clean_value.call(value)
+		}
+		
+		gtk_location.each_pair { |key,value|
+			if key == "primary" && value.active?
+				settings['locations'].keys.each { |l|
+					next if l == location
+					settings['locations'][l]['primary'] = false
+				}
+			end
+			
+			settings['locations'][location][key] = clean_value.call(value)
+		}
+		
+		gtk_sbounty.each_pair { |key,value| 
+			settings[key] = clean_value.call(value)
+		}
+	}
+		
+	update_hunter_fields = proc {
+		settings['locations'][location].each_pair { |key,value|			
+			restore_value.call(gtk_location[key],value) if gtk_location.include?(key)
+		}
+	}
+	
+	update_hunting_area = proc {
+		loop {
+			break unless gtk_generic['hunting_area'].model.iter_first
+			gtk_generic['hunting_area'].remove_text(0)
+		}
+		
+		settings['locations'].keys.sort.each { |loc| gtk_generic['hunting_area'].append_text(loc) }
+		gtk_generic['hunting_area'].active = 0
+	}
+	
+	update_disabled_fields = proc {
+		disabled = [
+			'area',
+			'herb',
+			'skins',
+			'hunting_room_id',
+			'hunting_boundaries',
+			'targets',
+			'always_flee_from',
+			'primary',
+			'bounty_critter_only',
+			'delete',
+			'autofill'
+		]		
+		
+		if location == default_location
+			disabled.each { |key|
+				if gtk_location.include?(key)
+					widget = gtk_location[key]
+				elsif gtk_generic.include?(key)
+					widget = gtk_generic[key]
+				end
+				widget.sensitive = false
+				
+				if widget.class == Gtk::Entry
+					widget.text = ''
+				elsif widget.class == Gtk::CheckButton
+					widget.active = false
+				end
+			}
+		else
+			disabled.each { |key|
+				if gtk_location.include?(key)
+					widget = gtk_location[key]
+				elsif gtk_generic.include?(key)
+					widget = gtk_generic[key]
+				end
+				widget.sensitive = true
+			}
+		end
+	}
+	
+	update_selected_combobox = proc { |area|
+		index = 0
+		
+		if area == nil
+			settings['locations'].keys.sort.each { |key|
+				break if settings['locations'][key]['primary'] == true
+				index += 1
+			}
+		else
+			settings['locations'].keys.sort.each { |key|
+				break if area.strip == key.strip
+				index += 1
+			}
+		end
+		
+		index = 0 if index == settings['locations'].keys.size
+		gtk_generic['hunting_area'].active = index
+	}
+	
+	Gtk.queue {
+		#
+		# Tooltip information for all widgets
+		#
+		ttips = Gtk::Tooltips.new.enable
+		ttips_text = { }
+		
+		ttips_text.each_pair { |widget,tip|
+			if widget = gtk_globals[widget] || gtk_hunter[widget]
+				ttips.set_tip(widget,tip,'')
+			end
+		}
+		
+		#
+		# Primary window
+		#
+		window = Gtk::Window.new
+		window.title = "SBounty v#{@@version} configuration for #{Char.name}"
+		window.border_width = 3
+		window.resizable = false
+		window.resize(450, 300)
+		
+		#
+		# Notebook for tabs at top
+		#
+		nb = Gtk::Notebook.new.set_show_border(true).set_tab_border(3)
+		
+		#
+		# Notebook Page 1 - Locations
+		#
+		vb_nb = Gtk::VBox.new(false,1).set_border_width(3)
+		
+		vb_fr = Gtk::VBox.new(false,1).set_border_width(3)
+		pg_fr = Gtk::Frame.new.set_border_width(5).set_label_widget(Gtk::Label.new.set_markup('<big><b>Information</b></big>'))
+		pg_fr.add(vb_fr)
+		vb_nb.pack_start(pg_fr,false)
+		
+		lbl = Gtk::Label.new.set_markup('<span color="blue" weight="bold">Adding a Location</span>')
+		vb_fr.pack_start(lbl.set_wrap(true).set_width_request(525).set_padding(0,5),false)
+		
+		lbl = Gtk::Label.new.set_markup("Fill in the name under \"New\" and then press the create " +
+			"button. The new location will show up under \"Hunting Area\". Use the tabs above " +
+			"to configure the location.")
+		vb_fr.pack_start(lbl.set_wrap(true).set_width_request(525),false)
+		
+		lbl = Gtk::Label.new.set_markup('<span color="blue" weight="bold">Editing a Location</span>')
+		vb_fr.pack_start(lbl.set_wrap(true).set_width_request(525).set_padding(0,5),false)
+		
+		lbl = Gtk::Label.new.set_markup("Select the location from the \"Hunting Area\" drop down " +
+			"and use the tops above to configure the location.")
+		vb_fr.pack_start(lbl.set_wrap(true).set_width_request(525),false)
+		
+		#
+		# Page 1, Frame 1 - Locations
+		#
+		vb_fr = Gtk::VBox.new(false,1).set_border_width(3)
+		pg_fr = Gtk::Frame.new.set_border_width(5).set_label_widget(Gtk::Label.new.set_markup('<big><b>Hunting Locations</b></big>'))
+		pg_fr.add(vb_fr)
+		vb_nb.pack_start(pg_fr,false)
+		
+		hb = Gtk::HBox.new(false,1)
+		hb.pack_start(Gtk::Alignment.new(1,0,0,1).add(Gtk::Label.new('(?) New:')).set_width_request(75),false)
+		hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(gtk_generic['new_hunting_ground'].set_max_length(50).set_width_chars(50)),false)
+		hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(gtk_generic['create']),false)
+		hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(gtk_generic['primary']),false)
+		vb_fr.pack_start(hb,false)
+		
+		hb = Gtk::HBox.new(false,1)
+		hb.pack_start(Gtk::Alignment.new(1,0,0,1).add(Gtk::Label.new('(?) Locations:')).set_width_request(75),false)
+		hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(gtk_generic['hunting_area'].set_width_request(308)),false)
+		hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(gtk_generic['delete']),false)
+		hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(gtk_generic['copy']),false)
+		vb_fr.pack_start(hb,false)
+		
+		hb = Gtk::HBox.new(false,1)
+		hb.pack_start(Gtk::Alignment.new(1,0,0,1).add(Gtk::Label.new('(?) Area name:')).set_width_request(75),false)
+		hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(gtk_location['area'].set_max_length(25).set_width_chars(25)),false)
+		hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(gtk_generic['autofill']),false)
+		vb_fr.pack_start(hb,false)
+		
+		hb = Gtk::HBox.new(false,1)
+		hb.pack_start(Gtk::Alignment.new(1,0,0,1).add(Gtk::Label.new('(?) Area skins:')).set_width_request(75),false)
+		hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(gtk_location['skins'].set_width_chars(25)),false)
+		vb_fr.pack_start(hb,false)
+		
+		hb = Gtk::HBox.new(false,1)
+		hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(gtk_location['primary'].set_width_request(129)),false)
+		hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(gtk_location['herb'].set_width_request(129)),false)
+		hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(gtk_location['bounty_critter_only']),false)
+		vb_fr.pack_start(hb,false)
+		
+		nb.append_page(vb_nb, Gtk::Label.new('Locations'))
+		
+		#
+		# Notebook Page 2 - Location Setup
+		#
+		vb_nb = Gtk::VBox.new(false,1).set_border_width(3)
+		
+		#
+		# Page 2, Frame 1 - Map
+		#
+		vb_fr = Gtk::VBox.new(false,1).set_border_width(3)
+		pg_fr = Gtk::Frame.new.set_border_width(5).set_label_widget(Gtk::Label.new.set_markup('<big><b>Map</b></big>'))
+		pg_fr.add(vb_fr)
+		vb_nb.pack_start(pg_fr,false)
+		
+		hb = Gtk::HBox.new(false,1)
+		hb.pack_start(Gtk::Alignment.new(1,0,0,1).add(Gtk::Label.new('(?) Starting room:')).set_width_request(100),false)
+		hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(gtk_location['hunting_room_id']),false)
+		hb.pack_start(Gtk::Alignment.new(1,0,0,1).add(Gtk::Label.new('(?) Boundaries:')).set_width_request(100),false)
+		hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(gtk_location['hunting_boundaries']),false)
+		vb_fr.pack_start(hb,false)
+		
+		#
+		# Page 2, Frame 2 - Targetting
+		#
+		vb_fr = Gtk::VBox.new(false,1).set_border_width(3)
+		pg_fr = Gtk::Frame.new.set_border_width(5).set_label_widget(Gtk::Label.new.set_markup('<big><b>Targeting</b></big>'))
+		pg_fr.add(vb_fr)
+		vb_nb.pack_start(pg_fr,false)
+		
+		hb = Gtk::HBox.new(false,1)
+		hb.pack_start(Gtk::Alignment.new(1,0,0,1).add(Gtk::Label.new('(?) Targets:')).set_width_request(100),false)
+		hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(gtk_location['targets'].set_width_request(418)),false)
+		vb_fr.pack_start(hb,false)
+		
+		hb = Gtk::HBox.new(false,1)
+		hb.pack_start(Gtk::Alignment.new(1,0,0,1).add(Gtk::Label.new('(?) Stance:')).set_width_request(100),false)
+		hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(gtk_location['hunting_stance']),false)
+		hb.pack_start(Gtk::Alignment.new(1,0,0,1).add(Gtk::Label.new('(?) Ignore:')).set_width_request(100),false)
+		hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(gtk_location['invalid_targets']),false)
+		vb_fr.pack_start(hb,false)
+
+		hb = Gtk::HBox.new(false,1)
+		hb.pack_start(Gtk::Alignment.new(1,0,0,1).add(Gtk::Label.new('(?) Flee count:')).set_width_request(100),false)
+		hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(gtk_location['flee_count']),false)
+		hb.pack_start(Gtk::Alignment.new(1,0,0,1).add(Gtk::Label.new('(?) Always flee:')).set_width_request(100),false)
+		hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(gtk_location['always_flee_from']),false)
+		vb_fr.pack_start(hb,false)
+		
+		#
+		# Page 2, Frame 3 - Commands
+		#
+		vb_fr = Gtk::VBox.new(false,1).set_border_width(3)
+		pg_fr = Gtk::Frame.new.set_border_width(5).set_label_widget(Gtk::Label.new.set_markup('<big><b>Commands</b></big>'))
+		pg_fr.add(vb_fr)
+		vb_nb.pack_start(pg_fr,false)
+		
+		hb = Gtk::HBox.new(false,1)
+		hb.pack_start(Gtk::Alignment.new(1,0,0,1).add(Gtk::Label.new('(?) A:')).set_width_request(50),false)
+		hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(gtk_location['hunting_commands'].set_width_request(469)),false)
+		vb_fr.pack_start(hb,false)
+		
+		hb = Gtk::HBox.new(false,1)
+		hb.pack_start(Gtk::Alignment.new(1,0,0,1).add(Gtk::Label.new('(?) B:')).set_width_request(50),false)
+		hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(gtk_location['hunting_commands_b'].set_width_request(469)),false)
+		vb_fr.pack_start(hb,false)
+		
+		hb = Gtk::HBox.new(false,1)
+		hb.pack_start(Gtk::Alignment.new(1,0,0,1).add(Gtk::Label.new('(?) C:')).set_width_request(50),false)
+		hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(gtk_location['hunting_commands_c'].set_width_request(469)),false)
+		vb_fr.pack_start(hb,false)
+
+		hb = Gtk::HBox.new(false,1)
+		hb.pack_start(Gtk::Alignment.new(1,0,0,1).add(Gtk::Label.new('(?) Fried:')).set_width_request(50),false)
+		hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(gtk_location['disable_commands'].set_width_request(469)),false)
+		vb_fr.pack_start(hb,false)
+		
+		nb.append_page(vb_nb, Gtk::Label.new('Location Setup'))
+		
+		#
+		# Notebook Page 3 - Resting
+		#
+		vb_nb = Gtk::VBox.new(false,1).set_border_width(3)
+				
+		#
+		# Page 3, Frame 1 - Resting
+		#
+		vb_fr = Gtk::VBox.new(false,1).set_border_width(3)
+		pg_fr = Gtk::Frame.new.set_border_width(5).set_label_widget(Gtk::Label.new.set_markup('<big><b>Resting</b></big>'))
+		pg_fr.add(vb_fr)
+		vb_nb.pack_start(pg_fr,false)
+		
+		hb = Gtk::HBox.new(false,1)
+		hb.pack_start(Gtk::Alignment.new(1,0,0,1).add(Gtk::Label.new('(?) Commands:')).set_width_request(100),false)
+		hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(gtk_hunter['resting_commands'].set_width_request(418)),false)
+		vb_fr.pack_start(hb,false)
+		
+		hb = Gtk::HBox.new(false,1)
+		hb.pack_start(Gtk::Alignment.new(1,0,0,1).add(Gtk::Label.new('(?) Scripts:')).set_width_request(100),false)
+		hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(gtk_hunter['resting_scripts'].set_width_request(418)),false)
+		vb_fr.pack_start(hb,false)
+		
+		hb = Gtk::HBox.new(false,1)
+		hb.pack_start(Gtk::Alignment.new(1,0,0,1).add(Gtk::Label.new('(?) Room ID:')).set_width_request(100),false)
+		hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(gtk_hunter['resting_room_id'].set_width_chars(5)),false)
+		vb_fr.pack_start(hb,false)
+		
+		#
+		# Page 3, Frame 2 - Should Rest
+		#
+		vb_fr = Gtk::VBox.new(false,1).set_border_width(3)
+		pg_fr = Gtk::Frame.new.set_border_width(5).set_label_widget(Gtk::Label.new.set_markup('<big><b>Should Rest</b></big>'))
+		pg_fr.add(vb_fr)
+		vb_nb.pack_start(pg_fr,false)
+				
+		hb = Gtk::HBox.new(false,1)
+		hb.pack_start(Gtk::Alignment.new(1,0,0,1).add(Gtk::Label.new('(?) Wounded:')).set_width_request(100),false)
+		hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(gtk_hunter['wounded_eval'].set_width_request(418)),false)
+		vb_fr.pack_start(hb,false)
+		
+		hb = Gtk::HBox.new(false,1)
+		hb.pack_start(Gtk::Alignment.new(1,0,0,1).add(Gtk::Label.new('(?) mind >=')).set_width_request(100),false)
+		hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(gtk_hunter['fried'].set_max_length(3).set_width_chars(3)),false)
+		hb.pack_start(Gtk::Alignment.new(1,0,0,1).add(Gtk::Label.new('(?) mana <=')).set_width_request(110),false)
+		hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(gtk_hunter['oom'].set_max_length(3).set_width_chars(3)),false)
+		hb.pack_start(Gtk::Alignment.new(1,0,0,1).add(Gtk::Label.new('(?) encumbrance >=')).set_width_request(110),false)
+		hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(gtk_hunter['encumbered'].set_max_length(3).set_width_chars(3)),false)
+		vb_fr.pack_start(hb,false)
+		
+		nb.append_page(vb_nb, Gtk::Label.new('Resting'))
+		
+		#
+		# Notebook Page 4 - Resting
+		#
+		vb_nb = Gtk::VBox.new(false,1).set_border_width(3)
+		
+		#
+		# Page 4, Frame 1 - Hunting
+		#
+		vb_fr = Gtk::VBox.new(false,1).set_border_width(3)
+		pg_fr = Gtk::Frame.new.set_border_width(5).set_label_widget(Gtk::Label.new.set_markup('<big><b>Hunting</b></big>'))
+		pg_fr.add(vb_fr)
+		vb_nb.pack_start(pg_fr,false)
+		
+		hb = Gtk::HBox.new(false,1)
+		hb.pack_start(Gtk::Alignment.new(1,0,0,1).add(Gtk::Label.new('(?) Commands:')).set_width_request(100),false)
+		hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(gtk_hunter['hunting_prep_commands'].set_width_request(418)),false)
+		vb_fr.pack_start(hb,false)
+		
+		hb = Gtk::HBox.new(false,1)
+		hb.pack_start(Gtk::Alignment.new(1,0,0,1).add(Gtk::Label.new('(?) Scripts:')).set_width_request(100),false)
+		hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(gtk_hunter['hunting_scripts'].set_width_request(418)),false)
+		vb_fr.pack_start(hb,false)
+		
+		hb = Gtk::HBox.new(false,1)
+		hb.pack_start(Gtk::Alignment.new(1,0,0,1).add(Gtk::Label.new('(?) Spells:')).set_width_request(100),false)
+		hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(gtk_hunter['signs'].set_width_request(418)),false)
+		vb_fr.pack_start(hb,false)
+		
+		hb = Gtk::HBox.new(false,1)
+		hb.pack_start(Gtk::Alignment.new(1,0,0,1).add(Gtk::Label.new('(?) Loot script:')).set_width_request(100),false)
+		hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(gtk_hunter['loot_script']),false)
+		hb.pack_start(Gtk::Alignment.new(1,0,0,1).add(Gtk::Label.new('(?) Wracking spirit:')).set_width_request(100),false)
+		hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(gtk_hunter['wracking_spirit']),false)
+		vb_fr.pack_start(hb,false)
+		
+		hb = Gtk::HBox.new(false,1)
+		hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(gtk_hunter['use_wracking'].set_width_request(175)),false)
+		hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(gtk_hunter['spam'].set_width_request(135)),false)
+		vb_fr.pack_start(hb,false)
+		
+		#
+		# Page 4, Frame 2 - Should Hunt
+		#
+		vb_fr = Gtk::VBox.new(false,1).set_border_width(3)
+		pg_fr = Gtk::Frame.new.set_border_width(5).set_label_widget(Gtk::Label.new.set_markup('<big><b>Should Hunt</b></big>'))
+		pg_fr.add(vb_fr)
+		vb_nb.pack_start(pg_fr,false)
+		
+		hb = Gtk::HBox.new(false,1)
+		hb.pack_start(Gtk::Alignment.new(1,0,0,1).add(Gtk::Label.new('(?) mind <=')).set_width_request(100),false)
+		hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(gtk_hunter['rest_till_exp'].set_max_length(3).set_width_chars(3)),false)
+		hb.pack_start(Gtk::Alignment.new(1,0,0,1).add(Gtk::Label.new('(?) mana >=')).set_width_request(110),false)
+		hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(gtk_hunter['rest_till_mana'].set_max_length(3).set_width_chars(3)),false)
+		hb.pack_start(Gtk::Alignment.new(1,0,0,1).add(Gtk::Label.new('(?) spirit >=')).set_width_request(110),false)
+		hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(gtk_hunter['rest_till_spirit'].set_max_length(3).set_width_chars(3)),false)
+		vb_fr.pack_start(hb,false)
+		
+		nb.append_page(vb_nb, Gtk::Label.new('Hunting'))
+		
+		#
+		# Notebook Page 4 - Ammo & Wands
+		#
+		vb_nb = Gtk::VBox.new(false,1).set_border_width(3)\
+		
+		vb_fr = Gtk::VBox.new(false,1).set_border_width(3)
+		pg_fr = Gtk::Frame.new.set_border_width(5).set_label_widget(Gtk::Label.new.set_markup('<big><b>Information</b></big>'))
+		pg_fr.add(vb_fr)
+		
+		#
+		# Page 4, Frame 1 - Ammo
+		#
+		vb_fr = Gtk::VBox.new(false,1).set_border_width(3)
+		pg_fr = Gtk::Frame.new.set_border_width(5).set_label_widget(Gtk::Label.new.set_markup('<big><b>Ammo</b></big>'))
+		pg_fr.add(vb_fr)
+		vb_nb.pack_start(pg_fr,false)
+		
+		hb = Gtk::HBox.new(false,1)
+		hb.pack_start(Gtk::Alignment.new(1,0,0,1).add(Gtk::Label.new('(?) Container:')).set_width_request(100),false)
+		hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(gtk_hunter['ammo_container']),false)
+		hb.pack_start(Gtk::Alignment.new(1,0,0,1).add(Gtk::Label.new('(?) Ammo:')).set_width_request(100),false)
+		hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(gtk_hunter['ammo']),false)
+		vb_fr.pack_start(hb,false)
+		
+		hb = Gtk::HBox.new(false,1)
+		hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(gtk_hunter['hide_for_ammo']),false)
+		vb_fr.pack_start(hb,false)
+		
+		#
+		# Page 4, Frame 2 - Wands
+		#
+		vb_fr = Gtk::VBox.new(false,1).set_border_width(3)
+		pg_fr = Gtk::Frame.new.set_border_width(5).set_label_widget(Gtk::Label.new.set_markup('<big><b>Wands</b></big>'))
+		pg_fr.add(vb_fr)
+		vb_nb.pack_start(pg_fr,false)
+		
+		hb = Gtk::HBox.new(false,1)
+		hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(gtk_hunter['wand_if_oom']),false)
+		vb_fr.pack_start(hb,false)
+		
+		hb = Gtk::HBox.new(false,1)
+		hb.pack_start(Gtk::Alignment.new(1,0,0,1).add(Gtk::Label.new('(?) Fresh container:')).set_width_request(100),false)
+		hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(gtk_hunter['fresh_wand_container']),false)
+		hb.pack_start(Gtk::Alignment.new(1,0,0,1).add(Gtk::Label.new('(?) Dead container:')).set_width_request(100),false)
+		hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(gtk_hunter['dead_wand_container']),false)
+		vb_fr.pack_start(hb,false)
+		
+		hb = Gtk::HBox.new(false,1)
+		hb.pack_start(Gtk::Alignment.new(1,0,0,1).add(Gtk::Label.new('(?) Wand:')).set_width_request(100),false)
+		hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(gtk_hunter['wand']),false)
+		vb_fr.pack_start(hb,false)
+		
+		nb.append_page(vb_nb, Gtk::Label.new('Ammo & Wands'))
+		
+		#
+		# Notebook Page 5 - Bounties
+		#
+		vb_nb = Gtk::VBox.new(false,1).set_border_width(3)\
+		
+		vb_fr = Gtk::VBox.new(false,1).set_border_width(3)
+		pg_fr = Gtk::Frame.new.set_border_width(5).set_label_widget(Gtk::Label.new.set_markup('<big><b>Information</b></big>'))
+		pg_fr.add(vb_fr)
+		
+		
+		lbl = Gtk::Label.new.set_markup("The bounties tab allows configuration of what bounties you want " +
+			"SBounty to handle as well as turn in options for bounties. Critter bounties are bounties that " +
+			"require killing a critter while gather bounties generally don't involve killing.")
+		lbl.set_wrap(true).set_width_request(525).set_padding(0,10)
+		vb_fr.pack_start(lbl,false)
+		vb_nb.pack_start(pg_fr,false)
+		
+		#
+		# Page 5, Frame 1 - Critter tasks
+		#
+		vb_fr = Gtk::VBox.new(false,1).set_border_width(3)
+		pg_fr = Gtk::Frame.new.set_border_width(5).set_label_widget(Gtk::Label.new.set_markup('<big><b>Critter Bounties</b></big>'))
+		pg_fr.add(vb_fr)
+		vb_nb.pack_start(pg_fr,false)
+		
+		hb = Gtk::HBox.new(false,1)
+		hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(gtk_sbounty['dangerous_enable'].set_width_request(129)),false)
+		hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(gtk_sbounty['kill_enable'].set_width_request(129)),false)
+		hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(gtk_sbounty['heirloom_enable'].set_width_request(129)),false)
+		hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(gtk_sbounty['skin_enable'].set_width_request(129)),false)
+		vb_fr.pack_start(hb,false)
+		
+		hb = Gtk::HBox.new(false,1)
+		hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(gtk_sbounty['rescue_enable'].set_width_request(129)),false)
+		vb_fr.pack_start(hb,false)
+		
+		#
+		# Page 5, Frame 2 - Gather tasks
+		#
+		vb_fr = Gtk::VBox.new(false,1).set_border_width(3)
+		pg_fr = Gtk::Frame.new.set_border_width(5).set_label_widget(Gtk::Label.new.set_markup('<big><b>Gather Bounties</b></big>'))
+		pg_fr.add(vb_fr)
+		vb_nb.pack_start(pg_fr,false)
+		
+		hb = Gtk::HBox.new(false,1)
+		hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(gtk_sbounty['gem_enable'].set_width_request(129)),false)
+		hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(gtk_sbounty['heirloom_search_enable'].set_width_request(129)),false)
+		hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(gtk_sbounty['herb_enable'].set_width_request(129)),false)
+		vb_fr.pack_start(hb,false)
+		
+		#
+		# Page 5, Frame 3 - Options
+		#
+		vb_nb_3 = Gtk::VBox.new(false,1).set_border_width(3)
+		fr_pg1_3 = Gtk::Frame.new.set_border_width(5).set_label_widget(Gtk::Label.new.set_markup('<big><b>Options</b></big>'))
+		fr_pg1_3.add(vb_nb_3)
+		vb_nb.pack_start(fr_pg1_3,false)
+		
+		hb = Gtk::HBox.new(false,1)
+		hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(gtk_sbounty['force_complete'].set_width_request(129)),false)
+		hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(Gtk::Label.new('(?) Turn in:')).set_width_request(60),false)
+		hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(gtk_sbounty['turn_in_percent'].set_max_length(3).set_width_chars(3)))
+		vb_nb_3.pack_start(hb,false)
+		
+		nb.append_page(vb_nb, Gtk::Label.new('Bounties'))
+		
+		# Save/Close buttons
+		hb_saveclose = Gtk::HBox.new
+		save = Gtk::Button.new('_Save')
+		close = Gtk::Button.new('E_xit')
+		
+		save.signal_connect('clicked') { save_settings.call }
+		close.signal_connect('clicked') { window_action = :done }
+		
+		hb_saveclose.pack_start(save,false)
+		hb_saveclose.pack_start(close,false)
+		
+		# Primary VerticalBox to split up Notebook and Save/Close buttons
+		vb_main = Gtk::VBox.new(false,5)
+		vb_main.border_width = 3
+		
+		vb_main.pack_start(nb,false)
+		vb_main.pack_start(Gtk::Alignment.new(1,0,0,0).add(hb_saveclose),false)
+		
+		#
+		# Signals
+		#
+		gtk_generic['autofill'].signal_connect('clicked') {
+			Gtk.queue {			
+				area = nil
+				critter = nil
+				skin = nil
+			
+				if bounty? =~ /#{regex['heirloom']}|#{regex['dangerous']}|#{regex['kill']}|#{regex['rescue']}/
+					critter = $1.strip if $1
+					area = $2.strip if $2
+					
+					critter = $3.strip if $3
+					area = $4.strip if $4
+					
+					critter = $5.strip if $5
+					area = $6.strip if $6
+					
+					critter = $7.strip if $7
+					area = $8.strip if $8
+				elsif bounty? =~ /#{regex['skin']}/
+					skin = $2.strip
+					critter = $3.strip
+				elsif bounty? =~ /#{regex['herb']}/
+					area = $2.strip
+				else
+					respond "autofill failed: unable to determine area, critter, or skin from current bounty"
+				end
+				
+				unless area.nil?
+					gtk_location['area'].text = area
+				end
+				
+				unless critter.nil?
+					critters = gtk_location['targets']
+					unless critters.text =~ /#{critter}/
+						cur_critters = critters.text.split(',')
+						cur_critters << critter
+						critters.text = cur_critters.join(',')
+					end
+				end
+				
+				skins = gtk_location['skins']
+				unless skin.nil? or skins.text =~ /#{skin}/
+					cur_skins = skins.text.split(',')
+					cur_skins << skin
+					skins.text = cur_skins.join(',')
+				end
+				
+				nb.next_page if skin or area or critter
+			}
+		}
+		gtk_generic['create'].signal_connect('clicked') {
+			area = gtk_generic['new_hunting_ground'].text.strip
+			if settings['locations'].include?(area)
+				respond "create location: that location already exists"
+			elsif area.nil? or area == ''
+				respond "create location: you must enter a location name"
+			else
+				settings['locations'][area] = Hash.new
+				settings['locations'][default_location].each_pair { |key,value| settings['locations'][area][key] = value }
+				settings['locations'][area]['bounty_critter_only'] = true
+				settings['locations'][area]['herb'] = false
+				
+				update_hunting_area.call
+				update_selected_combobox.call(area)
+			end
+		}
+		gtk_generic['hunting_area'].signal_connect('changed') {
+			location = gtk_generic['hunting_area'].active_text
+			update_hunter_fields.call
+			update_disabled_fields.call
+		}
+		gtk_generic['copy'].signal_connect('clicked') {
+			respond "copying defaults to all hunting locations"
+			settings['locations'][default_location].each_pair { |key,value|
+				next if [ 'primary', 'bounty_critter_only' ].include?(key)
+				next if value.nil? or value == ''
+				
+				settings['locations'].each_key { |key2|
+					next if key2 == default_location
+					settings['locations'][key2][key] = value
+				}
+			}
+		}
+		gtk_generic['delete'].signal_connect('clicked') {
+			unless gtk_generic['hunting_area'].active == -1
+				settings['locations'].delete(gtk_generic['hunting_area'].active_text.strip)
+				gtk_generic['hunting_area'].remove_text(gtk_generic['hunting_area'].active)
+				update_hunting_area.call
+			end
+		}
+		gtk_generic['primary'].signal_connect('clicked') { update_selected_combobox.call(nil) }
+		window.signal_connect('delete_event') { respond window.allocation.width; window_action = :exit }
+		
+		update_hunting_area.call
+		update_selected_combobox.call(nil)
+		
+		window.add(vb_main)	
+		window.show_all
+		window.keep_above = true # On windows keep_above is required AFTER show_all
+	}
+	
+	before_dying { Gtk.queue { window.destroy } }
+	wait_while { window_action.nil? }
+	undo_before_dying # Don't ask me what this does - I stripped it from Tillmen's code
+	Gtk.queue { window.destroy }
+}
+
+$sbounty_status = proc {
+	echo 'status report'
+	echo "   accepted: #{$sbounty_accepted}"
+	echo "   cur_hunting_area: #{cur_hunting_area}"
+	echo "   cur_hunting_options: #{cur_hunting_options.inspect}"
+}
+
+################################################################################
+# Program Start
+################################################################################
+write_log.call("logging started")
+
+settings['locations'].each_pair { |area, options|
+	if options['primary']
+		hunting_ground = area
+		break
+	end
+}
+
+# Cleanup before we die
+before_dying {
+	UserVars.op['fried'] = fried_percent
+	
+	saved_room = nil
+	resume_scripts.call
+}
+
+# Argument detection
+if script.vars[1] =~ /^change$/i
+	change_hunting_ground(script.vars[2]).call
+elsif script.vars[0] =~ /^(cull|heirloom|rescue|gem|skin) (true|false|on|off)$/
+	key = "#{$1}_enable"
+	value = $2
+	
+	if value =~ /true|on/
+		settings[key] = true
+	else
+		settings[key] = false
+	end
+	
+	echo "set #{key} to #{value}", :bold
+elsif script.vars[1] =~ /^settings$/i
+	echo 'Dumping settings'
+	settings.to_hash.each_pair { |key,value| echo sprintf('   %18s: %s', key, value) unless value.class == Hash }
+elsif script.vars[1] =~ /^resetgui$/i
+	settings['window_height'] = nil
+	settings['window_position'] = nil
+	settings['window_width'] = nil
+elsif script.vars[1] =~ /^setup$/i
+	setup.call
+elsif script.vars[1] =~ /^(?:help|\?)$/
+	echo (sprintf 'SBounty v%f', @@version)
+	echo (sprintf '%17s: SpiffyJr &lt;spiffyjr@gmail.com&gt;', 'Author')
+	echo (sprintf '%17s: SBounty is a bounty script that runs along with a hunting script to automate AvG tasks.', 'Description')
+	respond
+	echo (sprintf '%17s     %s', 'help, ?', 'show this help message')
+	echo (sprintf '%17s     %s', 'resetgui', 'resets the GUI position if lost off screen')
+	echo (sprintf '%17s     %s', 'setup', 'run the GUI configuration')
+	echo (sprintf '%17s     %s', 'change [area]', 'changes the hunter hunting area ** requires hunting script restart ** ')
+	respond
+	echo (sprintf '%17s     %s', '[task] [on/off]', 'turn task on or off')
+	respond
+	echo (sprintf '%17s', 'Available tasks:')
+	echo (sprintf '%5s %s', '', 'cull')
+	echo (sprintf '%5s %s', '', 'gem')
+	echo (sprintf '%5s %s', '', 'heirloom')
+	echo (sprintf '%5s %s', '', 'rescue')
+	echo (sprintf '%5s %s', '', 'skin')
+end
+
+exit unless script.vars[1].nil?
+
+primary_location = get_primary.call
+
+force_rest = true
+rested = false
+run_hunter = false
+
+loop {
+	break if dead?
+	
+	if bounty? =~ /#{regex['child_contact']}/			
+		pause_scripts.call
+		saved_room = Room.current.id.to_s
+		state_escort_child.call('advguard')
+		resume_scripts.call
+		reset.call
+	elsif bounty? =~ /#{regex['dangerous_provoked']}/ and UserVars.op['targets'] !~ /ancient|grizzled/
+		change_targets.call
+		if script_running.call(hunting_script)
+			$bigshot.load_settings
+		end
+	elsif bounty? =~ /#{regex['child_failed']}/
+		# fixme: do we need to do anything here?
+	elsif bounty? =~ /#{regex['herb']}/ and (cur_herb.nil? or $sbounty_accepted) and settings['herb_enable']
+		if cur_herb.nil? or ($sbounty_accepted and Time.now.to_f - $last_search_attempt >= 300)
+			if cur_herb.nil?
+				echo 'changing hunting ground based on herb'
+				cur_herb = $1.strip.split(' ')
+				cur_area = $2.strip
+				cur_herb_count = $3.strip.to_i
+				cur_herb = cur_herb.join(' ').sub('handful of', '').sub('sprig of', '').strip
+				
+				area = nil
+				herbs = nil
+				settings['locations'].each { |loc, options|
+					if options['area'] == cur_area and options['herb']
+						area = loc
+						break
+					end
+				}
+				
+				# Did we find a match on the area?
+				if area.nil?
+					$sbounty_accepted = false
+					
+					echo "no herb location set for \"#{cur_herb}\" around \"#{cur_area}\""
+				else
+					cur_area = area
+					$sbounty_accepted = true
+					
+					echo "found herb location at \"#{area}\""
+				end
+			end
+			
+			if $sbounty_accepted and Time.now.to_f - $last_search_attempt >= 300
+				pause_scripts.call
+				saved_room = Room.current.id.to_s
+				state_forage.call
+				resume_scripts.call
+			end
+		end
+	elsif bounty? =~ /#{regex['skin']}/
+		if cur_critter.nil?			
+			cur_skin_count = $1.strip.to_i
+			cur_skin = $2.strip
+			cur_critter = $3.strip
+			
+			state_set_hunting_ground_skin.call
+		end
+			
+		if script_running.call(hunting_script) and percentmind >= settings['turn_in_percent'].to_i and not saturated?
+			contents = GameObj.inv.find { |obj| obj.name =~ /#{Regexp.escape(UserVars.skinsack.strip)}/i}.contents
+			if contents.find_all { |item| item.name =~ /#{cur_skin.gsub(/s?$/,'')}/ }.size >= (cur_skin_count + 3)
+				kill_hunter.call
+				force_rest = true
+			end
+		end
+	elsif bounty? =~ /#{regex['heirloom']}/
+		if cur_critter.nil?
+			cur_critter = $1.strip if $1
+			cur_area = $2.strip if $2
+			
+			state_set_hunting_ground_critter.call
+							
+			# Search heirlooms
+			if settings['heirloom_search_enable'] and bounty? =~ /#{regex['heirloom_search']}/ and $sbounty_accepted and Time.now.to_f - $last_search_attempt >= 300
+				pause_scripts.call
+				saved_room = Room.current.id.to_s
+				state_search_heirloom.call
+				resume_scripts.call
+			end
+		end
+	elsif bounty? =~ /#{regex['dangerous']}|#{regex['kill']}|#{regex['rescue']}/
+		if cur_critter.nil?			
+			cur_critter = $1.strip if $1
+			cur_area = $2.strip if $2
+			
+			cur_critter = $3.strip if $3
+			cur_area = $4.strip if $4
+			
+			cur_critter = $5.strip if $5
+			cur_area = $6.strip if $6
+			
+			state_set_hunting_ground_critter.call
+		end
+	elsif bounty? =~ /#{regex['gem']}/ and settings['gem_enable'] and not $sbounty_accepted
+		$sbounty_accepted = true
+	end
+	
+	if turn_in_ready.call or new_bounty_ready.call
+		pause_scripts.call
+	
+		if turn_in_ready.call
+			saved_room = Room.current.id.to_s if saved_room.nil?
+			echo 'pausing scripts and turning in'
+															
+			if bounty? =~ /#{regex['succeeded']}/
+			elsif bounty? =~ /#{regex['succeeded_heirloom']}/
+				state_turn_in_heirloom.call
+			elsif bounty? =~ /#{regex['succeeded_guard']}/
+				state_turn_in_guard.call
+			end
+			
+			state_turn_in.call
+			
+			coins = checksilver
+
+			unless coins == 0				
+				go2('bank')
+				dothistimeout "deposit all", 1, /You deposit|You hand your silvers|teller/
+			end
+			
+			echo 'coins deposited'
+			
+			# If we're above our resting point don't bother returning to hunting... just go to the rest room
+			if percentmind >= UserVars.op['rest_till_exp'].to_i
+				echo 'fried, resting'
+				
+				saved_room = UserVars.op['resting_room_id']
+				kill_hunter.call
+			else
+				echo 'returning to hunt'
+			end
+			
+			echo 'turn-in process complete!'
+		end
+
+		if new_bounty_ready.call
+			saved_room = Room.current.id.to_s if saved_room.nil?
+			
+			# Grab a new bounty
+			state_get_new_bounty.call					
+		end
+		
+		saved_room = Room.current.id.to_s if saved_room.nil?
+		
+		# Handle the new bounty and make sure we're ready to continue what we were doing
+		if bounty? =~ /#{regex['creature_problem']}|#{regex['help_resident']}/
+			state_talk_to_guard.call
+		elsif bounty? =~ /#{regex['track_heirloom']}/
+			state_talk_to_guard.call
+		# Go ahead and get the gem task even if we don't plan on doing it
+		# We may get lucky and finish it in the 15 minutes before the next task
+		elsif bounty? =~ /#{regex['help_dealer']}/
+			state_talk_to_gemdealer.call
+		elsif bounty? =~ /#{regex['help_herbalist']}/
+			state_talk_to_herbalist.call
+		elsif bounty? =~ /#{regex['help_furrier']}/
+			state_talk_to_furrier.call
+		end
+					
+		resume_scripts.call
+		rested = false
+	end
+	
+	# Change hunting location under certain circumstances
+	if (bounty? =~ /#{regex['succeeded']}|#{regex['succeeded_heirloom']}|#{regex['succeeded_guard']}/ or not $sbounty_accepted) and (cur_hunting_area != primary_location or UserVars.op['targets'] != settings['locations'][primary_location]['targets'])
+		restart_needed = false
+		unless cur_hunting_area == primary_location
+			restart_needed = true
+		end
+		change_to_primary_hunting_ground.call
+		
+		if restart_needed and script_running.call(hunting_script)
+			restart_hunter.call
+		else
+			$bigshot.load_settings
+		end
+	end
+				
+	# Resting routine (run if mind > rest percent or if we're in our resting room)
+	if force_rest or (not turn_in_ready.call and not new_bounty_ready.call)
+		if Room.current.id.to_s == UserVars.op['resting_room_id']
+			kill_hunter.call
+		end
+		
+		if force_rest or (not script_running.call(hunting_script) and (percentmind >= UserVars.op['rest_till_exp'].to_i or eval(wounded) or percentencumbrance >= UserVars.op['encumbered'].to_i or percentmana < UserVars.op['rest_till_mana'].to_i or checkspirit < UserVars.op['rest_till_spirit'].to_i)) or eval(wounded)
+			kill_hunter.call
+			
+			if not rested or eval(wounded)
+				go2(UserVars.op['resting_room_id']) unless checkarea =~ /table/i
+				
+				echo 'running resting routine'
+				
+				wait_while { script_running.call(loot_script) }
+				UserVars.op['resting_commands'].split(',').each { |rc| fput "#{rc}" }
+				UserVars.op['resting_scripts'].split(',').each { |rs|
+					go2(UserVars.op['resting_room_id']) unless checkarea =~ /table/i
+					
+					rs = rs.strip.split(' ')
+					script = rs.shift					
+					
+					kill_script(script) if script_running.call(script)
+					start_script(script, rs)
+					wait_while { script_running.call(script) }
+					
+					break if turn_in_ready.call
+				}
+				
+				rested = true
+			end
+			
+			echo 'continuing to rest'
+			echo '   ... encumbered' if percentencumbrance >= UserVars.op['encumbered'].to_i
+			echo '   ... mind still above threshold' if percentmind >= UserVars.op['rest_till_exp'].to_i
+			echo '   ... mana still below threshold' if percentmana < UserVars.op['rest_till_mana'].to_i
+			echo '   ... spirit still below threshold' if checkspirit < UserVars.op['rest_till_spirit'].to_i
+			echo '   ... wounded eval is true' if eval(wounded) == true
+			
+			unless hunter_start_time.nil? or hunter_end_time.nil? or (hunter_start_time < hunter_end_time)
+				hunter_time = hunter_start_time - hunter_end_time
+				echo sprintf('   ... hunter last ran for %d minutes %2.0f seconds', hunter_time / 60, hunter_time % 60)
+			end
+			
+			running = Time.now.to_f - sbounty_startup_time
+			echo sprintf('   ... running for %d minutes %2.0f seconds', running / 60, running % 60)
+			
+			unless settings['last_bounty_start'].nil? or settings['last_bounty_end'].nil? or (settings['last_bounty_start'] > settings['last_bounty_end'])
+				last_bounty = settings['last_bounty_end'] - settings['last_bounty_start']
+				echo sprintf('   ... last bounty took %d minutes %2.0f seconds', last_bounty / 60, last_bounty % 60)
+			end
+
+			rest_start = Time.now.to_f			
+			loop {						
+				if percentmind < UserVars.op['rest_till_exp'].to_i and percentmana >= UserVars.op['rest_till_mana'].to_i and checkspirit >= UserVars.op['rest_till_spirit'].to_i and eval(wounded) != true and percentencumbrance < UserVars.op['encumbered'].to_i
+					run_hunter = true
+				end
+				
+				break if run_hunter
+				break if (Time.now.to_f - rest_start) > 30
+				break if turn_in_ready.call
+				break if new_bounty_ready.call
+				
+				go2(UserVars.op['resting_room_id']) unless checkarea =~ /table/i
+				
+				sleep 0.25
+			}
+			
+			force_rest = false
+		elsif not script_running.call(hunting_script) and not paused
+			run_hunter = true
+		end
+	end
+	
+	if run_hunter
+		echo "done resting, resuming #{hunting_script}"
+		start_hunter.call
+		wait_while { Room.current.id.to_s == UserVars.op['resting_room_id'].to_s }
+		
+		rested = false
+		run_hunter = false
+	end
+		
+	sleep 0.25
+}

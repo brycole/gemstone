@@ -1,0 +1,40 @@
+
+cast_spells = Array.new
+
+  def cast_now(cast_spells)
+    waitrt?
+  
+    cast_spells.each {|do_spell|
+      $do_spell = do_spell
+      sleep 0.5
+      waitrt?
+      cast_exec = <<-eos
+      if $do_spell == 909
+        put "prep #{$do_spell}"
+        put 'evoke'
+      elsif $do_spell == 411
+        Spell[411].cast righthand
+      elsif $do_spell == 9603
+        waitcastrt?
+        waitrt?
+        fput 'cman smastery' if Spell[9603].affordable?
+      else
+        Spell[$do_spell].cast
+      end
+      eos
+      cast_exec_script = ExecScript.start(cast_exec, :quiet => false)
+      wait_until {!running? cast_exec_script.name}
+    }
+
+    cast_spells.clear
+  end
+
+cast_spells << 9903 if GSC.can_cast?(9903)
+cast_spells << 9907 if GSC.can_cast?(9907)
+cast_spells << 9910 if GSC.can_cast?(9910)
+cast_spells << 9913 if GSC.can_cast?(9913) and spirit > 2
+cast_spells << 9914 if GSC.can_cast?(9914) and spirit > 2
+cast_spells << 1035 if GSC.can_cast?(1035)
+
+
+cast_now(cast_spells) if !cast_spells.empty?

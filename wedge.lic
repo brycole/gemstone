@@ -1,0 +1,30 @@
+$box_open = false
+
+start_exec_script( <<-eos
+    while line = get;
+    	break unless running?('wedge');
+		$box_open = true if line =~ /^The lid of a/;
+	end;
+	eos
+	)
+
+while true
+	until $box_open
+		if GameObj.left_hand.noun != 'wedge'
+			dothistimeout "get my wedge", 2, /^You remove|^Get what/
+			if GameObj.left_hand.noun != 'wedge'
+				echo "Out of wedges!"
+				exit
+			end
+		end
+		dothistimeout "lmas wedge my #{GameObj.right_hand.noun}", 2, /^Roundtime/
+		#waitrt?
+	end
+	#dothistimeout "look in my #{GameObj.right_hand.noun}", 2, /^In the/
+	#dothistimeout "empty my #{GameObj.right_hand.noun} in my cloak", 2, /^Roundtime/
+	#dothistimeout "get coins", 2, /^Roundtime/
+	#dothistimeout "put my #{GameObj.right_hand.noun} in recep", 2, /^Roundtime/
+	break
+end
+
+		

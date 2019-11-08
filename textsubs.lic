@@ -1,0 +1,147 @@
+# quiet
+=begin
+  Authored by Seped for Dragonrealms. Suggestions and contributions are welcome: https://github.com/rpherbig/dr-scripts
+  12.15.2015
+
+  Moved to Gemstone by Kalros
+  12.22.2015
+  v.01
+
+  Add a sub with TextSubs.add('regex', 'replacement')
+  TextSubs.add('(\r+)no (puncture|slice|impact|fire|cold|electric) damage$','\1no (0/27) \2 damage')
+
+  Look in this script for more examples.
+
+  Clear out all stored subs with TextSubs.clear()
+
+
+## Gemstone To Do
+## Find more stuff to sub!
+
+=end
+
+class TextSubs
+  @@subs = {}
+
+  def self.subs
+    @@subs
+  end
+
+  def self.clear
+    @@subs = {}
+  end
+
+  def self.add(target, result)
+    @@subs[/#{target}/] = result
+  end
+end
+
+action = proc do |client_string|
+  matches = TextSubs.subs.select { |key, _| key =~ client_string }
+  matches.each { |target, result| client_string.sub!(target, result) }
+  client_string
+end
+
+DownstreamHook.remove('textsub')
+DownstreamHook.add('textsub', action)
+
+before_dying do
+  DownstreamHook.remove('textsub')
+end
+
+# defaults
+
+TextSubs.add('^Measuring carefully, it looks to be a primitive lock\.\r', 'Measuring carefully, it looks to be a primitive lock (5-35).')
+TextSubs.add('^Measuring carefully, it looks to be a rudimentary lock\.\r', 'Measuring carefully, it looks to be a rudimentary lock (40-75).')
+TextSubs.add('^Measuring carefully, it looks to be an extremely easy lock\.\r', 'Measuring carefully, it looks to be an extremely easy lock (80-115).')
+TextSubs.add('^Measuring carefully, it looks to be a very easy lock\.\r', 'Measuring carefully, it looks to be a very easy lock (120-155).')
+TextSubs.add('^Measuring carefully, it looks to be an easy lock\.\r', 'Measuring carefully, it looks to be an easy lock (160-195).')
+TextSubs.add('^Measuring carefully, it looks to be a very basic lock\.\r', 'Measuring carefully, it looks to be a very basic lock (200-235).')
+TextSubs.add('^Measuring carefully, it looks to be a fairly easy lock\.\r', 'Measuring carefully, it looks to be a fairly easy lock (240-275).')
+TextSubs.add('^Measuring carefully, it looks to be a simple lock\.\r', 'Measuring carefully, it looks to be a simple lock (280-315).')
+TextSubs.add('^Measuring carefully, it looks to be a fairly simple lock\.\r', 'Measuring carefully, it looks to be a fairly simple lock (320-355).')
+TextSubs.add('^Measuring carefully, it looks to be a fairly plain lock\.\r', 'Measuring carefully, it looks to be a fairly plain lock (360-395).')
+TextSubs.add('^Measuring carefully, it looks to be a moderately well-crafted lock\.\r', 'Measuring carefully, it looks to be a moderately well-crafted lock (400-435).')
+TextSubs.add('^Measuring carefully, it looks to be a well-crafted lock\.\r', 'Measuring carefully, it looks to be a well-crafted lock (440-475).')
+TextSubs.add('^Measuring carefully, it looks to be a tricky lock\.\r', 'Measuring carefully, it looks to be a tricky lock (480-515).')
+TextSubs.add('^Measuring carefully, it looks to be a somewhat difficult lock\.\r', 'Measuring carefully, it looks to be a somewhat difficult lock (520-555).')
+TextSubs.add('^Measuring carefully, it looks to be a moderately difficult lock\.\r', 'Measuring carefully, it looks to be a moderately difficult lock (560-595).')
+TextSubs.add('^Measuring carefully, it looks to be a very well-crafted lock\.\r', 'Measuring carefully, it looks to be a very well-crafted lock (600-635).')
+TextSubs.add('^Measuring carefully, it looks to be a difficult lock\.\r', 'Measuring carefully, it looks to be a difficult lock (640-675).')
+TextSubs.add('^Measuring carefully, it looks to be an extremely well-crafted lock\.\r', 'Measuring carefully, it looks to be an extremely well-crafted lock (680-715).')
+TextSubs.add('^Measuring carefully, it looks to be a very difficult lock\.\r', 'Measuring carefully, it looks to be a very difficult lock (720-755).')
+TextSubs.add('^Measuring carefully, it looks to be a fairly complicated lock\.\r', 'Measuring carefully, it looks to be a fairly complicated lock (760-795).')
+TextSubs.add('^Measuring carefully, it looks to be an intricate lock\.\r', 'Measuring carefully, it looks to be an intricate lock (800-835).')
+TextSubs.add('^Measuring carefully, it looks to be an amazingly well-crafted lock\.\r', 'Measuring carefully, it looks to be an amazingly well-crafted lock (840-875).')
+TextSubs.add('^Measuring carefully, it looks to be a very complex lock\.\r', 'Measuring carefully, it looks to be a very complex lock (880-915).')
+TextSubs.add('^Measuring carefully, it looks to be an impressively complicated lock\.\r', 'Measuring carefully, it looks to be an impressively complicated lock (920-955).')
+TextSubs.add('^Measuring carefully, it looks to be an amazingly intricate lock\.\r', 'Measuring carefully, it looks to be an amazingly intricate lock (960-995).')
+TextSubs.add('^Measuring carefully, it looks to be an extremely difficult lock\.\r', 'Measuring carefully, it looks to be an extremely difficult lock (1000-1035).')
+TextSubs.add('^Measuring carefully, it looks to be an extremely complex lock\.\r', 'Measuring carefully, it looks to be an extremely complex lock (1040-1075).')
+TextSubs.add('^Measuring carefully, it looks to be a masterfully well-crafted lock\.\r', 'Measuring carefully, it looks to be a masterfully well-crafted lock (1080-1115).')
+TextSubs.add('^Measuring carefully, it looks to be an amazingly complicated lock\.\r', 'Measuring carefully, it looks to be an amazingly complicated lock (1120-1155).')
+TextSubs.add('^Measuring carefully, it looks to be an astoundingly complex lock\.\r', 'Measuring carefully, it looks to be an astoundingly complex lock (1160-1195).')
+TextSubs.add('^Measuring carefully, it looks to be an incredibly intricate lock\.\r', 'Measuring carefully, it looks to be an incredibly intricate lock (1200-1235).')
+TextSubs.add('^Measuring carefully, it looks to be an absurdly well-crafted lock\.\r', 'Measuring carefully, it looks to be an absurdly well-crafted lock (1240-1275).')
+TextSubs.add('^Measuring carefully, it looks to be an exceedingly complex lock\.\r', 'Measuring carefully, it looks to be an exceedingly complex lock (1280-1315).')
+TextSubs.add('^Measuring carefully, it looks to be an absurdly difficult lock\.\r', 'Measuring carefully, it looks to be an absurdly difficult lock (1320-1355).')
+TextSubs.add('^Measuring carefully, it looks to be an unbelievably complicated lock\.\r', 'Measuring carefully, it looks to be an unbelievably complicated lock (1360-1395).')
+TextSubs.add('^Measuring carefully, it looks to be a masterfully intricate lock\.\r', 'Measuring carefully, it looks to be a masterfully intricate lock (1400-1435).')
+TextSubs.add('^Measuring carefully, it looks to be an absurdly complex lock\.\r', 'Measuring carefully, it looks to be an absurdly complex lock (1440-1475).')
+TextSubs.add('^Measuring carefully, it looks to be an impossibly complex lock\.\r', 'Measuring carefully, it looks to be an impossibly complex lock (1480-1515+).')
+
+=begin
+DRAGONREALMS SUB EXAMPLES
+TextSubs.add('(\r+)no (puncture|slice|impact|fire|cold|electric) damage$', '\1no (0/27) \2 damage')
+TextSubs.add('(\r+)dismal (puncture|slice|impact|fire|cold|electric) damage$', '\1dismal (1/27) \2 damage')
+TextSubs.add('(\r+)poor (puncture|slice|impact|fire|cold|electric) damage$', '\1poor (2/27) \2 damage')
+TextSubs.add('(\r+)low (puncture|slice|impact|fire|cold|electric) damage$', '\1low (3/27) \2 damage')
+TextSubs.add('^(\s+)dev[ae]stating (puncture|slice|impact|fire|cold|electric) damage$', '\1devastating (21/27) \2 damage')
+TextSubs.add('^(\s+)very dev[ae]stating (puncture|slice|impact|fire|cold|electric) damage$', '\1very devastating (22/27) \2 damage')
+TextSubs.add('^(\s+)overwhelming (puncture|slice|impact|fire|cold|electric) damage$', '\1overwhelming (23/27) \2 damage')
+TextSubs.add('^(\s+)annihilating (puncture|slice|impact|fire|cold|electric) damage$', '\1annihilating (24/27) \2 damage')
+TextSubs.add('^(\s+)obliterating (puncture|slice|impact|fire|cold|electric) damage$', '\1obliterating (25/27) \2 damage')
+TextSubs.add('^(\s+)demolishing (puncture|slice|impact|fire|cold|electric) damage$', '\1demolishing (26/27) \2 damage')
+TextSubs.add('^(\s+)catastrophic (puncture|slice|impact|fire|cold|electric) damage$', '\1catastrophic (27/27) \2 damage')
+TextSubs.add('(is|are) superbly (balanced and|suited)', '\1 superbly (13/17) \2')
+TextSubs.add('(is|are) incredibly (balanced and|suited)', '\1 incredibly (14/17) \2')
+TextSubs.add('(is|are) amazingly (balanced and|suited)', '\1 amazingly (15/17) \2')
+TextSubs.add('(is|are) unbelieve?ably (balanced and|suited)', '\1 unbelievably (16/17) \2')
+TextSubs.add('(is|are) perfectly (balanced and|suited)', '\1 perfectly (17/17) \2')
+TextSubs.add('^The (.+) appears set for a draw strength that is extremely low for a bow of this type\.$', 'The \1 appears set for a draw strength that is extremely low (1/8) for a bow of this type.')
+TextSubs.add('^The (.+) appears set for a draw strength that is very low for a bow of this type\.$', 'The \1 appears set for a draw strength that is very low (2/8) for a bow of this type.')
+TextSubs.add('^The (.+) appears set for a draw strength that is somewhat low for a bow of this type\.$', 'The \1 appears set for a draw strength that is somewhat low (3/8) for a bow of this type.')
+TextSubs.add('^If you were only wearing (.+) (your maneuvering would be|you could expect your maneuvering to be) greatly hindered and your stealth (would|to) be', 'If you were only wearing \1 \2 greatly (11/14) hindered and your stealth \3 be')
+TextSubs.add('^If you were only wearing (.+) (your maneuvering would be|you could expect your maneuvering to be) extremely hindered and your stealth (would|to) be', 'If you were only wearing \1 \2 extremely (12/14) hindered and your stealth \3 be')
+TextSubs.add('^If you were only wearing (.+) (your maneuvering would be|you could expect your maneuvering to be) overwhelmingly hindered and your stealth (would|to) be', 'If you were only wearing \1 \2 overwhelmingly (13/14) hindered and your stealth \3 be')
+TextSubs.add('^If you were only wearing (.+) (your maneuvering would be|you could expect your maneuvering to be) insanely hindered and your stealth (would|to) be', 'If you were only wearing \1 \2 insanely (14/14) hindered and your stealth \3 be')
+TextSubs.add('and your stealth (would|to) be unhindered\.$', 'and your stealth \1 be unhindered (0/14).')
+TextSubs.add('and your stealth (would|to) be barely hindered\.$', 'and your stealth \1 be barely (1/14) hindered.')
+TextSubs.add('and your stealth (would|to) be minimally hindered\.$', 'and your stealth \1 be minimally (2/14) hindered.')
+TextSubs.add('and your stealth (would|to) be insignificantly hindered\.$', 'and your stealth \1 be insignificantly (3/14) hindered.')
+TextSubs.add(', and (is|are|has|have|contains?) several unsightly notches\.', ', and \1 several unsightly notches (40-49%).')
+TextSubs.add(', and (is|are|has|have|contains?) a few dents and dings\.', ', and \1 a few dents and dings (50-59%).')
+TextSubs.add(', and (is|are|has|have|contains?) some minor scratches\.', ', and \1 some minor scratches (60-69%).')
+TextSubs.add(', and (is|are|has|have|contains?) rather scuffed up\.', ', and \1 rather scuffed up (70-79%).')
+TextSubs.add(', and (is|are|has|have|contains?) in good condition\.', ', and \1 in good condition (80-89%).')
+TextSubs.add(', and (is|are|has|have|contains?) practically in mint condition\.', ', and \1 practically in mint condition (90-97%).')
+TextSubs.add(', and (is|are|has|have|contains?) in pristine condition\.', ', and \1 in pristine condition (98-100%).')
+=end
+
+while line = script.gets
+  clear
+  begin
+  rescue Exception
+    echo $ERROR_INFO
+    echo $ERROR_INFO.backtrace.first
+    sleep 1
+  rescue ThreadError
+    echo $ERROR_INFO
+    echo $ERROR_INFO.backtrace.first
+    sleep 1
+  rescue
+    echo $ERROR_INFO
+    echo $ERROR_INFO.backtrace.first
+    sleep 1
+  end
+end

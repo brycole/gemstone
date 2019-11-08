@@ -1,0 +1,7 @@
+dothistimeout "look in backpack", 3, /In the/
+GameObj[/backpack/].contents.each {|i| 
+	fput "get ##{i.id}"
+	start_script 'loresing', [ "ability ##{i.name}" ] 
+	wait_while {running?('loresing')}
+	fput "put ##{i.id} in backpack"
+}

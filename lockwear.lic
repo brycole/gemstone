@@ -1,0 +1,13 @@
+
+
+if script.vars[0] =~ /wear/
+  GSC.open_satchel
+  GSC.remove_enhancive($tpick_remove_enhancives)
+  GSC.wear_enhancive($lock_enhancives)
+end
+
+if script.vars[0] =~ /remove/
+  GSC.open_satchel
+  GSC.remove_enhancive($lock_enhancives)
+  GSC.wear_enhancive($tpick_remove_enhancives)
+end

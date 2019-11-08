@@ -1,0 +1,50 @@
+#For Kegla from Ashkita
+sendmana = proc {|person|
+	if mana >= 20
+		put "send 20 #{person}"
+	elsif mana > 1
+		put "send #{mana} #{person}"
+	elsif mana <= 1
+		echo "*** Problem: #{mana} left ***"
+		return
+	end
+	while line = get
+		if line =~ /but satisfied that (\d+) point/
+			if $1.to_i == 19
+				sendmana.call(person)
+				break
+			else
+				echo "*** #{person} is full or you're low on mana ***"
+				break
+			end
+		elsif line =~ /but little else happens/
+			echo "*** #{person} is full ***"
+			break
+		elsif line =~ /You don't have that many points to transfer!/
+			echo "Error: you tried to send more mana than you have. Shouldn't happen"
+			exit
+		elsif line =~ /I could not find what you were referring to/
+			echo "Did #{person} walk off? Because can't find him/her"
+			break
+		end
+	end
+	script.clear
+}
+person = GameObj.pcs.find{|i| i.noun =~ /#{script.vars[1]}/i}.noun
+(echo 'person not found';exit ) if person.nil?
+put "send 2 #{person}"
+while line = get
+		if line =~ /but satisfied that (\d+) point/
+			break
+		elsif line =~ /but little else happens/
+			echo "*** #{person} is full ***"
+			exit
+		elsif line =~ /You don't have that many points to transfer!/
+			echo "Error: you tried to send more mana than you have. Shouldn't happen"
+			exit
+		elsif line =~ /I could not find what you were referring to/
+			echo "Did #{person} walk off? Because can't find him/her"
+			exit
+		end
+	end
+sendmana.call(person)

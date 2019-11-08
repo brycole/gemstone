@@ -1,0 +1,15 @@
+	
+	$lock_list = [["a primitive lock", 35],["a rudimentary lock", 75],["an extremely easy lock", 115],["a very easy lock", 155],["an easy lock", 195],["a very basic lock", 235],["a fairly easy lock", 275],["a simple lock", 315],["a fairly simple lock", 355],["a fairly plain lock", 395],["a moderately well\-crafted lock", 435],["a well-crafted lock", 475],["a tricky lock", 515],["a somewhat difficult lock", 555],["a moderately difficult lock", 595],["a very well\-crafted lock", 635],["a difficult lock", 675],["an extremely well\-crafted lock", 715],["a very difficult lock", 755],["a fairly complicated lock", 795],["an intricate lock", 835],["an amazingly well\-crafted lock", 875],["a very complex lock", 915],["an impressively complicated lock", 955],["an amazingly intricate lock", 995],["an extremely difficult lock", 1035],["an extremely complex lock", 1075],["a masterfully well\-crafted lock", 1115],["an amazingly complicated lock", 1155],["an astoundingly complex lock", 1195],["an incredibly intricate lock", 1235],["an absurdly well\-crafted lock", 1275],["an exceedingly complex lock", 1315],["an absurdly difficult lock", 1355],["a masterfully intricate lock", 1395],["an unbelievably complicated lock", 1435],["an impossibly complex lock", 1485]]
+
+	lock_txt = "Measuring carefully, it looks to be a very easy lock."
+	
+	lock = $1 if lock_txt =~ /be (an?.*lock)/
+	$lock_list.each{|word, val|
+		if word =~ /#{lock}/
+			fput "say #{word}"
+			break
+		end
+	}
+
+
+

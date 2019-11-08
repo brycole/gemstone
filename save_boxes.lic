@@ -1,0 +1,37 @@
+@list_of_box_ids = Array.new
+
+def check_for_boxes
+	action = proc { |server_string|
+		if server_string =~ /\s{6}.*(an?|the|some) |\s{2}.*(an?|the|some) |^You are currently wearing and carrying\:/
+			if server_string =~ /(\s{6}.*(an?|the|some)|\s{2}.*(an?|the|some)).*exist="(\d+)".*(strongbox|box|chest|trunk|coffer)/
+				@list_of_box_ids << $4
+				echo server_string
+			end
+			nil
+		elsif server_string =~ /^\(\d+ items? displayed\.\)/
+			DownstreamHook.remove("check_for_boxes")
+			@boxes_checked = true
+			nil
+		else
+			server_string
+		end
+	}
+		DownstreamHook.add("check_for_boxes", action)
+		silence_me
+		fput 'inv full'
+		silence_me
+		wait_until { @boxes_checked }
+end
+
+fput "look in kalros disk"
+sleep 0.5
+disk = GameObj.loot.find { |obj| obj.name =~ /#{Char.name} (disk|coffin)/ }
+disk.contents.each{|i| put "_drag ##{i.id} drop"}
+#disk.contents.each{|i| put "_drag ##{i.id} ##{GameObj[/chest/].id}"}
+sleep 1
+
+check_for_boxes
+@list_of_box_ids.each {|i| put "_drag ##{i} drop"}
+#@list_of_box_ids.each{|i| put "_drag ##{i} ##{GameObj[/chest/].id}"}
+
+sleep 1

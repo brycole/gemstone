@@ -1,0 +1,28 @@
+## Sell DR Shards
+## v.01 by Kalros
+
+containers_list = ['longcloak', 'cloak', 'bag', 'rucksack', 'harness', 'case', 'pack']
+containers_list = script.vars[0].to_s if script.vars[0]
+containers_list = containers_list.split(",") if script.vars[0]
+
+
+for container in containers_list
+  dothistimeout "look in #{container}", 1, /In|I could/
+end
+
+
+for container in containers_list
+   for shards in ['chunk', 'fragment', 'shard', 'sliver', 'strip', 'sphere', 'stone']
+    if GameObj.npcs.find {|i| i.noun == 'archaeologist'}
+      items = GameObj["#{container}"].contents.find_all {|i| i.noun =~ /\b#{shards}\b/}
+      items.each {|i| 
+        put "get ##{i.id}"
+        put "give ##{i.id} to arch"
+        dothistimeout "give ##{i.id} to arch", 1, /^You exchange/
+      }
+    end
+  end
+end
+
+#;e 3.times {fput 'get blood from back';fput 'put blood in pou';sleep 0.2}
+#;e GameObj.loot.each {|i| fput "_drag ##{i.id} ##{GameObj[/cloak/].id}" if i.noun != 'backpack';sleep 0.2}

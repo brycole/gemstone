@@ -1,0 +1,8 @@
+
+
+GSC.bput "hide", "^You attempt"
+GSC.bput "qstrike 1 punch githros head", "^Roundtime"
+GSC.bput "cman vanish", "^You attempt"
+GSC.bput "qstrike 1 punch githros head", "^Roundtime"
+GSC.bput "cman vanish", "^You attempt"
+GSC.bput "qstrike 1 punch githros head", "^Roundtime"

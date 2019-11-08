@@ -1,0 +1,40 @@
+####quiet
+=begin
+This script controls the line skipping function of monitor.  This must be running with monitor.lic.
+
+v.01 by Kalros
+12/28/2015
+
+NOT USING.  
+=end    
+
+## *** The purpose of this section is to control blocks of buffer lines that may trigger the monitor.
+## ** Over 1 second blocks to ignore.
+ignore_start_lines_30wait = /(^You leap|^You make [a|an]|^You attempt to (punch|jab|kick|pick)|^You give your)/
+ignore_end_lines_30wait = /^Roundtime:/
+
+## *** Short 1 second blocks to ignore.
+ignore_start_lines_1wait = /(^\[[A-Z][a-z]|^You search |^    Maximum|^In the|^You rummage|^You are wearing|^  Skill Name|^Peering into|^You are currently wearing|^Current society status|^Usage:|^A crier strides past|^Taking a gentle turn)/
+ignore_end_lines_1wait = /^>$/
+#ignore_end_lines_1wait = /^Obvious|^Total|^Click|^Further information|^Roundtime:|^\(\d+ items displayed/
+
+$skip_lines = false
+	
+## Main loop
+while(line = get)
+  	break unless running?('monitor')
+   	if line =~ ignore_start_lines_30wait
+   		echo "Bypassing - 30 Wait: #{$1}" if $monitor_debug
+   		$skip_lines = true
+   		matchtimeout 30, ignore_end_lines_30wait
+   		echo "Ignoring over - 30 Wait: #{$1}" if $monitor_debug
+   		$skip_lines = false
+   	end
+   	if line =~ ignore_start_lines_1wait
+   		echo "Bypassing - 1 Wait: #{$1}" if $monitor_debug
+   		$skip_lines = true
+   		matchtimeout 1, ignore_end_lines_1wait
+   		$skip_lines = false
+   		echo "Ignoring over - 1 Wait: #{$1}" if $monitor_debug
+   	end
+end

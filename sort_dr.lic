@@ -1,0 +1,30 @@
+
+#getboxes
+
+
+
+for container in ['leather cloak', 'shawl', 'rucksack', 'harness', 'case', 'link satchel']
+  GSC.bput "look in #{container}", "In|That is closed"
+end
+
+
+for container in ['leather cloak', 'shawl', 'rucksack', 'harness', 'case', 'link satchel']
+  #for types in ['jewelry', 'clothing', 'armor', 'weapon']
+    #items = GameObj["#{container}"].contents.find_all {|i| i.type == "#{types}"};items.each {|i| put "put ##{i.id} ##{GameObj.containers[/locker/].id}"}
+    #items = GameObj["#{container}"].contents.find_all {|i| i.type == "#{types}"}
+      GameObj["#{container}"].contents.each {|i|
+        put "_drag ##{i.id} right"
+        put "put ##{i.id} in locker"
+      }
+  #end
+  for shards in ['chunk', 'fragment', 'shard', 'sliver', 'strip', 'sphere', 'stone']
+    if GameObj.npcs.find {|i| i.noun == 'archaeologist'}
+      items = GameObj["#{container}"].contents.find_all {|i| i.noun =~ /\b#{shards}\b/}
+      items.each {|i| 
+        put "get ##{i.id}"
+        put "give ##{i.id} to arch"
+        GSC.bput "give ##{i.id} to arch", "^You exchange"
+      }
+    end
+  end
+end

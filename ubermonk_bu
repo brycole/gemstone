@@ -1,0 +1,107 @@
+# Ubermonk by EmbodiedChaos 12/31/2015
+Thread.new { 
+while true
+Script.self.kill if running?('go2')
+Script.self.kill if bleeding?
+end
+}
+def loot()
+dead_npcs = GameObj.npcs.find_all { |i| i.status == 'dead' }
+dead_npcs.each { |i|
+start_script ('sloot') if !running?('sloot')
+wait_while { running?('sloot') }
+}
+end
+findTarget = proc{
+if script.vars.length == 0
+put 'target random'
+line = get until line =~ /^You are now targeting <pushBold\/>an? <a exist="(\-?\d+)" noun=".*>\.$|^Could not find a valid target\./
+else
+put 'target ' + script.vars[0]
+line = get until line =~ /^You are now targeting <pushBold\/>an? <a exist="(\-?\d+)" noun=".*>\.$|^You do not have a target\.|You can only target creatures and players\.|You can't target/
+end
+status_tags
+GameObj[$1]
+}
+def attack(command)
+exit if @target.status =~ /dead/
+fput "stand" unless standing?
+put 'stance offensive' unless percentstance == 0
+put (command)
+while line = get
+if line =~ /You have (decent|good|excellent) positioning/
+@position = $1
+elsif line =~ /is already dead./
+exit
+elsif line =~ /(?:\.\.\.wait |Wait )[0-9]+/
+hold_up = line.slice(/[0-9]+/).to_i
+sleep(hold_up) unless hold_up.nil?
+put (command)
+elsif line =~ /You stand back up.|You are already standing./
+put (command)
+elsif line =~ /You are in far too much agony to do that/
+put "mstrike punch target"
+elsif line =~ /Sorry, you may only type ahead/
+sleep 0.5
+elsif line =~ /That is impossible to do while unconscious\!/
+sleep 1
+fput "stand"
+elsif GameObj.npcs.size.nil? || bleeding? || GameObj.npcs.size > 1
+exit
+elsif line =~ /Your muscles are too fatigued to attempt this action/
+fput "punch"
+elsif line =~ /Strike leaves foe vulnerable to a followup (.*) attack!/
+@uac = $1
+elsif line =~ /is already missing that!/
+@location = locations.pop
+put 'aim clear' unless @location
+elsif line =~ /You attempt to jab/
+@uac = 'jab'
+elsif line =~ /(Roundtime: )[0-9]+/
+hold_up = line.slice(/[0-9]+/).to_i
+sleep(hold_up - 0) unless hold_up.nil?
+@uac = 'kick' if @position == 'excellent'
+break
+elsif line =~ /^Try standing up first|^You might want to stand/
+fput "stand"
+if line =~ /Quickstrike what|You currently have no valid target\.  You will need to specify one\.|^It looks like somebody already did the job for you\.$|^What were you referring to\?$|Sorry,|You can't do that while entangled in a web|You are still stunned|You are unable to muster the will to attack anything\.|You spin about but don't see anything to hit\!/
+exit
+end
+end
+end
+status_tags
+@uac = 'jab'
+@position = 'decent'
+@target = findTarget.call
+if @target.nil?
+echo "No target found.  Exiting."
+exit
+end
+while GameObj.npcs.size == 1
+#if !Spell[9699].active && percenthealth == 100 && percentstamina >= 20 && ([Wounds.head, Wounds.neck, Wounds.torso, Wounds.limbs, Wounds.nerves].include?(1))
+#     put "cman ipower"
+#     sleep 1
+#end
+
+if !Spell[9699].active && (!Spell[9005].active || percentstamina >= 90) && GameObj.npcs.size > 2
+  attack 'mstrike punch'
+  elsif !Spell[9699].active && !Spell[9005].active
+  attack "mstrike kick ##{@target.id}"
+  #end
+  elsif GameObj.npcs.size > 1 && percentstamina > 90 && !Spell[9699].active && @uac != 'jab'
+  attack "cman qstrike #{@uac} ##{@target.id}"
+  else
+  attack "#{@uac} ##{@target.id}"
+ end
+
+loot() if !running?('bigshot')
+end
+attack "#{@uac} ##{@target.id}"
+end
+loot() if !running?('bigshot')
+#     attack "cman qstrike #{@uac} ##{@target.id}"
+#     attack 'mstrike punch'
+#     attack @ua
+
+$target = GameObj.npcs.find { |npc| 
+  if npc.status !~ /dead|gone/ && npc.type =~ /aggressive/ }

@@ -1,0 +1,11 @@
+while line = get
+
+  if line =~ /^\[Private/
+    puts "<pushStream id=\"speech\"/>#{line}\n<popStream/>\n" 
+  elsif line =~ /A plump grey-bearded scripmaster flags you over and says, "Here are your winnings.+a four-ringed metal pendant/
+    kill_script 'duskruinArena'
+    kill_script 'ubermonk'
+    kill_script 'drDriver'
+    kill_script 'waggle'
+  end
+end

@@ -1,0 +1,38 @@
+	respond "Script needs to be trusted to work"
+	respond ";trust #{script.name.downcase}"
+	respond "Script must be started PRIOR to entering the arena"
+	respond "Remember to ;tune DUSKRUIN to see arena times"
+
+def start() 
+	#respond Time.now
+	CharSettings['duration'] = Time.now
+	CharSettings['timequit'] ||= Time.now
+	timerested = Time.now - CharSettings['timequit']
+	#respond "here"
+	Thread.new{loop {CharSettings['timequit'] = Time.now; pause 1}}
+end
+
+def stop()
+	#respond Time.now
+	duration = Time.now - CharSettings['duration']
+		hours = (duration / 3600).to_i
+		minutes = (duration / 60 - hours * 60).to_i
+		seconds = (duration - 60 * minutes - 3600 * hours).to_i
+	responseText = "[ Arena Ended. #{hours}h:#{minutes}m:#{seconds}s. ]"
+	respond responseText
+	#result='[Arena Ended - (#{hours}h:#{'%02d' %minutes}m:#{'%02d' %seconds}s.)]'
+	#send_to_script 'lnet', 'chat '+result'
+					#attr={'type'=>'channel', 'channel'=>'code'} DUSKRUIN
+	LNet.send_message(attr={'type'=>'channel', 'channel'=>'DUSKRUIN'}, responseText) 
+	#CharSettings['duration'].delete
+	#goto "TOP"
+end
+
+loop {
+	line = get
+	if line =~ /Introducing our new challenger/
+		start()
+	elsif line =~ /is triumphant, defeating all those that opposed/
+		stop()
+	end
+}

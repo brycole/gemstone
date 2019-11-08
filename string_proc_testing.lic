@@ -1,0 +1,79 @@
+
+
+
+
+
+
+next_exit = {
+ 9823 => [ 'southeast', 'southwest', 'southwest', 'east', 'southwest', 'southeast', 'south' ], 
+ 9818 => [ 'east', 'southwest', 'west', 'west', 'northeast', 'northeast', 'northwest' ], 
+ 9808 => [ 'east', 'east', 'east', 'northeast', 'west' ], 9788 => [ 'southwest', 'southeast', 'southwest' ],
+ 9784 => [ 'southeast', 'south', 'northeast', 'north', 'west', 'west', 'west' ] }; 
+ 
+ loop { 
+    if move 'go root';
+      nil until get == '[Maaghara Tower, Refuse Heap]'; 
+      fput 'stand' unless standing?;
+      waitrt?;
+      UserVars.rescue_child = false;
+      break;
+    else; 
+      if dir_list = next_exit[Room.current.id]; 
+        dir_list.each { |dir| move dir; waitfor('child') if UserVars.rescue_child }; 
+      else; echo 'error: out of cheese'; 
+        break; 
+      end; 
+    end
+}
+
+
+[map_mod: @wayto=
+{"9822"=>"southeast", 
+"9734"=>StringProc.new("next_exit = 
+  { 9823 => [ 'southeast', 'southwest', 'southwest', 'east', 'southwest', 'southeast', 'south' ], 
+    9818 => [ 'east', 'southwest', 'west', 'west', 'northeast', 'northeast', 'northwest' ], 
+    9808 => [ 'east', 'east', 'east', 'northeast', 'west' ], 
+    9788 => [ 'southwest', 'southeast', 'southwest' ], 
+    9784 => [ 'southeast', 'south', 'northeast', 'north', 'west', 'west', 'west' ] }; 
+    loop { 
+    if (bounty? =~ /^You have made contact with the child/);
+      child = GameObj.npcs.find { |npc| npc.noun == 'child' };
+    else;
+      child = nil;
+    end;
+    if move 'go root'; 
+        nil until get == '[Maaghara Tower, Refuse Heap]'; 
+        fput 'stand' unless standing?; waitrt?; 
+        break; 
+      else; 
+        if dir_list = next_exit[Room.current.id]; 
+          dir_list.each { |dir| move dir; 
+            echo 'waiting for child'; 
+            echo child; 
+            50.times { break if GameObj.npcs.any? { |npc| npc.id == child.id }; sleep 0.1 } if child };
+        else; 
+          echo 'error: out of cheese'; 
+          break; 
+        end; 
+      end }"), 
+"9824"=>"southwest"}
+
+=begin
+## v.02 by Kalros
+## Script to replace/modify string procs inside the mapdb.
+## Assumes the only change we are making is with a StringProc
+## Credit to Tillmen for better child wait code.
+
+To do:
+    -Make more modular so it can take multiple rooms
+    -Swap out replace messages for variables
+    -Add better initial room loops to support more rooms
+    -Adjust make_change method to support more then string_procs
+
+Changelog:
+  4.1.2016:
+    -Swapped code to methods, removed most @variables
+  4.6.2016:
+    -Swapped child wait code for Tillmen's version
+    -Removed UserVars, no longer needed
+=end

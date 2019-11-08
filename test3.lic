@@ -1,0 +1,58 @@
+exit
+
+$map_changes_debug = true
+
+@room_list = []
+
+Map.list.each {|room| 
+     @room_list << room.id if (room.wayto.inspect =~ /move dir/ and room.title.inspect =~ /Maaghara/)
+}
+
+@room_list.each {|i|
+    echo Map[i].inspect
+}
+exit 
+
+#echo Map[i].wayto.inspect
+
+@wayto_list = []
+@proc_list = []
+@change_room = []
+
+echo @room_list if $map_changes_debug
+
+
+@room_list.each {|i|
+    Map[i].wayto.each { |k, v|
+        if v.class == Proc
+            @change_room << i
+            @wayto_list << k
+            @newStr = v.inspect
+            @newStr.gsub!(/move dir/, "move dir; waitfor('child') if UserVars.rescue_child")
+            @newStr.gsub!(/if move 'go root'/, "if move 'go root'; UserVars.rescue_child = false")
+            @newStr.gsub!(/StringProc.new\("/, "")
+            @newStr.gsub!(/"\)/, "")
+            @proc_list << @newStr
+            echo @newStr if $map_changes_debug
+            echo "" if $map_changes_debug
+        end
+    }
+}
+
+echo "proc list" if $map_changes_debug
+echo @proc_list[0] if $map_changes_debug
+echo @change_room if $map_changes_debug
+echo @wayto_list if $map_changes_debug
+
+## make room changes
+@i = 0
+def make_change(room_to_change, dest_room, new_way_to)
+    echo "Room to change: #{room_to_change}" if $map_changes_debug
+    ## change each wayto in the room that needs changing
+    echo "Change this wayto: #{@wayto_list[@i]}" if $map_changes_debug
+    echo "Change this proc inside the wayto: #{@proc_list[@i]}" if $map_changes_debug
+    
+    ## Making the change here
+    Room[room].wayto[@wayto_list[@i]] = StringProc.new(%{#{@proc_list[@i]}})
+    @i += 1
+end

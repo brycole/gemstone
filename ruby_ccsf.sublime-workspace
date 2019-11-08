@@ -1,0 +1,820 @@
+{
+	"auto_complete":
+	{
+		"selected_items":
+		[
+			[
+				"monitor",
+				"monitor_debug"
+			],
+			[
+				"monito",
+				"monitor_debug"
+			],
+			[
+				"moni",
+				"monitor_debug"
+			],
+			[
+				"vaa",
+				"vaalin_error"
+			],
+			[
+				"els",
+				"elsif	elsif ..."
+			],
+			[
+				"start",
+				"start_script"
+			],
+			[
+				"can",
+				"can_turn_in"
+			],
+			[
+				"sboun",
+				"sbounty_debug"
+			],
+			[
+				"sbou",
+				"sbounty_debug"
+			],
+			[
+				"sbounty",
+				"sbounty_debug"
+			],
+			[
+				"is_bo",
+				"is_bounty_call"
+			]
+		]
+	},
+	"buffers":
+	[
+		{
+			"contents": "",
+			"file": "/E/dev/ruby/myscript.rb",
+			"file_size": -1,
+			"file_write_time": -1,
+			"settings":
+			{
+				"buffer_size": 0,
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"contents": "",
+			"file": "/E/dev/ruby/lab1.rb",
+			"file_size": -1,
+			"file_write_time": -1,
+			"settings":
+			{
+				"buffer_size": 0,
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"contents": "",
+			"file": "/E/dev/ruby/arr_methods.rb",
+			"file_size": -1,
+			"file_write_time": -1,
+			"settings":
+			{
+				"buffer_size": 0,
+				"line_ending": "Windows",
+				"name": "g"
+			}
+		},
+		{
+			"contents": "",
+			"file": "/E/dev/ruby/arr_methods_output.txt",
+			"file_size": -1,
+			"file_write_time": -1,
+			"settings":
+			{
+				"buffer_size": 0,
+				"line_ending": "Windows",
+				"name": "E:\\dev\\ruby>ruby arr_methods.rb"
+			}
+		},
+		{
+			"contents": "",
+			"file": "/E/dev/ruby/week5_exercises.rb",
+			"file_size": -1,
+			"file_write_time": -1,
+			"settings":
+			{
+				"buffer_size": 0,
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"contents": "",
+			"file": "/E/dev/ruby/week5_output.txt",
+			"file_size": -1,
+			"file_write_time": -1,
+			"settings":
+			{
+				"buffer_size": 0,
+				"line_ending": "Windows",
+				"name": "E:\\dev\\ruby>ruby week5_exercises.rb"
+			}
+		},
+		{
+			"file": "/E/dev/ruby/oliver.txt",
+			"settings":
+			{
+				"buffer_size": 0,
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "/E/dev/ruby/arr2html_output.txt",
+			"settings":
+			{
+				"buffer_size": 0,
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"contents": "E:\\dev\\ruby>ruby arr2html.rb\n<table>\n<tr><td>Jim</td><td>bullfrog</td><td>99</td></tr>\n<tr><td>Mack the Knife</td><td>caterpillar</td><td>12</td></tr>\n<tr><td>Willy</td><td>chihuahua</td><td>143</td></tr>\n<tr><td>Trudy</td><td>bunny</td><td>3</td></tr>\n<tr><td>Mary Lou</td><td>slow loris</td><td>1443</td></tr>\n<tr><td>Sharon Stone</td><td>komodo dragon</td><td>8888</td></tr>\n</table>\n<table>\n<tr><td>Walter White,</td><td>123 Happy Home Drive</td><td>Albuquerque</td><td>NM</td><td>555-66-7777</td><td>505-123-4567</td></tr>\n<tr><td>Jesse Pinkman,</td><td>43 Cloudy Skies Parkway</td><td>Albuquerque</td><td>NM</td><td>666-12-3456,</td><td>505-888-9999</td></tr>\n<tr><td>Gustavo Fring,</td><td>123 Pollos Boulevard</td><td>Albuquerque</td><td>NM</td><td>565-32-3344,</td><td>505-434-9001</td></tr>\n<tr><td>Tuco Salamanca,</td><td>99 Crystal Springs</td><td>Lane</td><td>Albuquerque</td><td>NM</td><td>575-44-3553,</td><td>505-776-0455</td></tr>\n<tr><td>Saul Goodman,</td><td>9800 Montgomery Blvd NE</td><td>Albuquerque</td><td>NM</td><td>585-19-9990,</td><td>505-503-4455</td></tr>\n</table>\n<table>\n<tr><td>first_name</td><td>last_name</td><td>telephone</td><td>address</td><td>city</td><td>state</td><td>zip_code</td><td>birthdate</td><td>salary</td></tr>\n<tr><td>Vinh</td><td>Tranh</td><td>438-910-7449</td><td>8235 Maple Street</td><td>Wilmington</td><td>VM</td><td>29085</td><td>9/23/63</td><td>1200</td></tr>\n<tr><td>William</td><td>Kopf</td><td>846-836-2837</td><td>6937 Ware Road</td><td>Milton</td><td>PA</td><td>93756</td><td>9/21/46</td><td>43500</td></tr>\n<tr><td>Yukio</td><td>Takeshida</td><td>387-827-1095</td><td>13 Uno Lane</td><td>Ashville</td><td>NC</td><td>23556</td><td>7/1/29</td><td>57000</td></tr>\n<tr><td>Zippy</td><td>Pinhead</td><td>834-823-8319</td><td>2356 Bizarro Ave.</td><td>Farmount</td><td>IL</td><td>84357</td><td>1/1/67</td><td>89500</td></tr>\n<tr><td>Andy</td><td>Warhol</td><td>212-321-7654</td><td>231 East 47th Street</td><td>New York City</td><td>NY</td><td>10017</td><td>8/6/1928</td><td>2700000</td></tr>\n</table>",
+			"settings":
+			{
+				"buffer_size": 2058,
+				"line_ending": "Windows",
+				"name": "E:\\dev\\ruby>ruby arr2html.rb"
+			}
+		},
+		{
+			"file": "/E/dev/ruby/lab1_solution.txt",
+			"settings":
+			{
+				"buffer_size": 0,
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "/E/dev/ruby/oliver_twist.cgi",
+			"settings":
+			{
+				"buffer_size": 0,
+				"line_ending": "Windows"
+			}
+		}
+	],
+	"build_system": "",
+	"command_palette":
+	{
+		"height": 392.0,
+		"selected_items":
+		[
+			[
+				"Package Control: ",
+				"Package Control: Remove Package"
+			],
+			[
+				"install",
+				"Package Control: Install Package"
+			],
+			[
+				"Package Control: install",
+				"Package Control: Install Package"
+			]
+		],
+		"width": 408.0
+	},
+	"console":
+	{
+		"height": 292.0
+	},
+	"distraction_free":
+	{
+		"menu_visible": true,
+		"show_minimap": false,
+		"show_open_files": false,
+		"show_tabs": false,
+		"side_bar_visible": false,
+		"status_bar_visible": false
+	},
+	"file_history":
+	[
+		"/C/Users/Bryan/AppData/Roaming/Sublime Text 2/Packages/Default/Preferences.sublime-settings",
+		"/E/dev/ruby/irb-output.txt",
+		"/E/dev/ruby/test.rb",
+		"/E/dev/ruby/lab1_solution.txt",
+		"/C/Users/Bryan/AppData/Local/Temp/7zO404B5B52/myscript.rb",
+		"/E/dev/ruby/assignment template.rb",
+		"/E/dev/sql/Graded/A01_Cole (1).lst",
+		"/E/dev/sql/A01_Cole.sql",
+		"/E/Google Drive/Lich/scripts/sbounty.lic",
+		"/E/Google Drive/Lich/scripts/ubermonk.lic",
+		"/E/Google Drive/Lich/scripts/start_hunt.lic",
+		"/E/Google Drive/Lich/scripts/bigshot.lic",
+		"/E/Google Drive/Lich/scripts/monitor.lic",
+		"/E/Google Drive/Lich/scripts/test.lic",
+		"/E/Google Drive/Lich/scripts/test1.lic",
+		"/E/Google Drive/Lich/scripts/first_rest.lic",
+		"/E/Google Drive/Lich/scripts/last_rest.lic",
+		"/E/Google Drive/Lich/scripts/deedcalc.lic",
+		"/E/Google Drive/Lich/scripts/save_boxes.lic",
+		"/E/Google Drive/Lich/scripts/disarm_only.lic",
+		"/E/Google Drive/Lich/scripts/common.lic",
+		"/E/Google Drive/Lich/scripts/transcend.lic",
+		"/E/dev/sql/db1.sql",
+		"/E/dev/sql/db1.lst",
+		"/E/Google Drive/Lich/scripts/child2.lic",
+		"/E/Google Drive/Lich/scripts/checkemail.lic",
+		"/E/Google Drive/Lich/scripts/tpick.lic",
+		"/E/Gemstone IV/lich/lich.rbw",
+		"/E/Google Drive/Lich/scripts/open.lic",
+		"/E/Google Drive/Lich/scripts/grgvars.lic",
+		"/E/Google Drive/Lich/scripts/grguild.lic",
+		"/E/Google Drive/Lich/scripts/loot-be-gone.lic",
+		"/E/dev/sql/A15_Cole.sql",
+		"/E/dev/sql/A01_Cole_template.sql",
+		"/E/Google Drive/Lich/scripts/countarrows.lic",
+		"/E/Google Drive/Lich/scripts/favorhunt_temp.lic",
+		"/E/Google Drive/Lich/scripts/favorhunt.lic",
+		"/E/Google Drive/Lich/scripts/fbigshot.lic",
+		"/E/Gemstone IV/lich/temp/debug-2016-01-19-15-20-33.log",
+		"/E/Google Drive/Lich/scripts/alchemy.lic",
+		"/E/Google Drive/Lich/scripts/movegem.lic",
+		"/E/Google Drive/Lich/scripts/trapped box location",
+		"/E/Google Drive/Lich/scripts/sbounty-bigshot.lic",
+		"/E/Google Drive/Lich/scripts/useherbs.lic",
+		"/E/Google Drive/Lich/scripts/go2.lic",
+		"/E/Google Drive/Lich/scripts/textsubs.lic",
+		"/E/Google Drive/Lich/scripts/server.lic",
+		"/E/Google Drive/Lich/scripts/client.lic",
+		"/E/Chat/app.rb",
+		"/E/Chat/views/index.erb",
+		"/E/Google Drive/Lich/scripts/stream.lic.rb",
+		"/E/Ruby_Projects/something.rb",
+		"/E/Google Drive/Lich/scripts/log.lic",
+		"/E/Ruby_Projects/Sinatra/sinatra-1.4.6/lib/sinatra/main.rb",
+		"/E/Ruby_Projects/Sinatra/sinatra-1.4.6/lib/sinatra/base.rb",
+		"/C/Users/Bryan/AppData/Roaming/Sublime Text 2/Packages/PersistentRegexHighlight/PersistentRegexHighlight.sublime-settings",
+		"/E/Google Drive/Lich/scripts/test4.lic",
+		"/E/Ruby_Projects/Sinatra/sinatra-1.4.6/lib/sinatra.rb",
+		"/E/Ruby_Projects/Steam_Data/steam.rb",
+		"/E/Chat/GemFile.rb",
+		"/C/Users/Bryan/AppData/Roaming/Sublime Text 2/Packages/PersistentRegexHighlight/README.md",
+		"/C/Users/Bryan/AppData/Roaming/Sublime Text 2/Packages/BeautifyRuby/BeautifyRuby.sublime-settings"
+	],
+	"find":
+	{
+		"height": 34.0
+	},
+	"find_in_files":
+	{
+		"height": 0.0,
+		"where_history":
+		[
+			""
+		]
+	},
+	"find_state":
+	{
+		"case_sensitive": false,
+		"find_history":
+		[
+			"You say",
+			"(\\w+)$",
+			"(\\s)\\^",
+			"\\s\\^",
+			"= '",
+			"|",
+			"/",
+			"cmd =",
+			"wand",
+			"stance_dance",
+			"\\d+",
+			"stance",
+			"cmd_spell",
+			"cast",
+			"incant",
+			"drop",
+			"wait",
+			"masters",
+			"trash",
+			"to_locker",
+			"from_locker =",
+			"from_locker",
+			"to_locker.call",
+			"elven",
+			"giant",
+			"child",
+			"to_locker =",
+			"to_locker.call",
+			"to_locker",
+			"locker",
+			"echo",
+			"$monitor_debug",
+			"waves",
+			"You say",
+			"vest",
+			"map",
+			"basically worthless",
+			"measure =",
+			"exit",
+			"index",
+			"$disarm_index",
+			"##{box}",
+			"###{box}",
+			"##box",
+			"#{script_var1}",
+			"disarm_list",
+			"vars2",
+			"vars1",
+			"script.vars[1]",
+			"script.vars[2]",
+			"haste.cast",
+			"506",
+			"haste.cast",
+			"506",
+			"measure.call",
+			"disarm_trap =",
+			"disarm",
+			"disarm =",
+			".contents",
+			".container",
+			"scan",
+			"roundtime",
+			"about bounty",
+			"should_hunt",
+			"percentmind",
+			"echo",
+			"should_rest",
+			"total loop",
+			"~=",
+			"pick2 =",
+			"pick2",
+			"vaalin",
+			"vaalin_lockpick",
+			"vaalin",
+			"_script",
+			"vaalin",
+			"rest_scripts",
+			"to_s",
+			"cmd_run_script",
+			"run_commands",
+			"runs_commands",
+			"hunt_pre",
+			"commands",
+			"prehunt",
+			"pre-hunt",
+			"match",
+			"matchwait",
+			"spectre",
+			"worthless",
+			"scale =",
+			"scales",
+			"vest",
+			"scales",
+			"ether",
+			"bandits",
+			"$bandits",
+			"bandits",
+			"$bandits",
+			"bandits",
+			"current_bounty",
+			"bandit",
+			"$bandits",
+			"exp",
+			"experience",
+			"nil",
+			"running? 'bigshot'",
+			"'fbigshot'",
+			"'bigshot'",
+			".op[",
+			"_F_",
+			"$OP",
+			"OP",
+			"bandits = ",
+			"bandits",
+			"should_rest",
+			"bandit",
+			"can_turn_in",
+			"should_rest.call",
+			"bandits",
+			"can_do_bounty",
+			"bandits",
+			"echo",
+			"should_rest",
+			"can_do_bounty",
+			"$sbounty_debug",
+			"should_hunt",
+			"$sbounty_debug",
+			".call value"
+		],
+		"highlight": true,
+		"in_selection": false,
+		"preserve_case": false,
+		"regex": true,
+		"replace_history":
+		[
+			"$1',",
+			"$1\\'\\^",
+			"$1\\^\\'",
+			"($1)\\^\\'",
+			"\\^\\'",
+			"= [",
+			",",
+			"'",
+			"$ground_index",
+			"##{box_id}",
+			"##{box}",
+			"var1",
+			"script_vars1",
+			"script_vars2",
+			"'xx'",
+			"running? 'bigshot' or running? 'fbigshot'",
+			"running? 'fbigshot'",
+			"'bigshot' or 'fbigshot'",
+			".opf[",
+			"__",
+			"$OPF_",
+			"OPF",
+			"=~ /#{",
+			"msg}"
+		],
+		"reverse": false,
+		"show_context": true,
+		"use_buffer2": true,
+		"whole_word": false,
+		"wrap": true
+	},
+	"groups":
+	[
+		{
+			"selected": 4,
+			"sheets":
+			[
+				{
+					"buffer": 0,
+					"file": "/E/dev/ruby/myscript.rb",
+					"settings":
+					{
+						"buffer_size": 0,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								0,
+								0
+							]
+						],
+						"settings":
+						{
+							"sorttabs_lastactivated": 1464933519.65,
+							"syntax": "Packages/Ruby/Ruby.tmLanguage"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 1,
+					"file": "/E/dev/ruby/lab1.rb",
+					"settings":
+					{
+						"buffer_size": 0,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								0,
+								0
+							]
+						],
+						"settings":
+						{
+							"sorttabs_lastactivated": 1464933519.24,
+							"syntax": "Packages/Ruby/Ruby.tmLanguage",
+							"tab_size": 2,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 2,
+					"file": "/E/dev/ruby/arr_methods.rb",
+					"settings":
+					{
+						"buffer_size": 0,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								0,
+								0
+							]
+						],
+						"settings":
+						{
+							"auto_name": "g",
+							"sorttabs_lastactivated": 1464933518.6,
+							"syntax": "Packages/Ruby/Ruby.tmLanguage"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 3,
+					"file": "/E/dev/ruby/arr_methods_output.txt",
+					"settings":
+					{
+						"buffer_size": 0,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								0,
+								0
+							]
+						],
+						"settings":
+						{
+							"auto_name": "E:\\dev\\ruby>ruby arr_methods.rb",
+							"sorttabs_lastactivated": 1464933516.74,
+							"syntax": "Packages/Text/Plain text.tmLanguage"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 4,
+					"file": "/E/dev/ruby/week5_exercises.rb",
+					"settings":
+					{
+						"buffer_size": 0,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								0,
+								0
+							]
+						],
+						"settings":
+						{
+							"sorttabs_lastactivated": 1464933530.02,
+							"syntax": "Packages/Ruby/Ruby.tmLanguage",
+							"tab_size": 2,
+							"translate_tabs_to_spaces": true,
+							"word_wrap": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 5,
+					"file": "/E/dev/ruby/week5_output.txt",
+					"settings":
+					{
+						"buffer_size": 0,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								0,
+								0
+							]
+						],
+						"settings":
+						{
+							"auto_name": "E:\\dev\\ruby>ruby week5_exercises.rb",
+							"sorttabs_lastactivated": 1464933521.17,
+							"syntax": "Packages/Text/Plain text.tmLanguage"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 6,
+					"file": "/E/dev/ruby/oliver.txt",
+					"settings":
+					{
+						"buffer_size": 0,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								0,
+								0
+							]
+						],
+						"settings":
+						{
+							"sorttabs_lastactivated": 1456812367.18,
+							"syntax": "Packages/Text/Plain text.tmLanguage"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 7,
+					"file": "/E/dev/ruby/arr2html_output.txt",
+					"settings":
+					{
+						"buffer_size": 0,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								0,
+								0
+							]
+						],
+						"settings":
+						{
+							"auto_name": "",
+							"sorttabs_lastactivated": 1456812376.43,
+							"syntax": "Packages/Text/Plain text.tmLanguage"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 8,
+					"settings":
+					{
+						"buffer_size": 2058,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								2058,
+								2058
+							]
+						],
+						"settings":
+						{
+							"auto_name": "E:\\dev\\ruby>ruby arr2html.rb",
+							"sorttabs_lastactivated": 1456812375.9,
+							"syntax": "Packages/Text/Plain text.tmLanguage"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 9,
+					"file": "/E/dev/ruby/lab1_solution.txt",
+					"settings":
+					{
+						"buffer_size": 0,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								0,
+								0
+							]
+						],
+						"settings":
+						{
+							"sorttabs_lastactivated": 1456812373.09,
+							"syntax": "Packages/Text/Plain text.tmLanguage"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 10,
+					"file": "/E/dev/ruby/oliver_twist.cgi",
+					"settings":
+					{
+						"buffer_size": 0,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								0,
+								0
+							]
+						],
+						"settings":
+						{
+							"sorttabs_lastactivated": 1456812368.3,
+							"syntax": "Packages/Ruby/Ruby.tmLanguage"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				}
+			]
+		}
+	],
+	"incremental_find":
+	{
+		"height": 0.0
+	},
+	"input":
+	{
+		"height": 0.0
+	},
+	"layout":
+	{
+		"cells":
+		[
+			[
+				0,
+				0,
+				1,
+				1
+			]
+		],
+		"cols":
+		[
+			0.0,
+			1.0
+		],
+		"rows":
+		[
+			0.0,
+			1.0
+		]
+	},
+	"menu_visible": true,
+	"replace":
+	{
+		"height": 62.0
+	},
+	"save_all_on_build": true,
+	"select_file":
+	{
+		"height": 0.0,
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"select_project":
+	{
+		"height": 0.0,
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"show_minimap": false,
+	"show_open_files": false,
+	"show_tabs": true,
+	"side_bar_visible": true,
+	"side_bar_width": 150.0,
+	"status_bar_visible": true
+}

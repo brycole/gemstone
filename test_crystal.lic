@@ -1,0 +1,3 @@
+@crysal_weapon = nil
+GameObj.loot.find {|i| @crystal_weapon = i if i.name =~ /crystal-tipped/}
+fput "_drag ##{@crystal_weapon.id} ##{GameObj[/link equipment satchel/].id}" if !@crystal_weapon.nil?

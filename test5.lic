@@ -1,0 +1,25 @@
+put 'glance'
+while line = get 
+  if line =~ /You glance down to see an? (.*) in your right/
+    echo $1
+    break
+  end
+end
+
+songverse = 0
+
+# loresong block
+while line = get 
+  case line
+  when /^You sing/
+    echo songverse =+ 1
+  when /temporarily blessed/
+    tempbless = true      
+  when /enchanted by (\w+)/
+    enchantedname = $1
+  end
+  break if songverse >= 4
+end
+
+echo tempbless
+echo enchantedname

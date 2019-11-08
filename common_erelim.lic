@@ -1,0 +1,49 @@
+## Stripped version of common
+## Kalros v.01
+
+
+$time_since_last_deposit = Time.now
+
+module GSC
+
+
+  def track_deposit(deposit_reason)
+    $silvers_from_coins = 0
+    $silvers_from_notes = 0
+
+    wait_while { running?('go2')}
+    $check_silvers = <<-eos
+    while line = get
+      break unless Room.current.id.to_s =~ /\\b(11|4686|3672)\\b/
+      if line =~ /You deposit (\\d+) silvers into your account|says, "That's a total of (\\d+) silvers/
+        echo "inside silver line"
+        echo line
+        echo $silvers_from_coins = $1 if $1
+        echo $silvers_from_notes = $2 if $2
+      end
+    end
+    eos
+
+    ExecScript.start($check_silvers, :quiet => true)
+    put 'deposit all'
+
+    sleep 1
+    fput 'wealth'
+
+    silvers = $silvers_from_coins.to_i + $silvers_from_notes.to_i
+    time_since_start = ((Time.now - $time_since_last_deposit) / 60.0).round(2)
+    silvers_per_hour = (silvers / (time_since_start/60.0)).round
+
+    echo "Reason for deposit: #{deposit_reason}"
+    echo "Silvers: #{silvers}"
+    echo "Time since last deposit: #{time_since_start} minutes."
+    echo "Silvers per hour: #{silvers_per_hour}"
+
+    File.open("silvers_per_hour.txt", 'a') { |file|
+      file.puts deposit_reason
+      file.puts "Per_hour: #{silvers_per_hour} Silvers: #{silvers} Total_time: #{time_since_start}"
+      file.puts "-------"
+    }
+    $time_since_last_deposit = Time.now
+  end
+  module_function :track_deposit

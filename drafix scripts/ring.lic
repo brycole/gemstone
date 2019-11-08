@@ -1,0 +1,44 @@
+=begin
+	A script for switching to the right position for your multi-setting teleport rings
+
+	The script itself is pretty self-explanatory when you read it.
+	It assumes the first time you run it that you're on position 1.
+	It will remember which position you set it to afterwards.
+
+	It will figure out the shortest way to get to the position you want.
+
+	Variables that might be of interest to you:
+	number_of_settings
+	
+	P.S. change the word ring to whatever (amulet/bracer/thingamabob) you need
+=end
+def turn_ring(current_position, target_position, number_of_settings=10)
+	left = 0
+	right = 0
+	return if current_position == target_position
+	if current_position > target_position
+		left = current_position - target_position
+		right = number_of_settings + target_position - current_position
+	else
+		right = target_position - current_position
+		left = number_of_settings - target_position + current_position
+	end
+	left < right ? left.times{fput 'pull my ring'} : right.times{fput 'push my ring'}
+end
+
+def reset_ring
+	put "tap my ring"
+	line = get until line =~ /->  (\d+)/
+	Settings['current_position'] = $1.to_i	
+end
+
+if script.vars[0] =~ /reset/
+	reset_ring
+	exit
+end
+
+Settings['current_position'] ||= 1
+echo "Current position: #{Settings['current_position']}"
+turn_ring(Settings['current_position'], script.vars[1].to_i)
+put "rub my ring"
+Settings['current_position'] = script.vars[1].to_i

@@ -1,0 +1,20 @@
+=begin
+	Adds commas in numbers larger than 5 digits for easy reading
+	
+	-Drafix
+=end
+begin
+	action = proc { |client_string|
+		if client_string =~ /\d{5,}/ && client_string !~ /<.*>/
+			client_string.gsub(/(\d)(?=(\d\d\d)+(?!\d))/, "\\1,")
+		elsif client_string =~ /(\d{5,} (silver|coin))/
+			client_string.gsub(/(\d)(?=(\d\d\d)+(?!\d)(?= (silvers|coins)))/, "\\1,")
+		else
+			client_string
+		end
+	}
+	DownstreamHook.add('numbercomma', action)
+	loop { sleep 1 }
+ensure
+	DownstreamHook.remove('numbercomma')
+end

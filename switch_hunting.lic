@@ -1,0 +1,98 @@
+## switch_hunting
+## v.01 by Kalros
+## Switch bigshot settings via data stored in YAML config file
+##
+
+$switch_hunting_debug = true
+
+hunt_settings = YAML.load_file('./scripts/creature-data.yaml') if hunt_settings.nil?
+echo hunt_settings if $switch_hunting_debug
+
+UserVars.creature_index = 0 if UserVars.creature_index.nil?
+
+creature_name = Array.new
+creature_name << ['great stagTI', 'tawny brindlecat']
+#creature_name << ['great stagTV']
+#creature_name << ['direwolf', 'direbear'] # TV
+creature_name << ['greater moor wight', 'lesser moor wight', 'greater fetid corpse', 'colossus vulture']
+creature_name << ['agresh bear', 'black leopard'] # TV
+creature_name << ['crested basiliskTI', 'giant weasel']
+creature_name << ['mastodonic leopard', 'dreadnought raptor']
+creature_name << ['scaly burgee']
+#creature_name << ['crested basiliskTV', 'centaur', 'centaur ranger']
+creature_name << ['centaur', 'centaur ranger']
+total_creatures = creature_name.size
+echo creature_name if $switch_hunting_debug
+echo "size: #{total_creatures}" if $switch_hunting_debug
+
+## Counters for rotating through the creature list
+## see track_deposit method in common for increase of index 
+## using minimum silver values
+
+UserVars.creature_index = 0 if UserVars.creature_index >= total_creatures
+echo "Creature_index: #{UserVars.creature_index}" if $switch_hunting_debug
+
+$global_creature_name = creature_name[UserVars.creature_index]
+creature_name = creature_name[UserVars.creature_index]
+echo "Hunting: #{creature_name}"
+echo creature_name if $switch_hunting_debug
+
+## End index creature_name assignment
+
+temp_start_room = nil
+temp_boundaries = nil
+temp_targets = ""
+temp_a = ""
+temp_b = ""
+temp_c = ""
+
+## Setting some UserVars that sbounty clears
+UserVars.op['resting_room_id'] = 20
+UserVars.op['wounded_eval'] = "bleeding? || percenthealth <= 60 || ([Wounds.head, Scars.head].max >= 2) || ([Wounds.nsys, Scars.nsys].max >= 2) || ([Wounds.leftArm, Wounds.leftHand, Wounds.rightArm, Wounds.rightHand, Scars.leftArm, Scars.leftHand, Scars.rightArm, Scars.rightHand].max >= 3) || ( ([Wounds.leftArm, Wounds.leftHand, Scars.leftArm, Scars.leftHand].max >= 2) or ([Wounds.rightArm, Wounds.rightHand, Scars.leftArm, Scars.leftHand].max >= 2) )"
+
+## Cross check Areas Hash against Creature Hash to find starting room and boundaries
+temp_areas = hunt_settings['Creatures']["#{creature_name[0]}"]['area_name'].join(",")
+hunt_settings['Areas'].each do |key, value|
+  if temp_areas =~ /#{key}/
+    echo key if $switch_hunting_debug
+    echo value if $switch_hunting_debug
+    $to_hunt_zone = hunt_settings['Areas']["#{key}"]['hunt_zone']
+    temp_start_room = hunt_settings['Areas']["#{key}"]['start_room']
+    temp_boundaries = hunt_settings['Areas']["#{key}"]['boundaries'].join(",")
+  end
+end
+
+echo temp_areas if $switch_hunting_debug
+echo temp_start_room if $switch_hunting_debug
+echo temp_boundaries if $switch_hunting_debug
+echo $to_hunt_zone
+
+## Append with (a) or (b) to determine where to aim attacks based on skin locations
+creature_name.each{|i|
+  short = hunt_settings['Creatures'][i]['short_name']
+  skin_temp = hunt_settings['Creatures'][i]['skin_location']
+  temp_targets << (short + "(a)" + ",") if skin_temp =~ /head/
+  temp_targets << (short + "(b)" + ",") if skin_temp =~ /back|chest/
+  temp_targets << (short + "(c)" + ",") if skin_temp =~ /flying|undead/
+}
+
+## combining the targets into 1 target line if more then 1 target
+#temp_targets = (temp_a+temp_b+temp_c).join(",")
+#temp_targets = temp_a + "," + temp_b + "," + temp_c if (temp_b != "" or temp_c != "")
+
+temp_attackA = 'punch target abdomen'
+temp_attackB = 'punch target head'
+temp_attackC = 'punch target right leg, smite target, punch target abdomen'
+temp_attackC = 'wait 5, punch target head' if temp_targets !~ /spirit/
+
+## Move local variables into bigshot settings
+UserVars.op['targets']            = temp_targets
+UserVars.op['hunting_room_id']    = temp_start_room
+UserVars.op['hunting_boundaries'] = temp_boundaries
+UserVars.op['hunting_commands']   = temp_attackA
+UserVars.op['hunting_commands_b'] = temp_attackB
+UserVars.op['hunting_commands_c'] = temp_attackC
+UserVars.op['flee_count']         = 99
+UserVars.op['rest_till_exp']      = 101
+UserVars.op['fried']      = 101
+UserVars.op['encumbered']         = 100

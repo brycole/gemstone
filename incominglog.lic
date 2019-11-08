@@ -1,0 +1,35 @@
+#Logs incoming PMs for Newsby
+PrevName = []
+PrevName[1] = "Newsby"
+$answering = "I'm just the hired help. I'll take your message for Luxie and let her know. Or you can Message her: Luxelle"
+key = "recap"
+
+while 1
+
+	incoming = waitfor "Private]"
+
+	xml_thought = "<pushStream id=\"familiar\"/>#{incoming}\n<popStream/>\n";puts xml_thought
+
+	Script.log "#{Time.now.strftime("%Y-%m-%d %H:%M:%S")} \t#{incoming}"
+
+## Reply to them...
+#debugging...
+#echo "Last Name was: #{PrevName[1]}"
+#echo "And the incoming string looks like #{incoming}"
+#		if incoming !~ /PrevName[1]/		;;never worked.
+#		unless (incoming =~ /PrevName[1]/)	;;never worked
+		if incoming.include? PrevName[1]
+			respond "...already took that message, boss."
+		else
+			LNet.send_message(attr={'type'=>'private', 'to'=>LNet.last_priv}, $answering)
+		end
+
+	LastMsg = incoming
+
+	PrevName = LastMsg.split(/:/)
+
+#	respond "#{PrevName[1]}"
+
+	sleep 0.3
+
+end

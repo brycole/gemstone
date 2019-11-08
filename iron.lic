@@ -1,0 +1,562 @@
+=begin
+Makes 4 Iron slabs and returns you to forge
+
+# Name: Make Iron
+# Authors: Hazado
+# Categories: Artisan, Society
+# Tags: forging, forge, craft, artisan, voln
+=end
+
+c = 0
+
+begin:
+start_script('go2', [ "7998", '_disable_confirm_' ]);
+wait_while{ running?('go2') }
+ waitrt?
+
+fput "get Char"
+ match "charcoal1", "You just grabbed a charcoal from the burner\\.  It is still warm but you find you can safely hold it"
+ match "start", "There is nothing more for you to get"
+ match "start", "There is no charcoal yet, you must make some first"
+ match "charcoal1", "You pick"
+ match "charcoal1", "You remove"
+ matchwait
+
+
+start:
+ waitrt?
+fput "get wood"
+ match "log", "You just grabbed yourself a split log"
+ match "tinder", "You just grabbed yourself a handful of tinder"
+ match "stick", "You just grabbed yourself a wooden stick"
+matchwait
+
+log:
+ pause 1
+ waitrt?
+fput "put log in burn"
+ waitrt?
+fput "get wood"
+ match "log2", "You just grabbed yourself a split log"
+ match "tinder1", "You just grabbed yourself a handful of tinder"
+ match "stick1", "You just grabbed yourself a wooden stick"
+matchwait
+
+tinder:
+ waitrt?
+fput "put tinder in bur"
+ goto "start"
+
+stick:
+ waitrt?
+fput "drop stick"
+ goto "start"
+
+tinder1:
+ waitrt?
+fput "put tinder in bur"
+ goto "log"
+ 
+stick1:
+ waitrt?
+fput "drop stick"
+ goto "log"
+
+log2:
+ waitrt?
+fput "put log in burn"
+ waitrt?
+fput "get stick"
+ waitrt?
+fput "get stick"
+ match "stick2", "Get what"
+ match "stick2", "You already have that"
+ match "rub", "You pick"
+matchwait
+
+stick2:
+ pause 1
+ waitrt?
+fput "get wood"
+ match "log3", "You just grabbed yourself a split log"
+ match "tinder3", "You just grabbed yourself a handful of tinder"
+ match "rub", "You just grabbed yourself a wooden stick"
+matchwait
+
+tinder3:
+ pause 1
+ waitrt?
+fput "put tinder in bur"
+ goto "stick2"
+log3:
+ pause 1
+ waitrt?
+fput "put log in bur"
+ goto "stick2"
+rub:
+ waitrt?
+fput "rub Stick"
+ match "charcoal", "You rub two sticks"
+ match "stick2", "You rub the wooden stick in your hand"
+matchwait
+
+charcoal:
+ waitfor "The fire flickers and dies down to a few glowing lumps of charcoal and finally goes out"
+ waitrt?
+fput "get char"
+
+charcoal1:
+waitrt?
+clear
+fput "stow my char"
+waitrt?
+clear
+move "go bush"
+waitrt?
+clear
+move "go shadow"
+waitrt?
+clear
+move "down"
+waitrt?
+clear
+move "down"
+waitrt?
+clear
+move "down"
+waitrt?
+clear
+move "south"
+c = 1
+ore:
+waitrt?
+clear
+fput "search work"
+match "ore#{c}", "You dig around in the cracks and fissures on the workface and you manage to dislodge something heavy!"
+match "orea", "You search the working face but you don't find anything"
+match "orea", "Your eyes are too tired from the uncertain light"
+matchwait
+
+orea:
+pause 1
+goto "ore"
+
+ore1:
+c += 1
+oreb:
+pause 1
+waitrt?
+clear
+fput "search work"
+match "ore#{c}", "You dig around in the cracks and fissures on the workface and you manage to dislodge something heavy!"
+match "oreb", "You search the working face but you don't find anything"
+matchwait
+
+ore2:
+c += 1
+orec:
+pause 1
+waitrt?
+clear
+fput "search work"
+match "ore#{c}", "You dig around in the cracks and fissures on the workface and you manage to dislodge something heavy!"
+match "orec", "You search the working face but you don't find anything"
+matchwait
+
+ore3:
+c += 1
+ored:
+pause 1
+waitrt?
+clear
+fput "search work"
+match "ore#{c}", "You dig around in the cracks and fissures on the workface and you manage to dislodge something heavy!"
+match "ored", "You search the working face but you don't find anything"
+matchwait
+
+ore4:
+waitrt?
+clear
+fput "get ore"
+waitrt?
+clear
+fput "stow my ore"
+pause 1
+waitrt?
+clear
+fput "get ore"
+waitrt?
+clear
+fput "stow my ore"
+pause 1
+waitrt?
+clear
+fput "get ore"
+waitrt?
+clear
+fput "stow my ore"
+pause 1
+waitrt?
+clear
+fput "get ore"
+waitrt?
+clear
+fput "stow my ore"
+pause 1
+waitrt?
+clear
+move "n"
+waitrt?
+clear
+move "up"
+waitrt?
+clear
+move "n"
+
+c = 1
+oil:
+ waitrt?
+
+fput "search"
+ match "rt", "wait"
+ match "oil#{c}", "back behind a pile of oily debris, you find a filthy flask of oil seemingly still"
+ match "oil", "You carefully and meticulously search every place you can think of"
+ match "oil", "You grope about the place searching here and there, but you find only dust and old cobwebs"
+ match "oil", "You grope about the place searching carefully, but you find only a thin film of oil that coats your hands"
+ matchwait
+
+rt:
+ pause 1
+ goto "oil"
+
+oil1:
+c += 1
+waitrt?
+clear
+fput "get oil"
+waitrt?
+clear
+fput "stow oil"
+oilb:
+pause 1
+waitrt?
+clear
+fput "search"
+match "rt1", "\205wait"
+match "oil#{c}", "back behind a pile of oily debris, you find a filthy flask of oil seemingly still"
+match "oilb", "You carefully and meticulously search every place you can think of"
+match "oilb", "You grope about the place searching here and there, but you find only dust and old cobwebs"
+match "oilb", "You grope about the place searching carefully, but you find only a thin film of oil that coats your hands"
+matchwait
+
+rt1:
+ pause 1
+ goto "oilb"
+
+
+oil2:
+waitrt?
+clear
+fput "get oil"
+waitrt?
+clear
+fput "stow oil"
+c += 1
+oilc:
+pause 1
+waitrt?
+clear
+fput "search"
+match "rt2", "\205wait"
+match "oil#{c}", "back behind a pile of oily debris, you find a filthy flask of oil seemingly still"
+match "oilc", "You carefully and meticulously search every place you can think of"
+match "oilc", "You grope about the place searching here and there, but you find only dust and old cobwebs"
+match "oilc", "You grope about the place searching carefully, but you find only a thin film of oil that coats your hands"
+matchwait
+
+rt2:
+ pause 1
+ goto "oilc"
+
+rt3:
+ pause 1
+ goto "oil3"
+
+oil3:
+ waitrt?
+
+fput "get oil"
+ match "rt3", "\205wait"
+ match "oil4", "You pick up a filthy flask of oil"
+ matchwait
+
+oil4:
+ waitrt?
+
+fput "stow oil"
+ waitrt?
+
+ move "s"
+ waitrt?
+
+ move "go door"
+
+
+smelt:
+fput "look"
+match "occupied", "Also here:"
+match "noone", "Obvious exits"
+matchwait 
+
+occupied:
+echo "When the occupants here are done to continue type ;send RESTART"
+waitfor "RESTART"
+
+noone:
+fput "look in pit"
+match "FULL", "In the casting pit you see a"
+match "notfull", "There is nothing in there"
+matchwait 
+
+full:
+echo "THERES SOME ALREADY DONE REMOVE IT and TYPE ;send RESTART to restart the script where it left off or HOME to head back to town."
+match "notfull", "RESTART"
+match "home", "HOME"
+matchwait 
+
+notfull:
+ waitrt?
+fput "get char"
+ waitrt?
+
+fput "put char in cru"
+ pause 1
+ waitrt?
+
+fput "get ore"
+ waitrt?
+
+fput "put ore in cru"
+ pause 1
+ waitrt?
+
+fput "get ore"
+ waitrt?
+
+fput "put ore in cru"
+ pause 1
+ waitrt?
+
+fput "get ore"
+ waitrt?
+
+fput "put ore in cru"
+ pause 1
+ waitrt?
+
+fput "get ore"
+ waitrt?
+
+fput "put ore in cru"
+ pause 1
+valve:
+ waitrt?
+
+fput "turn valv"
+ match "bellow", "The valve closes"
+ match "valve", "You turn the valve but only"
+matchwait
+
+bellow:
+waitrt?
+clear
+move "east"
+ waitrt?
+
+fput "get oil"
+ waitrt?
+
+fput "pour oil in drum"
+pause 1
+waitrt?
+clear
+fput "get oil"
+waitrt?
+clear
+fput "pour oil in drum"
+pause 1
+waitrt?
+clear
+fput "get oil"
+waitrt?
+clear
+fput "pour oil in drum"
+pause 1
+waitrt?
+clear
+put "pull chain"
+match "bellow1", "Roundtime"
+match "bellow1", "You tug on the chain but nothing much happens"
+matchwait
+
+bellow1:
+waitrt?
+clear
+fput "pull bellow"
+match "rt", "\\.\\.\\.wait"
+match "turn", "Roundtime"
+matchwait
+
+rt:
+	 pause 1
+	 goto "bellow1"
+
+turn:
+waitrt?
+clear
+put "w"
+match "move", "\\[Kobold Mines, Crucible\\]"
+match "rt1", "\\.\\.\\.wait"
+matchwait
+rt1:
+	 pause 1
+	 goto "turn"
+
+move:
+waitrt?
+clear
+fput "turn valv"
+waitrt?
+clear
+move "e"
+
+waitrt?
+clear
+fput "pull chain"
+bellow2:
+ waitrt?
+
+fput "pull bellow"
+ match "rt2", "\\.\\.\\.wait"
+ match "chain", "Roundtime"
+matchwait
+
+rt2:
+	 pause 1
+	 goto "bellow2"
+
+chain:
+ waitrt?
+
+fput "pull chain"
+ match "bellow3", "Roundtime"
+ match "rta", "\\.\\.\\.wait"
+matchwait
+rta:
+	 pause 1
+	 goto "chain"
+
+bellow3:
+ waitrt?
+
+fput "pull bellow"
+ match "rt3", "\\.\\.\\.wait"
+ match "chain1", "Roundtime"
+matchwait
+
+rt3:
+	 pause 1
+	 goto "bellow3"
+
+chain1:
+ waitrt?
+
+fput "pull chain"
+ match "bellow4", "Roundtime"
+ match "rtb", "\\.\\.\\.wait"
+matchwait
+rtb:
+	 pause 1
+	 goto "chain"
+
+bellow4:
+ waitrt?
+
+fput "pull bellow"
+ match "rt4", "\\.\\.\\.wait"
+ match "finish", "Roundtime"
+matchwait
+
+rt4:
+	 pause 1
+	 goto "bellow4"
+
+finish:
+ waitrt?
+
+fput "w"
+ match "finishm", "\\[Kobold Mines, Crucible\\]"
+ match "rt5", "\\.\\.\\.wait"
+matchwait
+
+rt5:
+	 pause 1
+	 goto "finish"
+	 
+finishm:
+match "whoops", "There is a loud crackling sound from within the crucible as the partially melted but not yet forged materials solidify into useless slag caking the insides of the forge\\.  The work is ruined"
+match "final", "With an oddly musical ringing sound, the slab"
+matchwait
+
+
+whoops:
+waitrt?
+clear
+put "go door"
+waitrt?
+clear
+move "up"
+waitrt?
+clear
+move "up"
+waitrt?
+clear
+move "out"
+waitrt?
+clear
+move "out"
+waitrt?
+clear
+put "go hole"
+waitrt?
+clear
+put "go shrub"
+goto "start"
+
+
+
+final:
+ waitrt?
+fput "get iron from pit"
+ waitrt?
+fput "stow my iron"
+ pause 1
+ waitrt?
+fput "get iron from pit"
+ waitrt?
+fput "stow my iron"
+ pause 1
+ waitrt?
+fput "get iron from pit"
+ waitrt?
+fput "stow my iron"
+ pause 1
+ waitrt?
+fput "get iron from pit"
+ waitrt?
+fput "stow my iron"
+ pause 1
+home:
+start_script('go2', [ "forge", '_disable_confirm_' ]);
+wait_while{ running?('go2') }
+exit

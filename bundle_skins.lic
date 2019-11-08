@@ -1,0 +1,26 @@
+
+
+skin = "(feathers|pelt)"
+skin_long = 'link equipment satchel'
+skin_short = 'link satchel'
+
+#skin = GameObj[/link equipment satchel/].contents.find {|i| i.type =~ "skin"}
+#fput "get my ##{skin.id}"
+
+while true
+  sleep 0.05
+  if lefthand.nil?
+    skin = GameObj[/link equipment satchel/].contents.find {|i| i.noun =~ /\b#{skin}\b/}
+    GSC.bput "get ##{skin.id} from my link sat", "^You remove|Get what"
+  end
+  if righthand.nil?
+    skin = GameObj[/link equipment satchel/].contents.find {|i| i.noun =~ /\b#{skin}\b/}
+    GSC.bput "get ##{skin.id} from my link sat", "^You remove|Get what"
+  end
+  result = GSC.bput "bundle", "^You carefully|Your bundle would be too large"
+  if result =~ /Your bundle would/
+    GSC.bput "put ##{GameObj.right_hand.id} in my #{skin_short}", "You put"
+    GSC.bput "swap", "^You swap"
+  end
+  sleep 0.05
+end

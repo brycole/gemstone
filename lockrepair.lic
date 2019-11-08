@@ -1,0 +1,7 @@
+5.times do
+	2.times {fput "get ticket from cloak"}
+	fput "give ticket to tisan"
+	fput "swap"
+	fput "give ticket to tisan"
+	2.times {fput "put lock in toolkit"}
+end

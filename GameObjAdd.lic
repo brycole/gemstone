@@ -1,0 +1,89 @@
+=begin
+This script expands and incorporates what Kalros/Haldrik did in confluence_sort.lic
+
+Its designed to add new objects to GameObj data so that Lich recognizes things properly
+Just add it to your autostart - ;autostart add GameObjAdd
+
+Adds Reim NPCs to undead and aggressive npcs list
+Adds new NPC type noncorporeal
+Adds Reim Gems and gives them their own category
+Excludes stuff that shouldn't be picked up
+Adds Confluence plinites and cores to new category "confluence" (STOLEN from confluence_sort.lic!!)
+Adds Duskruin Shards to category "moonshard"
+Adds Duskruin digging gems to category "duskruin gem"
+Adds Pennant Chase gems to category "pennant chase gem"
+
+=end
+
+ReimNpcs = "ethereal (?:commoner|denizen|guard|guardsman|guardswoman|inmate|lunatic|madman|madwoman|peasant|prisoner|squire|swordsman|swordswoman|traveller|townsman|townswoman|villager)|ghostly (?:bandit|highwayman|highwaywoman|marauder|waylayer)|unworldly (?:guest|maid|noble|royal guard|royal knight|servant|slave|steward|visitor)|celestial (?:dancer|juggler|nomad|traveller)|Shopkeeper|Innkeeper|Bartender|Patrol Leader|Bandit Lord|Bandit Lady|Gypsy Queen|Gypsy King|Guard Captain|Wall Captain|Drill Sergeant|Stable Hostler|Dungeon Master|Master Torturer|Butler|Cook|Knight Captain|Foreign Dignitary|Royal Prince|Royal Princess|Royal Jester|Royal Emperor|Royal Empress"
+
+wait_while { running?('repository')}
+
+GameObj.load_data
+
+#Exclude crap that shouldn't be picked up or is miscatgorized
+#Add stuff that is missing!
+if GameObj.type_data['armor'][:exclude].inspect !~ /dirty brown robes/i && GameObj.type_data['armor'][:exclude].inspect !~ /some flowing robes/i && GameObj.type_data['armor'][:exclude].inspect !~ /some tattered white robes/i
+	GameObj.type_data['armor'][:exclude] = Regexp.new(/#{GameObj.type_data['armor'][:exclude]}|^(?:some dirty brown robes|some flowing robes|some tattered white robes)$/)
+end
+if GameObj.type_data['clothing'][:exclude].inspect !~ /some tattered white robes/i && GameObj.type_data['clothing'][:exclude].inspect !~ /woven cloak/i
+	GameObj.type_data['clothing'][:exclude] = Regexp.new(/#{GameObj.type_data['clothing'][:exclude]}|some tattered white robes|woven cloak/)
+end
+if GameObj.type_data['ebongate'][:name].inspect =~ /piece of golden amber/i
+	GameObj.type_data['ebongate'][:exclude] = Regexp.new(/#{GameObj.type_data['ebongate'][:exclude]}|^(?:piece of golden amber)$/)
+end
+if GameObj.type_data['jewelry'][:noun].inspect !~ /scepter/i && GameObj.sellable_data['gemshop'][:noun].inspect !~ /scepter/i && GameObj.sellable_data['pawnshop'][:noun].inspect !~ /scepter/i
+	GameObj.type_data['jewelry'][:noun] = Regexp.new(/#{GameObj.type_data['jewelry'][:noun]}|^(?:scepter)$/)
+	GameObj.sellable_data['gemshop'][:noun] = Regexp.new(/#{GameObj.sellable_data['gemshop'][:noun]}|^(?:scepter)$/)
+	GameObj.sellable_data['pawnshop'][:noun] = Regexp.new(/#{GameObj.sellable_data['pawnshop'][:noun]}|^(?:scepter)$/)
+end
+
+#Adds Reim undead to aggressive npc and undead category
+if GameObj.type_data['aggressive npc'][:name].inspect !~ /#{ReimNpcs}/i && GameObj.type_data['undead'][:name].inspect !~ /#{ReimNpcs}/i 
+	GameObj.type_data['aggressive npc'][:name] = Regexp.new(/#{GameObj.type_data['aggressive npc'][:name]}|^#{ReimNpcs}$|monstrous direwolf|direbear/)
+	GameObj.type_data['undead'][:name] = Regexp.new(/#{GameObj.type_data['undead'][:name]}|^#{ReimNpcs}$/)
+end
+
+#Stolen from confluence_sort.lic
+if GameObj.type_data['confluence'].nil?
+	GameObj.type_data['confluence'] = {:noun=>'test'}
+	GameObj.type_data['confluence'][:noun] = Regexp.new(/plinite/)
+	GameObj.type_data['confluence'][:name] = Regexp.new(/(glowing|tranquil|churning|stable|balanced|pulsating|fire|lightning|earth|steam) core/)
+end
+
+#Add Duskruin Shards
+if GameObj.type_data['moonshard'].nil?
+	GameObj.type_data['gem'][:exclude] = Regexp.new(/#{GameObj.type_data['gem'][:exclude]}|^cracked ur-barath stone$/)
+	GameObj.type_data['uncommon'][:exclude] = Regexp.new(/#{GameObj.type_data['uncommon'][:exclude]}|^(thin iron strip|thin kakore strip)$/)
+	GameObj.type_data['valuable'][:exclude] = Regexp.new(/#{GameObj.type_data['valuable'][:exclude]}|^golden glimaerstone nugget$/)
+	GameObj.type_data['moonshard'] = {:name=>'test'}
+	GameObj.type_data['moonshard'][:name] = Regexp.new(/^(?:jagged white sunstone shard|broken white opal sphere|white dreamstone sliver|thin platinum strip|black opal fragment|blood red garnet chunk|coarse grey moonstone shard|thin iron strip|cracked ur-barath stone|broken fire opal chunk|splintered fire agate shard|thin kakore strip|lopsided golden moonstone sphere|sharp golden topaz shard|golden glimaerstone nugget|reticulated crystal-edged golvern segment)$/)
+end
+
+#Reim gems get there own category!
+if GameObj.type_data['reim gem'].nil?
+	GameObj.type_data['reim gem'] = {:name=>'test'}
+	GameObj.type_data['reim gem'][:name] = Regexp.new(/^(?:round of milky amber|smoky amethyst|hexagonal cobalt blue beryl|chunk of bronzite|marbled green chrysoprase|cluster of sky blue crystal|ice blue diamond|nebulous emerald|lustrous black garnet|ethereal blue gem|teardrop of dark green heliotrope|spear of lavender-grey iolite|piece of jet-flecked ivory|piece of black jade|piece of blue jade|pebble of orbicular jasper|cone of mahogany obsidian|heart of blue onyx|cloud opal|iridescent wood opal|jelly opal|shard of pink petalite|luminous prehnite|snow quartz|haloed Reim ruby|pallid sapphire|chunk of pale blue ice stone|chunk of pearly grey ice stone|chunk of snowy white ice stone|slice of ribbon stone|dark blue tempest stone|faint gold tempest stone|pale grey tempest stone|ebon-cored vortex stone|silver-cored vortex stone|sliver of bright green viridine)$/)
+	GameObj.type_data['gem'][:name] = Regexp.new(/#{GameObj.type_data['gem'][:name]}|^(?:cluster of sky blue crystal)$/)
+	GameObj.type_data['gem'][:noun] = Regexp.new(/#{GameObj.type_data['gem'][:noun]}|^(?:bronzite|chrysoprase|heliotrope|iolite|petalite|prehnite|viridine)$/)
+end
+
+#Duskruin gems get there own category!
+if GameObj.type_data['duskruin gem'].nil?
+	GameObj.type_data['duskruin gem'] = {:name=>'test'}
+	GameObj.type_data['duskruin gem'][:name] = Regexp.new(/^(?:flame-banded gold chameleon agate|thin shard of iridescent fire agate|gently sloped green moss agate|round of gnat-filled amber|slice of gold-blended ametrine|fragment of lilac-toned amethyst|brilliant teal-laced azurite|scintillating scarlet red blazestar|inky-cored vivid carmine bloodjewel|cluster of gingery golden chrysoberyl|clouded maize-colored citrine|pale metallic silver mistvein diamond|sharply cut salorisa pink diamond|flawless argent-white diamond|pale-edged powder blue dreamstone|smooth black umber-suffused dreamstone|heart-shaped aqua green emerald|black-rayed celadon star emerald|multi-faceted sky blue feystone|six-pointed rich sanguine garnet|beryl green crystal-filled geode|pristine smoky violet glimaerstone|teardrop of mauve petrified haon|dainty orb of primrose yellow heliodor|cushion-cut ember orange hyacinth|bronze-tinged lambent yellow jacinth|slim bar of woodland green jade|pyrite-capped vibrant blue lapis lazuli|small disk of velvety green malachite|silver-washed celestial blue moonstone|cyan-haloed creamy ivory moonstone|pearlescent raven black opal|pellucid blue-green ora-bloom|oversized shadowy purple pearl|glimmering magnolia white pearl|tiny prism of wintry blue peridot|trilliant-cut yellow-green peridot|triangular pastel rainbow quartz|hazy shard of faint pink rose quartz|cube of sheer blossom pink rosespar|wheel-incised incarnadine ruby|coin-sized seafoam white sandsilver|silver-swept blue mistvein sapphire|honey-tinted indigo water sapphire|dark-veined apple green turquoise)$/)
+	GameObj.type_data['gem'][:noun] = Regexp.new(/#{GameObj.type_data['gem'][:noun]}|^(?:ametrine|chrysoberyl|citrine|haon|malachite|rosespar)$/)
+end
+
+#Pennant Chase gems
+if GameObj.type_data['pennant chase gem'].nil?
+	GameObj.type_data['pennant chase gem'] = {:name=>'test'}
+	GameObj.type_data['pennant chase gem'][:name] = Regexp.new(/^(?:chunk of|faceted|fist-sized|nugget of|piece of|polished|sliver of|smooth|thumb-sized) (?:banana|bright|candy|dark|forest|mint|ocean|pale|rose|sky|sunny|sunset|vibrant)?\s?(?:blue|green|orange|pink|red|violet|yellow)(?:-tinged)? (?:coral|diamond|dreamstone|glimaerstone|jade|quartz|roestone|sapphire|sphene|spinel|topaz|tourmaline|zircon)$/)
+	GameObj.type_data['pennant chase gem'][:exclude] = Regexp.new(/^(?:piece of blue jade)$/)
+end
+
+#Noncorporeal creature identifier
+if GameObj.type_data['noncorporeal'].nil?
+	GameObj.type_data['noncorporeal'] = {:name=>'test'}
+	GameObj.type_data['noncorporeal'][:name] = Regexp.new(/(?:banshee|barghest|bog wraith|dark apparition|darkwoode|death dirge|eidolon|elder tree spirit|ethereal mage apprentice|ethereal triton sentry|fallen crusader|firephantom|gaunt spectral servant|ghost wolf|ghost|ghostly mara|ghostly pooka|ghostly warrior|ice wraith|lesser frost shade|lesser shade|lost soul|mist wraith|moaning phantom|moaning spirit|naisirc|night mare|nightmare steed|phantasma|phantasmal bestial swordsman|phantom|revenant|seraceris|shadow mare|shadow steed|shadowy spectre|snow spectre|spectral fisherman|spectral lord|spectral miner|spectral monk|spectral shade|spectral triton defender|spectral warrior|spectral woodsman|spectre|tree spirit|troll wraith|warrior shade|wind wraith|wolfshade|wraith|#{ReimNpcs})$/)
+end

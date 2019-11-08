@@ -1,0 +1,82 @@
+### 
+### Script that controls item wearing and other administrative tasks
+### before going hunting
+
+start_script "monitor" if !running? "monitor"
+unpause_script 'transcend' if running? 'transcend'
+start_script "transcend" if !running? "transcend"
+#start_script "checkemail" if !running? "checkemail"
+
+UserVars.op['flee_count'] = 2
+
+#GSC.open_satchel
+
+GSC.run_wait_script('waggle', 'xx') if Room.current.id == 20
+
+GSC.bput "get knife from cloak", "You|Get|I"
+GSC.bput "put knife in harn", "You|I" if (GameObj.right_hand.noun == 'stiletto') or (GameObj.left_hand.noun == 'stiletto')
+
+
+@wear_items = Array.new
+
+#fput 'cman predator'
+
+#fput 'put lock in toolkit' if (GameObj.right_hand.noun == 'lockpick') or (GameObj.left_hand.noun == 'lockpick')
+
+#GSC.bput 'put my paingrip in my spidersilk satchel', '^You put' if righthand == 'paingrip' or lefthand == 'paingrip'
+fput 'stow right' if GameObj.right_hand.noun.nil? == false
+fput 'stow left' if GameObj.right_hand.noun.nil? == false
+
+exit
+
+## ** Remove enhancives! ##
+GSC.remove_enhancive($lock_enhancives)
+
+## ** Wear armor
+
+if running? 'treasure_hunt'
+ # GSC.remove_enhancive(['imflass-winged golden rolaren greathelm'])
+  GSC.remove_enhancive($exp_enhancives - $skin_enhancives)
+  GSC.remove_enhancive($combat_enhancives - $skin_enhancives)
+  GSC.wear_enhancive($skin_enhancives)
+  GSC.wear_enhancive(['imflass-winged golden rolaren greathelm'])
+  GSC.wear_enhancive(['some electrum-edged plate']) 
+else
+  GSC.remove_enhancive($exp_enhancives)
+  GSC.remove_enhancive($skin_enhancives - $combat_enhancives)
+  GSC.wear_enhancive($combat_enhancives)
+  GSC.wear_enhancive($tpick_remove_enhancives)
+  GSC.wear_armor($armors)
+end
+
+check_armor = GameObj.inv.find{|z| z.name =~ /#{$armorshort}/}
+if check_armor.nil?
+  echo "Armor is missing."
+  fput "get my plate"
+  fput "wear my plate"
+  sleep 1
+  waitrt?
+end
+check_armor = GameObj.inv.find{|z| z.name =~ /#{$armorshort}/}
+
+if check_armor.nil?
+  echo "Second armor check, armor is still missing. Exiting scripts."
+  kill_script 'sbounty' if running? 'sbounty'
+  kill_script 'bigshot' if running? 'bigshot'
+  kill_script 'go2' if running? 'go2'
+  sleep 2
+  start_script 'go2', [ 'town' ]
+  sleep 6000
+  exit
+end
+
+dothistimeout "armor evasion", 2, /^Roundtime/ if Spell[9505].timeleft < 60
+GSC.close_satchel
+
+waitrt?
+GSC.close_satchel
+
+until GameObj.right_hand.noun != 'plate' and GameObj.left_hand.noun != 'plate' do
+  fput 'wear my plate'
+end
+

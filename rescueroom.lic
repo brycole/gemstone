@@ -1,0 +1,41 @@
+=begin
+Simple script to fog to a player, attempt to group everyone in the room, then fog them out.
+
+Useful when a group gets wiped out.
+
+usage ;rescueroom <player>
+
+=end
+
+
+
+target=script.vars[1].downcase
+
+if checkmana <= 61
+	respond ("Not enough mana!")
+	exit
+else
+
+fput "prep 225"
+fput "cast #{target}"
+
+spellresult = waitfor("A silvery fog envelops you.  You feel a sudden lurching motion, and as the fog dissipates you see..." , "Your spell misfires.")
+
+
+	if spellresult =~ /Your spell misfires/
+		respond ("Can't fog to target")
+		exit
+	end
+
+
+	if spellresult =~ /A silvery fog envelops you/
+		GameObj.pcs.each{|pc|
+		next if pc.noun =~ /Alfred|Staypuff/i
+		fput "group ##{pc.id}"
+#		wait
+		}
+		waitcastrt?
+		fput "incant 130"
+	end
+
+end

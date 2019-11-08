@@ -1,0 +1,401 @@
+##quiet
+## vim: set ft=ruby:
+=begin
+
+    This script will loresing to an item in your right hand, an item in a container,
+    a person's items, or all items on the ground. Start the script with ;ssing <item|person|ground>
+    and watch it work. At the end it will whisper (if person), say (if ground), or echo a summary of the item.
+
+     author: SpiffyJr, modified Sept 20, 2016 for Luxelle
+       name: SpiffySing, originally. Now: newsong
+       tags: utility, bard
+    version: 2.1L
+
+    Luxie Changes:
+    Added other padding, other weighting, flares, sighting, all sorts of properties that were missing
+    Recognizes weapon lost in combat
+
+    Reformatted to my output
+    added MY lyrics for each verse
+    Made it output to my own details file for archiving, uses Vars client to whisper OOC to client
+    And Other Stuff.
+
+=end
+print = proc { |msg|
+    echo "-- #{msg}"
+}
+
+error = proc { |msg|
+    echo "** #{msg}"
+    exit
+}
+
+loresing = proc { |item, phrase|
+    waitrt?
+    waitcastrt?
+#    fput "loresing #{item.noun} that I hold;let your #{phrase} now be told"
+
+echo "*** #{phrase} ***"
+
+if phrase.eql? "value"
+    fput "loresing Hello, brave #{item.noun}, Iloru is my name!;Tell me your #{phrase}, sing of your fame!"
+elsif phrase.eql? "purpose"
+    fput "loresing #{item.noun} held dear, now be ever so bold;Sing out your #{phrase} lest ye be sold!"
+elsif #{phrase} == "magic"
+    fput "loresing Now #{item.noun} true, I really like what I hear.;Share more of your #{phrase}, sing it loud and clear!"
+elsif #{phrase} == "special ability"
+    fput "loresing Finally #{item.noun}, I thank you for your true and charming song.;Let me hear your #{phrase} and I will sing along!"
+end
+
+    waitfor "You sing"
+
+    lines = []
+    time = Time.now.to_i
+
+    while true
+        line = get?
+
+        if checkrt == 0
+            break
+        end
+
+        if line.nil?
+            sleep 0.1
+            next
+        end
+
+        lines.push(line)
+    end
+
+    props = []
+
+    lines.each { |line|
+        index = lines.index(line)
+
+        if line =~ /is the weight, which is about (\d+) pounds/
+            props.push("#{$1.to_s} pounds")
+        end
+
+        if line =~ /under a pound/
+            props.push("less than 1 pound")
+        end
+
+        if line =~ /It has (.*) lock/
+            props.push("with a #{$1.to_s} lock")
+        end
+
+        if line =~ /feel it trying to draw power from you/
+            props.push("Orb Gem")
+        end
+
+        if line =~ /it may be refilled/
+            props.push("mage-rechargeable")
+        end
+
+        if line =~ /to function as a (.*)/
+            props.push("#{$1.to_s}")
+        end
+
+        if line =~ /is a magical item, which casts spells from the (\w+) sphere.  It has (.*) charges/
+            props.push("spell from #{$1.to_s.downcase} sphere with #{$2.to_s} charges")
+        end
+
+        if line =~ /it's worth about ([\d,]+) silvers/
+            props.push("value: #{$1.to_s} silvers")
+        end
+
+        if line =~ /You sense that this is some type of holy item/
+            props.push("holy item")
+        end
+
+        if line =~ /may be able to hold more power/
+            props.push("mage rechargeable")
+        end
+
+        if line =~ /It has a bonus of ([\-\d+]+) from/
+            props.push("#{$1.to_s} enchant")
+        end
+
+        if line =~ /The magical strength of this item is strong/
+            props.push("re-imbeddible")
+        end
+
+         if line =~ /It provides a boost of (\d+) to ([^.]+)/
+             prop = "+#{$1.to_s} to #{$2}"
+
+             prop.gsub!('Bonus', "BONUS")
+             prop.gsub!('Ranks', "RANKS")
+
+            if lines[index + 1] =~ /who have not trained (\d+) times/
+                prop = "#{prop} (#{$1.to_s} trains)"
+            end
+
+
+            props.push("ENHANCIVE: #{prop}")
+        end
+
+        if line =~ /looks to have (.*) remaining\./
+            props.push($1.to_s)
+        end
+
+         if line =~ /seems to be out of charges/
+            props.push(It is out of charges)
+        end
+
+       if line =~ /will (crumble into dust|persist) after its last enhancive charge/
+            effect = $1 =~ /crumble/ ? 'crumbles' : 'persists'
+            props.push("on enhancive it #{effect}")
+        end
+
+        if line =~ /will (disintegrate|persist) after its last magical charge/
+            effect = $1 =~ /disintegrate/ ? 'crumbles' : 'persists'
+            props.push("on magic it #{effect}")
+        end
+
+        if line =~ /allows a caster to occasionally focus their magical prowess/
+            props.push("acuity flares")
+        end
+
+        if line =~ /contains the spell (.*),/
+            props.push("the spell is #{$1}")
+
+            if Spell[$1]
+                 props.push(prop + "(#{Spell[$1].num})")
+            end
+        end
+
+        if line =~ /song blurs/
+            props.push("additional blurry msg from imbeddible")
+        end
+
+        if line =~ /belonging to the Chronomages/
+            props.push("Chronomage item")
+        end
+
+        if line =~ /attuned to (.*)/
+            props.push("tuned to #{$1.to_s}")
+        end
+
+        if line =~ /untuned to any particular location/
+            props.push("Location not set to anywhere")
+        end
+
+
+        if line =~ /infused with an? (\w+) (?:substance|force|elemental)/
+            props.push("#{$1.to_s} flares")
+        end
+
+        if line =~ /infused with the power of an? (\w+) (?:substance|force|elemental)/
+            props.push("#{$1.to_s} flares")
+        end
+
+        if line =~ /lightning bolt/
+            props.push("#{$1.to_s} lightning flares")
+        end
+
+        if line =~ /has been sanctified for use/
+            props.push("#{$1.to_s} this is SANCTIFIED")
+        end
+
+        if line =~ /helps defend the one who wields it/
+            props.push("#{$1.to_s} DEFENDER Weapon")
+        end
+
+        if line =~ /it has no spell within it now, but could be imbedded with one, in the proper hands.  You estimate that it can contain an (.*) of mana/
+            props.push("imbeddible #{$1.to_s}")
+        end
+
+        if line =~ /you determine that it is (\w+) resistant to (\w+) attacks/
+            props.push("#{$1.to_s} resistant to #{$2.to_s}")
+        end
+
+        if line =~ /infused with mana/
+            props.push("mana flares")
+        end
+
+        if line =~ /was recently lost in battle by (\w+)/
+            props.push("#LOST in Battle by {$1.to_s}")
+        end
+
+        if line =~ /assists its bearer with aiming attacks at range/
+            props.push("sighted - get it evaluated")
+        end
+
+
+        # containers
+        if line =~ /maximum interior capacity of (.*) with room for ([^.,]+)/
+            prop = "holds up to #{$1.to_s} pounds for #{$2.to_s}"
+
+            if line =~ /where each item can weigh up to (.*) pound/
+                prop = "#{prop} @ #{$1.to_s} pound each"
+            end
+
+            props.push(prop)
+        end
+
+        # padding
+        if line =~ /protect from magical attacks|protect from additional damage|inflicts more fearsome wounds|extra damage when it strikes|reduce the severity of inflicted wounds/
+            if line =~ /extra damage/
+                prop = "damage weighted -get it assessed"
+            elsif line =~ /reduce the severity/
+                prop = "crit padded -get it assessed"
+            elsif line =~ /protect from additional damage/
+                prop = "damage padded -get it assessed"
+            elsif line =~ /inflicts more fearsome/
+                prop = "crit weighted -get it assessed"
+            elsif line =~ /magical attacks/
+                prop = "td boost"
+            end
+
+            if lines[index + 1] =~ /temporary/
+                prop = "temp #{prop}"
+
+                if lines[index + 3] =~ /able to withstand an (.*) of uses/i
+                    prop = "#{prop} #{$1.to_s}"
+                end
+            end
+
+           if lines[index + 1] =~ /enhancement will degrade/
+                prop = "temp #{prop}"
+
+                if lines[index + 3] =~ /able to withstand an (.*) of uses/i
+                    prop = "#{prop} #{$1.to_s} -get it assessed"
+                end
+            end
+
+
+            props.push(prop)
+        end
+
+
+    }
+
+    props
+}
+
+sing = proc { |item|
+    print.call("singing to #{item.name}")
+
+    fput "speak bard"
+
+    props = [item.name]
+
+    props.concat(loresing.call(item, "value"))
+    props.concat(loresing.call(item, "purpose"))
+    props.concat(loresing.call(item, "magic"))
+    props.concat(loresing.call(item, "special ability"))
+
+    fput "speak common"
+
+    props
+}
+
+sing_for_person = proc { |person|
+    item = nil
+
+    # did they offer before we started the script?
+    fput "accept"
+
+    if GameObj.right_hand.id.nil?
+        print.call('waiting on item from person')
+
+        start = Time.now.to_i
+        while true
+            line = get?
+
+            if Time.now.to_i - start > 10
+                error.call('failed to get item, try again')
+                break
+            end
+
+            if line.nil?
+                sleep 0.25
+                next
+            end
+
+            if line =~ /#{person.noun} offers you/i
+                fput "accept"
+                if GameObj.right_hand.id.nil?
+                    error.call('offer expired before we could accept')
+                end
+
+                item = GameObj.right_hand
+
+                break
+            end
+        end
+    else
+        item = GameObj.right_hand
+    end
+
+    props = sing.call(item)
+    fput "whisper #{person.noun.downcase} #{props.join('; ')}"
+    fput "give ##{item.id} to ##{person.id}"
+}
+
+sing_ground = proc { |items|
+    if items.empty? or items.nil?
+        items = GameObj.loot.find_all { |item|
+            item.type =~ /uncommon|clothing|jewelry|armor|weapon/
+        }
+    end
+
+    if items.empty? or items.nil?
+        error.call("nothing on ground")
+    end
+
+    items.each { |item|
+        fput "_drag ##{item.id} right hand"
+        fput "say #{sing.call(item).join('; ')}"
+        fput "_drag ##{item.id} drop"
+    }
+}
+
+if Char.prof !~ /Bard/
+    error.call('silly rabbit, tricks are for kids (you are not a bard)')
+end
+
+if script.vars[1].nil? and GameObj.right_hand.id.nil?
+    error.call('specify a person, an item, or put an item in your right hand')
+end
+
+on_ground = false
+
+if script.vars[1].nil?
+    item = GameObj.right_hand
+#    print.call(sing.call(item).join('; '))
+    Script.run('details4newsong', "#{sing.call(item).join('; ')}")
+
+
+else
+    if script.vars[0] =~ /ground/
+        sing_ground.call(nil)
+        exit
+    elsif person = GameObj.pcs.find { |pc| pc.noun =~ /#{script.vars[0]}/i }
+        sing_for_person.call(person)
+        exit
+    elsif item = GameObj.loot.find { |item| item.name =~ /#{script.vars[0]}/i }
+        sing_ground.call([item])
+        exit
+    else
+        container = nil
+        item = nil
+        GameObj.inv.each { |inv|
+            if item = inv.contents.find { |item| item.name =~ /#{script.vars[0]}/i }
+                container = inv
+                break
+            end
+        }
+
+        if item
+            fput "_drag ##{item.id} right hand"
+            print.call("#{sing.call(item).join('; ')}")
+            fput "_drag ##{item.id} ##{container.id}"
+            exit
+        end
+    end
+
+    error.call("not sure what to do with #{script.vars[0]}")
+end
+
+

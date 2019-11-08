@@ -1,0 +1,2 @@
+# DO NOT edit by hand unless it's necessary -- just delete the file to reset these values.
+18:0:0.0

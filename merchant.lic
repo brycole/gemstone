@@ -1,0 +1,10 @@
+
+while true
+  merchant_msg = "Last call on T3 Chaos Jewelry. Fully altered, grants invisbility!"
+  merchant_msg1 = "Bid via LNet or here -> http://forum.gsplayers.com/showthread.php?116309-EVERYTHING-MUST-GO!-1-MB-Part-1"
+  LNet.send_message(attr={'type'=>'channel', 'channel'=>'merchant'}, merchant_msg)
+  LNet.send_message(attr={'type'=>'channel', 'channel'=>'merchant'}, merchant_msg1)
+  $verb_count += 1
+  $verb_count = 0 if $verb_count > 5
+  sleep 1800
+end

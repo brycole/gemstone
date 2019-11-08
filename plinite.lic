@@ -1,0 +1,18 @@
+
+@plinite_list = []
+
+GameObj['bag'].contents.each {|i| @plinite_list << i.id}
+
+@plinite_list.each {|plinite|
+  Spell[402].cast if Spell[402].timeleft < 0.01
+  Spell[403].cast if Spell[403].timeleft < 0.01
+  Spell[404].cast if Spell[404].timeleft < 0.01
+  GSC.bput "get ##{plinite}", "^You remove"
+  result = GSC.bput "extract my plinite", "^You carefully work your lockpick into the cracks of the plinite and manage to hook|^You promptly discover that the core has|^You carefully work your lockpick into the cracks of the plinite, but cannot manage"
+  #echo result
+  if result =~ /^You carefully work your lockpick into the cracks of the plinite and manage to hook|^You promptly discover that the core has/
+    GSC.bput "_drag ##{plinite} ##{GameObj['bag'].id}", "^You put"
+  else
+    GSC.bput "_drag ##{plinite} ##{GameObj['shawl'].id}", "^You put"
+  end
+}

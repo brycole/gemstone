@@ -1,0 +1,40 @@
+##quiet
+## vim: set ft=ruby:
+=begin
+
+    SBounty SHunt Proxy by SpiffyJr (spiffyjr@gmail.com)
+    
+    This script is intended to be used with SBounty to proxy
+    hunter calls through SHunt.
+    
+     author: spiffyjr
+      email: theman@spiffyjr.me
+       name: SpiffyBounty SHunt
+       tags: bounty
+    version: 1.0
+
+=end
+
+if not defined? SHunt
+    start_script('shunt', [ 'load' ])
+    wait_while { running?('shunt') }
+end
+
+$SBOUNTY_HUNTER_NAME  = 'shunt'
+$SBOUNTY_HUNTER_SETUP = proc { |settings, location|
+    name = location[0]
+    data = location[1]
+
+    $shunt.set_setting('looter', settings[:loot_script])
+    $shunt.set_setting('targets', data[:targets])
+    $shunt.set_setting('boundaries', data[:boundaries])
+    $shunt.set_setting('room', data[:room])
+    $shunt.set_setting('attack-line-1', settings[:hunt_commands_a].join(','))
+    $shunt.set_setting('attack-line-2', settings[:hunt_commands_b].join(','))
+    $shunt.set_setting('attack-line-3', settings[:hunt_commands_c].join(','))
+}
+$SBOUNTY_CLEAN_TARGETS = proc { |targets|
+    targets.collect { |target| target.strip.gsub(/\d+\./, '') }
+}
+
+$SBOUNTY_HUNTER_RELOAD = proc {}

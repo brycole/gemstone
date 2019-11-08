@@ -1,0 +1,14 @@
+
+
+
+while line = get
+  sleep 0.03
+  if line =~ /Obvious/
+    fput 'punch nazagor head'
+    waitrt?
+    fput 'punch nazagor head'
+    waitrt?
+    fput 'punch nazagor head'
+    waitrt?
+  end
+end

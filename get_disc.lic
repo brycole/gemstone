@@ -1,0 +1,29 @@
+# Get black crystal
+
+
+GSC.find_teleport_setting
+GSC.goto_teleport_setting(12)
+
+#13953
+
+## Bank
+GSC.run_wait_script('go2', 13938)
+
+GSC.bput 'withdraw 2000 silver', '^The teller'
+
+## black crystal
+GSC.run_wait_script('go2', 13953)
+
+GSC.bput 'order 12', '^You may'
+GSC.bput 'buy', 'takes the'
+GSC.bput 'rub cry', '^You rub'
+
+## Bank
+GSC.run_wait_script('go2', 13938)
+GSC.bput 'deposit all', '^You'
+
+## wyvern plaza
+GSC.run_wait_script('go2', 13920)
+
+# bank to ta'illistim
+GSC.goto_teleport_setting(1)

@@ -1,0 +1,20 @@
+$hasted = false
+
+
+Thread.new {
+	while line = get
+		$hasted = false if line =~ /Kalros returns to normal speed|Kalros just went|Kalros just arrived/
+		$hasted = true if line =~ /Kalros begins moving faster|Your magic clashes/
+	end
+}
+
+while true
+	if $hasted == false and checkpcs.to_s =~ /Kalros/
+		put "prep 506"
+		put "cast kalros"
+		$hasted = true
+	end
+
+	#checkpcs.to_s =~ /Kalros/ ? Spell[506].cast("at Kalros") : (fput "exp")
+	sleep 1
+end

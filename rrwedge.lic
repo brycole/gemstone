@@ -1,0 +1,79 @@
+
+def stow()
+	fput "stow left" if checkleft != nil
+	fput "stow right" if checkright != nil
+end
+
+def carve_rub()
+	waitrt?
+	result = dothistimeout "rub my wedge", 3, /is ready for use!|Roundtime/i
+	if result =~ /is ready for use!/i
+		buy_block
+	elsif result =~ /Roundtime/i
+		carve_rub
+	elsif result.nil?
+		carve_rub
+	end
+end
+
+
+def carve()
+	waitrt?
+	result = dothistimeout "carve my wedge", 3, /You should RUB the wedge now.|Roundtime/i
+	if result =~ /You should RUB the wedge now./i
+		carve_rub
+	elsif result =~ /Roundtime/i
+		carve
+	elsif result.nil?
+		carve
+	end
+end
+
+def carve_start()
+	waitrt?
+	result = dothistimeout "carve my block", 3, /wedge|wooden block/i
+	if result =~ /wedge/i
+		carve
+	elsif result =~ /wooden block/i
+		carve_start
+	elsif result.nil?
+		carve_start
+	end
+end
+
+def buy_block()
+	wedge_container = 'shawl'
+	fput "put my wedge in my #{wedge_container}" if checkleft == "wedge" or checkright == "wedge"
+	number_of_wedges -= 1
+	if number_of_wedges <= 0
+		echo "Done making wedges"
+		move 'out' if checkpaths 'out'
+		exit
+	end
+	waitrt?
+	multifput "order 1", "buy"
+	carve_start
+end
+
+def carve_go()
+	number_of_wedges = 10
+	silvers_needed = number_of_wedges * 300
+	if number_of_wedges == 1
+		echo "Making 1 wedge"
+	else
+		echo "Making #{number_of_wedges} wedges."
+	end
+	stow
+	start_script 'go2', [ 'bank', '--disable-confirm' ]
+	wait_while{ running?('go2') }
+	multifput "depo all", "withdraw #{silvers_needed} silvers"
+	#target_room = Room.current.find_nearest(toolbenches_room_number)
+	start_script 'go2', [ '17881' ]
+	wait_while{ running?('go2') }
+	fput "go toolbench"
+	waitfor "workshop instructions"
+	number_of_wedges += 1
+	buy_block
+end
+
+carve_go

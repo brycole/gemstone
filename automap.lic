@@ -1,0 +1,48 @@
+=begin
+  Documentation: https://elanthipedia.play.net/Lich_script_repository#automap
+=end
+
+class AutoMapperActions
+  @@actions = []
+
+  def self.actions=(val)
+    @@actions = val
+  end
+
+  def self.actions
+    @@actions
+  end
+end
+
+action = proc do |client_string|
+  AutoMapperActions.actions << client_string
+  client_string
+end
+UpstreamHook.remove('automapper')
+UpstreamHook.add('automapper', action)
+
+before_dying do
+  UpstreamHook.remove('automapper')
+end
+
+respond('Starting')
+
+def map_room(last_id, current_id, actions)
+  Room[last_id].wayto ||= {}
+  new_action = actions.last.gsub(/<c>|\n/, '')
+  Room[last_id].wayto.delete_if { |_key, value| value == new_action }
+  Room[last_id].wayto[current_id.to_s] = new_action
+  Room[last_id].timeto[current_id.to_s] = 0.2
+  current_id
+end
+
+last_id = Room.current_or_new.id
+last_count = XMLData.room_count
+loop do
+  respond '**Mapping (abort to cancel, stop to finish)**'
+  wait_until { XMLData.room_count > last_count }
+  last_id = map_room(last_id, Room.current_or_new.id, AutoMapperActions.actions.dup)
+  last_count = XMLData.room_count
+  AutoMapperActions.actions = []
+  pause 0.1
+end

@@ -1,0 +1,65 @@
+
+
+# clear all shortcuts on exit
+# change this to my current room
+Map.list.each { |room|
+  room.wayto.delete_if { |k,v|
+    v.inspect =~ /activate_teleport_obj/
+  }
+  room.timeto.delete_if { |k,v|
+    v.inspect =~ /use_ring_shortcuts/
+  }
+}
+
+ring_settings = {
+  1 =>  2300, # icemule TC
+  2 => 223, # landing, north gate
+  3 => 1014, # Khazar's hold
+
+  5 => 990, # as close to zhintel's post cart as we can get from illistim
+  6 => 10815, # just outside swim to otf
+  7 => 728, # illistim, glamesine var garden supernode
+}
+
+
+[exec2: @wayto={"9811"=>"southwest", "9813"=>"southeast"}
+@paths=["Obvious exits: southeast, southwest"]
+@image_coords=[1150, 409, 1160, 419]
+@terrain=nil
+@description=["Dark clay walls ascend toward the high ceiling, their rich brown hue mottled with countless tiny vein-like cracks.  A smooth earthen floor spreads out beneath you, featureless except for a few thin roots, which are barely visible beneath the dirt.  The steady drip of water can be heard in the distance, the echoes playing off the twists and turns of the labyrinth."]
+@image="en-tower-1264234799.png"
+@climate=nil
+@title=["[Maaghara Labyrinth]"]
+@check_location=nil
+@timeto={"9811"=>0.2, "9813"=>0.2}
+@id=9814
+@location="the Maaghara Tower"
+@tags=[]
+@links=[]]
+
+
+@wayto ={"5555" => "stringproc-teleport(1)"}
+@timeto ={"5555" => "50)"}
+
+zoneTI
+1 => 30   [Ta'Illistim, Stearriza Var]
+12 => 10216 [Apple Orchard]
+3 => 990 [Eastern DragonSpine, Slope]
+7 => 188 ->  7 Ta'Illistim, Hanging Gardens
+
+ZoneOTF
+11813 ->  8 Ta'Faendryl Approach
+11996 ->  9 Aqueduct
+
+ring_zones = { 
+  'zoneTI' => {
+    1 => 30, 
+    12 => 10216, 
+    3 => 990, 
+    7 => 188,
+  }
+  'zoneOTF' => {
+    8 => 11813, 
+    9 => 11996,
+  }
+}

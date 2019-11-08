@@ -1,0 +1,44 @@
+=begin
+	Reports room creatures as they enter the room. 
+	
+	Known Bugs: reports a critter if you walk into a room too.. too lazy to fix it.
+	
+	By: Drafix
+	
+	Changelog:
+	1.0 (02/21/2016)
+		Original Author Drafix
+		Maintainer is now Kalros
+		Added automatic color highlighting to bandit announcement
+		Pared code down to notifications only. (Removed Drafix custom attack scripts.)
+=end
+
+status_tags
+room = 0
+#[exec1: <compass><dir value="se"/><dir value="sw"/></compass>Your <pushBold/><a exist="12861925" noun="spirit">alpine spirit</a><popBold/> and your <pushBold/><a exist="12862968" noun="ptarmigan">rock ptarmigan</a><popBold/> followed.]
+Settings['exclude'] ||= Set.new ['alpine spirit', 'rock ptarmigan']
+while line = get
+	if line =~ /[Yy]our (.+?) and your (.+?) followed\./
+		Settings['exclude'].add($1)
+		Settings['exclude'].add($2)
+	elsif line =~ /[Yy]our (.+?) followed\./
+		Settings['exclude'].add($1)
+	elsif line =~ /<dialogData id='combat'>.*content_text="(.*)" content_value=.*<\/dialogData>/
+		monsters = $1.split(',')
+		if npc=monsters.find{|npc| npc =~ /\b(?:thief|rogue|bandit|mugger|outlaw|highwayman|marauder|brigand|thug|robber)\b/}
+			next if npc =~ /dark\-clad/
+			foundroom=Room.current.id
+			_respond("<preset id='thought'>Bandits Found!   entered the room.</preset>")
+		end
+		
+		if monsters.length == 1
+			num_monsters = 0
+			next
+		end
+		num_monsters ||= monsters.length
+		if monsters.length > num_monsters
+			_respond("<preset id='thought'>#{monsters[1]} entered the room.</preset>") if !Settings['exclude'].include?(monsters[1])
+		end
+		num_monsters = monsters.length
+	end
+end

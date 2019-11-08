@@ -1,0 +1,204 @@
+## DR arena
+## by Kalros
+
+ #;e fput "loresing Sing to me, #{GameObj.right_hand.noun}, and tell me true,;A little bit more about your value!"
+
+@guild = 'wizard' if Char.name == 'Lumino'
+@guild = 'monk' if Char.name == 'Atilio'
+@guild = 'wizard' if Char.name == 'Bilkago'
+@guild = 'bard' if Char.name == 'Iloru'
+$aim = 'none'
+$trapcommand = "none"
+$watchAgain = false
+$champNumber = 0
+$duskRuin = true
+$champion = false
+start_script('commonFight')
+
+#start_script 'monitor' if !running? 'monitor'
+kill_script 'transcend' if running? 'transcend' 
+
+$legCritMsgs = "Blow shatters knee|Strike punctures|Shot shatters|You ripped|(Left|Right) leg ripped|Lucky shop rips|(Left|Right) hip"
+
+check_lines = <<-eos
+  while line = get
+   #echo line
+    break if !running?('duskruinArena')
+    kill_script 'duskruinArena' if line =~ /^You've been defeated.  You'll/
+    #kill_script 'duskruinArena' if line =~ /^An arena guard escorts you from/
+    #put 'incant 1030' if line =~ /^Your armor/
+    if line =~ /^An announcer boasts, "Combatant \\w+ is triumphant|^An announcer shouts, "You've run out of time|^You've been defeated|^You surrender/
+      #put 'stop 1018'
+      if Char.name == 'Iloruxxx'
+        GSC.bput "wear shield", "You"
+        GSC.bput "put warblade in bag", "You"
+      end
+      if Char.name == 'Lumino' || Char.name == 'Atilio'
+        kill_script 'ubermonk'
+        #GSC.bput "stow all", "You"
+      end
+      kill_script 'duskruinArena'
+      start_script 'waggle'
+    elsif line =~ /You appraise.+/
+      #echo line
+      put $trapCommand = /\\b(roll|bob|lean|pedal|jump|duck)\\b/.match(line)
+      #echo $trapCommand
+    elsif line =~ /(Eye crushed|Crushing blow to head|Slash across right|Surgical strike)/
+      echo line
+      if $aim == 'right eye'
+        $aim = 'left eye'
+        #put 'aim left eye'
+      elsif $aim == 'left eye'
+        $aim = 'chest'
+        #put 'aim chest'
+      end
+    elsif line =~ /(Skull cracks in several places|Strike to temple! Saved by|Beautiful shot pierces skull!)/
+      echo line
+      if $aim == 'head'
+        $aim = 'neck'
+        #put 'aim neck'
+      end
+    elsif line =~ /(Throat nearly crushed|Pierced through neck, a fine|Neck skewered, sliding past)/
+      echo line
+      if $aim =='neck'
+        $aim = 'right eye'
+        #put 'aim right eye'
+      end
+    elsif line =~ /#{$legCritMsgs}/ and $aim == 'right leg'
+      $aim = 'left leg'
+      #put 'aim left leg'
+    elsif line =~ /#{$legCritMsgs}/ and $aim == 'left leg'
+      $aim = 'clear'
+      #put 'aim clear'
+    elsif line =~ /fall victim|^You glance around/
+      $watchAgain = true
+    elsif line =~ /An announcer shouts, "Send in a champion!/
+      $champNumber = $champNumber + 1
+    elsif line =~ /^The .+ does not have a chest|^You cannot aim that/
+      $aim = 'right leg'
+      #put 'aim right leg'
+    elsif line =~ /already missing thatxxxx/
+      $aim = 'chest'
+      #put 'aim chest'
+    end
+
+  end
+eos
+
+start_exec_script(check_lines, :quiet => true)
+
+fput 'stance off' until stance == "offensive"
+if @guild == 'bard'
+  #$aim = 'head'
+  #GSC.bput "aim head", "You're"
+  #GSC.bput "get my warblade from my bag", "You grab"
+  #GSC.bput "remove shield", "You sling"
+  #Spell[9805].cast if Spell[9805].timeleft < 4
+  #Spell[9805].cast if Spell[9805].timeleft < 8
+  #Spell[9805].cast if Spell[9805].timeleft < 8
+  #Spell[9806].cast if Spell[9806].timeleft < 8
+  #Spell[9806].cast if Spell[9806].timeleft < 8
+  Spell[1003].cast if !Spell[1003].active
+  Spell[1006].cast if !Spell[1006].active
+  Spell[1007].cast if !Spell[1007].active
+  Spell[1010].cast if !Spell[1010].active
+  waitcastrt?
+end
+
+while true
+  if GameObj.npcs.size > 0
+    GSF.arenaWatch() # check for traps
+    #GSC.checkspells(@guild)
+    # attack loop here
+    # old attack loop
+    #GSC.run_wait_script('ubermonk', "#{[checknpcs[0]]}") if @guild == 'wizard' || @guild == 'monk'
+    if @guild == 'wizard' || @guild == 'monk' || @guild == 'bard'
+      GSF.attackDriver()
+    end
+    
+    if @guild == 'bardxxxx'
+      if checknpcs[0] =~ /champion/
+        #$aim = 'right leg'
+        ##put 'aim right leg'
+        #$aim = 'clear'
+        ##put 'aim clear'
+      end
+      Spell[1005].cast if checknpcs[0] =~ /slaver|champion|grahnk|cave worm|automaton/
+      if checknpcs[0] =~ /champion|automaton/
+        $champion = true
+        if checknpcs[0] =~ /champion/
+          champTemp = "champion"
+        else
+          champTemp = "automaton"
+        end
+      end
+      #Spell[1005].cast if checknpcs[0] =~ /crab/
+      waitcastrt?
+      while checknpcs # Attack Loop
+        GSF.checkStatus()
+        arenaWatch() if $watchAgain
+        #attackCommand = stamina > 42 ? "qstrike -3 hurl" : "attack"
+        
+        if $champion = true
+          attackCommand = stamina > 34 ? "mstrike #{champTemp}" : "attack"
+        else
+          attackCommand = "attack"
+        end
+        fput "stand" unless standing?
+        GSC.bput "#{attackCommand}", "You"
+      end
+    end
+    #if $aim != 'head' and $aim != 'none'
+    #  $aim = 'head'
+    #  #put 'aim head'
+    #end
+    $watchAgain = false
+    matchtimeout(5, "An announcer shouts, \"Send") if GameObj.npcs.size < 1
+    GameObj.loot.each {|i| put "tap ##{i.id}" if i.name !~ /arrow/}
+    #put 'sigil of power' if stamina > 51 and mana < 240 if Spell[9718].known?
+    #dothistimeout "sign of wracking", 0.5, /^You shudder/ if spirit > 5 and mana < 20 if Spell[9918].known?
+    #if mana > 10
+    #  dothistimeout "incant 1030", 0.5, /^Your spellsong|^Your armor/
+    #  waitcastrt?
+    #else
+    #  dothistimeout "pray", 0.5, /^An announcer/
+    #end
+    #else sleep 0.5
+  else
+    sleep 0.1
+  end
+end
+
+
+## Sell DR Shards
+## v.01 by Kalros
+
+=begin
+
+containers_list = ['longcloak', 'cloak', 'bag', 'rucksack', 'harness', 'case', 'pack']
+containers_list = script.vars[0].to_s if script.vars[0]
+containers_list = containers_list.split(",") if script.vars[0]
+
+
+for container in containers_list
+  dothistimeout "look in #{container}", 1, /In|I could/
+end
+
+
+for container in containers_list
+   for shards in ['chunk', 'fragment', 'shard', 'sliver', 'strip', 'sphere', 'stone']
+    if GameObj.npcs.find {|i| i.noun == 'archaeologist'}
+      items = GameObj["#{container}"].contents.find_all {|i| i.noun =~ /\b#{shards}\b/}
+      items.each {|i| 
+        put "get ##{i.id}"
+        put "give ##{i.id} to arch"
+        dothistimeout "give ##{i.id} to arch", 1, /^You exchange/
+      }
+    end
+  end
+end
+
+#;e 3.times {fput 'get blood from back';fput 'put blood in pou';sleep 0.2}
+#;e GameObj.loot.each {|i| fput "_drag ##{i.id} ##{GameObj[/cloak/].id}" if i.noun != 'backpack';sleep 0.2}
+
+=end

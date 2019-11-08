@@ -1,0 +1,41 @@
+  #res = dothistimeout "info", 1, /Strength/i       
+  test = "You appraise the situation and notice the goblin champion may charge into you, you could try to bob back and forth!"
+  echo test
+  textreg = "(roll|bob|lean|pedal|jump|duck)"
+  docom = /\b(roll|bob|lean|pedal|jump|duck)\b/.match("#{test}")
+  #echo "#{trapCommand}"
+echo docom
+
+
+fput "STANCE OFFENSIVE" until stance == "offensive"
+while GameObj.npcs.size > 0
+  fput "STANCE OFFENSIVE" until stance == "offensive"
+  if !Spell[9005].active? && GameObj.npcs.all? { |i| i.noun !~ /nest/i }
+   if GameObj.npcs.size > 1 and stamina > 35
+        dothistimeout "mstrike", 5, /^Roundtime:/  
+   elsif stamina > 50
+        dothistimeout "mstrike target", 5, /^Roundtime:/ 
+   else
+        fput "attack" 
+   end 
+  else
+    fput "attack" 
+  end
+  fput "STANCE DEFENSIVE" until stance == "defensive" 
+end
+
+
+
+    if $position != 'decent' and $bandits != true and Spell[9699].timeleft < 0.01
+      if (Spell[9005].timeleft < 0.01 and stamina > 200) or stamina > 106
+        fput "mstrike punch ##{target.id}"
+      else
+        GSC.bput "#{$uac} ##{target.id} #{$aim_location}", "^You attempt"
+      end
+    else
+        GSC.bput "#{$uac} ##{target.id} #{$aim_location}", "^You attempt"
+    end  
+
+
+220*7 * 2 = 2800 per hour
+8*7 = 56

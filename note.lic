@@ -1,0 +1,6 @@
+
+
+while true
+  sleep 0.5
+  put 'stow note' if lefthand == 'note'
+end

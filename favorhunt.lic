@@ -1,0 +1,34 @@
+
+exit
+
+
+def run_wait_script(script, var1)
+	start_script "#{script}", ["#{var1}"] if var1 !~ /xx/
+	start_script "#{script}" if var1 =~ /xx/
+	sleep 1
+	wait_while { running?("#{script}")}
+end
+
+#if script.vars[1] =~ /end/
+
+	run_wait_script('start_hunt', 'xx')
+	
+	start_script 'fbigshot'
+	sleep 1
+	wait_while { running?("go2")}
+	wait_until { running?('favorhunt_temp') or percentmind <= 25}
+
+	pause_script 'fbigshot' if running? 'fbigshot'
+	pause_script 'transcend' if running? 'transcend'
+	run_wait_script('go2', '20')
+	run_wait_script('first_rest', 'xx')
+	run_wait_script('useherbs', 'xx')
+	run_wait_script('go2', "#{$pick_room}")
+	run_wait_script('tpick', 'xx')
+	run_wait_script('movegem', 'xx')
+	run_wait_script('loot-be', 'xx')
+	run_wait_script('go2', '20')	
+	run_wait_script('waggle', 'xx')
+	run_wait_script('last_rest', 'xx')
+	kill_script 'fbigshot' if running? 'fbigshot'
+	exit

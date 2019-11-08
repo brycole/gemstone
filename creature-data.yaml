@@ -1,0 +1,221 @@
+Creatures:
+  great stagTI:
+   short_name: stag
+   area_name: 
+    - Yegharren Valley
+   skin_location: head
+   skin_name: antlers
+   skin_short: antlers
+  great stagTV:
+   short_name: stag
+   area_name: 
+    - Yanders Farm
+   skin_location: head
+   skin_name: antlers
+   skin_short: antlers
+  tawny brindlecat:
+   short_name: brindlecat
+   area_name: 
+    - Yegharren Valley
+   skin_location: chest
+   skin_name: hide
+   skin_short: hide
+  crested basiliskTI:
+   short_name: basilisk
+   area_name: 
+    - Yegharren Plain
+   skin_location: head
+   skin_name: a basilisk crest        
+   skin_short: crest
+  giant weasel:
+   short_name: weasel
+   area_name:
+   - Yegharren Plain
+   skin_location: back
+   skin_name: a weasel pelt
+   skin_short: pelt
+  mastodonic leopard:
+   short_name: leopard
+   area_name:
+   - Gyldemar Forest
+   skin_location: back
+   skin_name: a spotted leopard pelt
+   skin_short: pelt
+  dreadnought raptor:
+   short_name: raptor
+   area_name:
+   - Gyldemar Forest
+   skin_location: back
+   skin_name: a ruff of raptor feathers
+   skin_short: feathers
+  greater fetid corpse:
+   short_name: corpse
+   area_name:
+   - Black Moor
+   skin_location: chest
+   skin_name: unknown
+   skin_short: unknown
+  greater moor wight:
+   short_name: wight
+   area_name:
+   - Black Moor
+   skin_location: head
+   skin_name: wight mane
+   skin_short: mane
+  lesser moor wight:
+   short_name: wight
+   area_name:
+   - Black Moor
+   skin_location: head
+   skin_name: wight skull
+   skin_short: skull
+  baesrukha:
+   short_name: baesrukha
+   area_name:
+   - Black moor
+   skin_location: back
+   skin_name: none
+   skin_short: none
+  colossus vulture:
+   short_name: vulture
+   area_name:
+   - Black moor
+   skin_location: chest
+   skin_name: none
+   skin_short: none
+  scaly burgee:
+   short_name: burgee
+   area_name:
+   - Teorainn Dale
+   skin_location: chest
+   skin_name: shell
+   skin_short: shell
+  black leopard:
+   short_name: leopard
+   area_name:
+   - Apple Orchard
+   skin_location: chest
+   skin_name: paw
+   skin_short: paw
+  agresh bear:
+   short_name: bear
+   area_name:
+   - Apple Orchard
+   skin_location: chest
+   skin_name: paw
+   skin_short: paw
+  centaur ranger:
+   short_name: ranger
+   area_name:
+   - Rambling Meadows
+   skin_location: chest
+   skin_name: hide
+   skin_short: hide
+  centaur:
+   short_name: centaur
+   area_name:
+   - Rambling Meadows
+   skin_location: chest
+   skin_name: hide
+   skin_short: hide
+  crested basiliskTV:
+   short_name: basilisk
+   area_name: 
+    - Rambling Meadows
+   skin_location: head
+   skin_name: a basilisk crest        
+   skin_short: crest
+  direwolf:
+   short_name: direwolf
+   area_name: 
+    - Red Forest
+   skin_location: head
+   skin_name: red eye
+   skin_short: eye
+  direbear:
+   short_name: direbear
+   area_name: 
+    - Red Forest
+   skin_location: head
+   skin_name: tusk
+   skin_short: tusk
+  tree spirit:
+   short_name: spirit
+   area_name: 
+    - Red Forest
+   skin_location: undead
+   skin_name: none
+   skin_short: none
+
+
+Skins:
+  a basilisk crest:
+   min_value: 0
+   max_value: 100
+  a weasel pelt:
+   min_value: 0
+   max_value: 100
+  antlers:
+   min_value: 0
+   max_value: 100
+
+Areas:
+  Yegharren Valley:
+   hunt_zone: Ta'Illistim
+   start_room: 5009
+   boundaries:
+    - 9931
+    - 9987
+    - 9932
+    - 667
+  Yegharren Plain:
+   hunt_zone: Ta'Illistim
+   start_room: 9937
+   boundaries:
+    - 9948
+    - 5035
+  Gyldemar Forest:
+   hunt_zone: Ta'Illistim
+   start_room: 4805
+   boundaries:
+    - 4713 
+    - 4801
+    - 4848
+    - 10749
+  Black Moor:
+   hunt_zone: Ta'Illistim
+   start_room: 10036
+   boundaries:
+    - 9987
+    - 10000
+  Teorainn Dale:
+   hunt_zone: Ta'Illistim
+   start_room: 1661
+   boundaries:
+    - 1648
+    - 1688
+    - 1673
+  Apple Orchard:
+   hunt_zone: Ta'Vaalor
+   start_room: 10226
+   boundaries:
+    - 10209
+    - 10262
+    - 10230
+  Red Forest:
+   hunt_zone: Ta'Vaalor
+   start_room: 24696
+   boundaries:
+    - 24695
+    - 24716
+  Rambling Meadows:
+   hunt_zone: Ta'Vaalor
+   start_room: 6000
+   boundaries:
+    - 5994
+  Yanders Farm:
+   hunt_zone: Ta'Vaalor
+   start_room: 6050
+   boundaries:
+    - 6043
+    - 6044

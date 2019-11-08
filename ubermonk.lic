@@ -1,0 +1,116 @@
+# Attack by Kalros 1/2/2015
+=begin
+	
+Script should be supplied with an argument. Can either be ran with a #mob.id or mob.name.	
+=end
+
+## 119 - 73 stamina = mstrike
+## 9005 mstrike cooldown
+
+$current_script_name = script.name
+(echo "Missing target from source script. Exiting."; exit) if script.vars.length == 0 and !$bandits
+target = nil
+$uac = 'punch'
+$position = 'decent'
+$aim_location = 'head'
+$pause_lines = /^A calm washes over|^You are unable to muster the will/
+$unpause_lines = /^You are enraged/
+$pause_combat = false
+$manual_target = false
+$new_vaesp = false
+$max_npc = 2
+@guild = 'none'
+@guild = 'wizard' if Char.name == 'Lumino'
+$champion = false
+$max_npc = 3 if running? 'bigshot'
+#fput 'sym sleep' if GameObj.npcs.size > 1
+
+fput 'stance offensive' unless percentstance == 0
+
+uac_line_checks = <<-eos
+while line = get
+  break unless running?($current_script_name)
+  if line =~ /^You have (decent|good|excellent) positioning/
+    $position = $1
+    ($uac = 'punch'; $aim_location = '') if $position == 'excellent' and $aim_location != "" and $champion
+    $uac = 'punch' if $position == 'good'
+  end
+  $uac = $1 if line =~ /^  Strike leaves foe vulnerable to a followup (.*) attack/
+  $pause_combat = true if line =~ /#{$pause_lines}/
+  $pause_combat = false if line =~ /#{$unpause_lines}/
+  $aim_location = "right leg" if line =~ /^The .+ does not have a chest|^You cannot aim that/
+  $aim_location = "" if line =~ /already missing that/
+  $new_vaesp = true if line =~ /^A vaespilon drags/
+end
+eos
+
+ExecScript.start(uac_line_checks, :quiet => true)
+
+def arenaWatch()
+  $watchAgain = false
+  #res = "You glance around"
+  #while res == "You glance around"
+    res = GSC.bput "watch", "You appraise|^You've already|^You glance around"
+  #end
+  matchtimeout(1, "You set yourself|^You've already spotted")
+  #GSC.bput "#{$trapCommand.to_s}", "You"
+  #waitfor "You set yourself"
+  
+end
+
+def loot()
+  dead_npcs = GameObj.npcs.find_all { |i| i.status == 'dead' }
+  dead_npcs.each { |i| start_script ('sloot') if !running?('sloot')
+  wait_while { running?('sloot') }}
+end
+
+def attack(target)
+  while (!bleeding? and health > 0 and !stunned?) and GameObj.npcs.size <= $max_npc and target.status !~ /dead|gone/ and (running? 'bigshot' or $manual_target)
+  #while GameObj.npcs.size <= $max_npc and target.status !~ /dead|gone/ and (running? 'bigshot' or $manual_target)
+    sleep 0.5 while $pause_combat
+    arenaWatch() if $watchAgain
+    fput "stand" unless standing?
+    fput "hide" if !hidden? and $bandits == true and @guild == 'rogue'
+    GSC.checkspells(@guild)
+    waitrt?
+    waitcastrt?
+    if $new_vaesp
+      fput 'sym holi vaesp'
+      fput 'sym holi second vaesp'
+      fput 'sym holi third vaesp'
+      $new_vaesp = false
+    end
+    if $position != 'decent' and $bandits != true and Spell[9699].timeleft < 0.01
+      if (Spell[9005].timeleft < 0.01 and stamina > 200) or stamina > 106 && $champion
+        GSC.bput "mstrike punch ##{target.id}", "^You concentrate"
+      else
+        GSC.bput "#{$uac} ##{target.id} #{$aim_location}", "^You attempt|^What were|^Try|^You make|^You cannot aim that high|is missing"
+      end
+    else
+        GSC.bput "#{$uac} ##{target.id} #{$aim_location}", "^You attempt|^What were|^Try|^You make|^You cannot aim that high|is missing"
+    end  
+    #waitrt?
+  end
+end
+
+if "#{script.vars[1]}"[0] != "#" and !$bandits
+  echo "Detected manual targeting."
+  $manual_target = true
+  GameObj.npcs.find {|i| target = i if i.noun =~ /^#{script.vars[1]}/}
+  echo "New target id is: ##{target.id}"
+elsif $bandits
+  echo "Inside bandit loop"
+  GameObj.npcs.find {|i| target = i if i.name =~ /thief|bandit|thug|marauder|mugger|outlaw|rogue|highwayman|robber|brigand/}
+else
+  # [1..-1] removes the first letter from script.vars. In this case "#"
+  GameObj.npcs.find {|i| target = i if i.id =~ /^#{script.vars[1][1..-1]}/}
+end
+
+## Main attack function
+echo target
+echo target.name
+$champion = true if target.name =~ /champion/
+attack(target)
+#loot() if !running?('bigshot')
+
+

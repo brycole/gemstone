@@ -1,0 +1,82 @@
+## Script to set waytos of current room to destination zones
+## for permanent gold ring
+
+GSC.find_teleport_setting
+
+ring_zones = { 
+  'zoneTI' => {
+    1 => '26', # Random room in TI
+    #2 => '188', # Town square in TI - Dais
+    7 => '10815', # Pool outside OTF
+    10 => '990', # Room outside Zul, TI side
+    11 => '9686', # Cysaegir, outside furrier
+    12 => '10216', # Apple Orchard in Ta'Vaalor
+  },
+  'zoneOTF' => {
+    6 => '11883', # OTF, east aqueduct
+    8 => '11813', # OTF, portal
+    9 => '11915', # OTF, east woods
+  },
+  'zoneWL' => {
+    3 => '1016', # WL, Room outside Zul Cart, WL Side
+    4 => '218', # WL, room outsid WL gate
+    5 => '2421', # WL, Icemule
+  }
+}
+
+def delete_rooms
+  for rooms in [$last_room, 990, 1016, 10815, 11813]
+    Map[rooms].wayto.delete_if { |wayto_destination_id, current_wayto|
+      current_wayto.inspect =~ /goto_teleport/}
+    Map[rooms].timeto.delete_if { |timeto_destination_id, current_timeto|
+      current_timeto.inspect =~ /.033/}
+    next
+  end
+  exit
+end
+
+def set_ring_waytos(wayto_list, room_id)
+  wayto_list.each {|ring_setting, room_destination|
+    timeto_destination = (Map.dijkstra(room_id, room_destination.to_i)[1][room_destination.to_i] / 2).round + 0.033
+    timeto_destination = 10 + 0.033 if timeto_destination > 50
+    next if Map[room_id].wayto.inspect =~ /"#{room_destination}"=>/
+    next if room_destination.to_i == room_id
+    new_wayto = "GSC.goto_teleport_setting(#{ring_setting})"
+    Room[room_id].wayto[room_destination] = StringProc.new(%{#{new_wayto}})
+    Room[room_id].timeto[room_destination] = timeto_destination
+  }
+end
+
+delete_rooms if script.vars[0] == 'delete'
+$last_room = Room.current.id # record room.id to delete room waytos after use
+
+ring_zones.each {|zone_name, ring_settings|
+  # Setting waytos based on zone
+  case zone_name
+  when 'zoneTI'
+    set_ring_waytos(ring_settings, 990) # Permanent ring path
+    set_ring_waytos(ring_settings, 10835)
+    next if Room.current.id != 990 && Room.current.image =~ /en-zul_logoth/ and Room.current.image[0..1] == "en"
+    if Room.current.image[0..1] != "en" ||
+      Room.current.title.inspect =~ /Ta'Illistim Keep/ ||
+      Room.current.location == "Old Ta'Faendryl" ||
+      #Room.current.id =~ /\b(10817|10818|10819|10820|10832|10833|10834|10835)\b/ # Gyldemar Road after swimming pool.
+      next
+    end
+  when 'zoneOTF'
+    set_ring_waytos(ring_settings, 11813)
+    next unless Room.current.location == "Old Ta'Faendryl"
+  when 'zoneWL'
+    set_ring_waytos(ring_settings, 1016) # Permanent ring path
+    next unless Room.current.image[0..1] =~ /\b(wl|im|vo)\b/ or (Room.current.image[0..1] == "en" and Room.current.id == 1016)
+  end
+  set_ring_waytos(ring_settings, Room.current.id)
+}
+
+#if Char.name == 'Kalros'
+  #start_script('ring_test2')
+  #wait_while { running?('ring_test2')}
+  #before_dying { 
+  #go2_count = Script.running.find_all { |s| s.name == 'go2' }.length
+ # start_script 'ring_test2', ['delete'] if go2_count <= 1 }
+#end

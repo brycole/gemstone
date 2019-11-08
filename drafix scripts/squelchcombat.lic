@@ -1,0 +1,39 @@
+=begin
+	This script squelches people's casting
+
+	To add someone to the ignore list use this command:
+	;e UserVars.ignore.push('<some person's name>')
+
+	ex: 
+		;e UserVars.ignore.push('Drafix')
+=end
+UserVars.ignore ||= ['Drafix']
+ignore = UserVars.ignore.join('|')
+found = 0
+begin
+	action = proc { |client_string|
+		if client_string =~ /<a exist.+?>([A-Za-z']+)<\/a> (?:gestures|hurls|.+\.\.\.|raises a hand and snaps)/i
+			found = 1 if $1 =~ /(?:#{ignore})('s)?/
+			nil
+		elsif found > 0 && client_string =~ /^\s+/
+			if found == 1 && client_string =~ /(?:AS|CS):/
+				found += 1
+			else
+				found = 0
+			end
+			nil
+		elsif found == 1
+			found = 0
+			nil
+		elsif found > 0 && found < 2
+			nil
+		else
+			found = 0
+			client_string
+		end
+	}
+	DownstreamHook.add('squelchcombat', action)
+	loop { sleep 1 }
+ensure
+	DownstreamHook.remove('squelchcombat')
+end

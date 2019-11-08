@@ -1,0 +1,298 @@
+#hide_me
+
+=begin
+
+This script checks for certain lines and alerts the person to their presence.  It uses the familiar window in game, and an email system.  You must have the mail gem installed.
+SMS is also enabled if your carrier has "email to text".
+
+Note:  Any inattentive scripting is against Simutronics policy. This should NOT be used to script away from keyboard.  It is ONLY meant as a detection device
+so you can catch script checks through text scroll while at the keyboard. Simutronics has the power to issue script warnings
+even if you pass a script check. This is NOT designed to protect against AFK scripting.
+
+There is no AS/DS checks here. This will not protect against those types of checks.
+
+Since this is public as of 09/15/2016, expect many of the keywords below to not be used by GMs, and update accordingly.
+
+v. 02 by Kalros/Haldrik
+	
+-- v.02 changelog
+
+Added more variables.
+	
+***************
+**What it does
+***************
+
+This script parses every game line and checks it against 3 patterns. Known script checks, 
+danger script checks, and capital letters.
+
+If any line is triggered, it passes through to the exceptions/exemptions.  If there is no exception,
+notification is sent. Script check patterns are ALWAYS sent.
+
+This tests against XML lines.
+
+****************
+** Instructions
+****************
+
+1. You must install "mail gem".  This may or may not work out of the box.
+Go to cmd prompt and type "gem install mail".  If not, you may need to google how to install gems.
+
+2. You must enable outgoing SMTP in gmail settings.
+
+3. You must update @sendUserName and @sendPassword and @email1/@email2.  You do not need to update the others if you use gmail.
+
+4. Update exception patterns as needed if things are popping that should not be.
+
+5. Review line 352, it contains a break if !running certain scripts. Uncomment if you want.
+
+=end
+
+require 'mail'
+
+$monitor_debug = true ## Debug option, turn off if you don't want to see patterns.  Recommened TRUE during initial runs.
+$monitor_send_email = true
+
+## Start variables
+
+@sendAddress = "smtp.gmail.com"
+@sendPort = 587
+@sendDomain = "gmail.com"
+## CHANGE THIS TO YOUR USER NAME
+@sendUserName = "gemstoneruby.smtp" # this is your username excluding @gmail.com 
+@sendPassword = "Mail123!" # CHANGE
+@fromEmail = "gemstoneruby.smtp@gmail.com" # ex, gemstoneruby@gmail.com
+
+## TO EMAILS - Max of 2 emails currently
+@email1 = "4153775105@msg.fi.google.com"  # example of email to text for ATT
+@email2 = "brycole@gmail.com" # Email notification is sent here.
+
+options = { :address              => @sendAddress,
+            :port                 => @sendPort,
+            :domain               => @sendDomain,
+            :user_name            => @sendUserName,
+            :password             => @sendPassword,
+            :authentication       => 'plain', # this might need to change if you don't use gmail.
+            :enable_starttls_auto => true  }
+
+Mail.defaults do
+  delivery_method :smtp, options
+end
+
+
+## *** Trigger patterns
+## *** Insert any known script triggers here, these will ALWAYS fire.
+
+priorScriptTriggers = /(^A sudden fierce gust|gruff voice|SEND|^You are buffeted by the wind|tell me|please respond|fairy|whatcha doin[g]?|^You hear someone applauding|answer that voice|what is wrong|speak with|how many silvers|This is a violation|SAY where|Where are|why are|a soft voice whispers|^You feel yourself being pulled away)/i
+
+## *** This is a list of certain keywords that GMS may/may not use.
+dangerTriggers = /(ignor|continu|\btyp(e[sd]?|ing)\b|hello|respond|reply|answer|speak|spoken|whisper|scream|\bSEND\b|aloud|talk|\bscript(s?|ing|ed)\b|smil|frown|snort|\byell\b|exclaim|announc|declar|voic|say|claim|boom|shout|this place|you there|squeak|spider|alert|cheer|nod|jump|wav|stop|attention|\bsilver[s]?\b|responsive|wrong|spider|monkey|mouse|\brat\b|frog|demand)/i
+
+### Checks for CAPITAL letters length 5 to 100. See ignores below.
+capitalTriggers = /([A-Z]{5,100})/
+
+## ***
+## *** Ignore line patterns below 
+## ***
+
+## Rooms where all lines are ignored. Add rooms as necessary.
+## These are generally shops and/or resting nodes.
+shard = [9639, 19276, 19280, 19340, 19270, 9817, 9816]
+fwi_rooms = [99999]
+safe_rooms = [999999]
+#safe_rooms = [3668,10861,188,2300,228,601,208,1572] if $lmas_audience == true
+
+## This combins the ignore rooms list
+$always_ignore_rooms = /\b(#{(shard+fwi_rooms+safe_rooms).join('|')})\b/
+
+## ***
+## ***
+## This section is a hodgepodge of ignore lines.  It does not really matter which category you put them under.
+## Just follow the same syntax.
+
+## ** Need to update these with additional magic casting
+ignore_magic_lines = [
+	'^You whisper several words',
+	'^You whisper the',
+	'^The air around',
+	'^You reveal',
+]
+
+ignore_environmentals = [
+	'^A sleek red squirrel hops nervously', #gs
+	'^He nods to',
+	'^A Zaulfungian wild boar',
+	'^Your body below',
+	'^Your feet',
+]
+
+ignore_creatures = [
+	'^The .+ was carrying',
+	'^A .+ forest gryphon stalks',
+	'^An armored shalswar creeps',
+	'^Not having any room',
+	#'^An? \w+ drags (herself|himself) in',
+	#'^An? \w+ centaur ranger (snorts|notices)',
+]
+
+ignore_spell_effects = [
+	'^You are buffeted by the (dark|emerald|icy|russet|formless|snapping)', #gs
+	'continues to move with a curious lethargy',
+	'^A (Human|broad)',
+	'^A \w+ stone shard',
+	'^Spidery webs of',
+	'^The wave (lightly|deeply|melts|completely|blasts|directly|slams)',
+	'^Alternating waves',
+	'^Part of the wave',
+	'^The fireball',
+	'^The .+ manages to avoid',
+	'^An? .+ screams as the streams',
+]
+
+ignore_misc = [
+	#'^You (attach|add|forage|pick|put|push|remove|tap|gather|swap|open|carefully|grab|tuck|drop|climb|close|settle|reach|rummage|slip|give|toss|take|seize)',
+	'^          SKILL',
+	'\* \w+',
+	'^Appearing to have lost',
+	'^You (get|pick|drop|turn|stop|reveal|continue|maneuver|concentrate|should stop playing|project|find yourself|blend)',
+	'(Dokoras|Kronars|Lirum)',
+	'^\[(Type|Check|Matching)',
+	'^Since your left hand',
+	'^Trying to judge',
+	'^The .+ stops',
+	'^Stow what',
+	'^In the',
+	'^\w+ continues',
+	'\w+ (evades|dodges),',
+	'\w+ stops practicing',
+	'^CLIMB',
+	'^  CLIMB',
+	'^Rat Catcher',
+	'^(Grabbing up a pinch|Working with extreme care)',
+	'^Sorry, you may only type',
+	'^\w+ loads his',
+	'^The .+ arrow lands',
+]
+
+ignore_city_environmentals = [ 
+	'^A crier hurries', #GS
+	'^He continues, "Those citizens holding', # GS
+]
+
+consolidated = [
+	'^1 day remains', #GS
+	"^<popStream", ## allows ignores and always script checks
+	"^<pushBold/><popBold/>", ## allows ignores and always script checks
+	"^<style id=\"\"/><preset id='roomDesc'>", ## allows ignores and always script checks
+	#{}"^<style id=\"\"/><style id=\"roomDesc\"/>",  ## XML IGNORES, not part of automatic ignore
+	#{}"^<streamWindow id=", ## XML IGNORES, not part of automatic ignore
+]
+
+$always_ignore_danger = /#{(consolidated+ignore_magic_lines+ignore_environmentals+ignore_creatures+ignore_spell_effects+ignore_misc+ignore_city_environmentals).join('|')}/
+
+## OLD IGNORE CODE FROM TGO, STILL USING. PROBALY DONT NEED.
+#$always_ignore_capital = /\s*(Strength|Constitution|Dexterity|Agility|Discipline|Aura|Logic|Intuition|Wisdom|Influence)\s+\((STR|CON|DEX|AGI|DIS|AUR|LOG|INT|WIS|INF)\)\:\s+\d+\s+\(-?\d+\)\s+\.\.\.\s+\d+\s+\(-?\d+\)/
+
+#$always_ignore_test1 = /#{consolidated.join('|')}/
+## ** Ignore XML
+
+## This will ignore all XML with these strings. It bypasses EVERYTHING, including script patterns.
+## Room description was moved to consolidated as well as streamWindow to avoid automatic ignore.
+ignore_xml = [
+	"^<component id='(exp|room desc|room objs|room players)",
+	"^<roundTime value=",
+	"^<pushStream id=",
+	"^<indicator id=",
+	"^<spell>",
+	"^<compass>",
+	#{}"^<dialogData id=",
+	#{}"<a exist=\"-?\\d+\" (noun|coord)=",
+	#'.*<d cmd',
+	#'<LaunchURL',
+	#'^Where are you trying',
+	'^<right',
+	'^<left',
+]
+
+$always_ignore_xml = /#{ignore_xml.join('|')}/
+
+echo $always_ignore_xml
+echo $always_ignore_rooms
+echo $always_ignore_test1
+
+def sendMail(message, type)
+	for toEmail in [@email1, @email2]
+		Mail.new(
+			to:       toEmail,
+			from: 		@fromEmail,
+			subject: 	type,
+			body: 		message
+		).deliver!
+	end
+end
+
+## Section where exceptions are checked.
+def ignore_list(test_line)
+	echo "Inside def ignore_list. Line being tested is: #{test_line}" if $monitor_debug
+	ignore_reason = 'No ignore reason, returning false'; ignore_lines = false
+	#(ignore_reason = 'Ignoring line based on XML'; echo ignore_reason if $monitor_debug; return true) if test_line =~ $always_ignore_xml
+	#(ignore_reason = 'Ignoring consolidated lines'; ignore_lines = true) if test_line =~ $always_ignore_test1
+	(ignore_reason = 'Ignoring line based on excluded rooms.'; echo ignore_reason if $monitor_debug; return true) if Room.current.id.to_s =~ $always_ignore_rooms
+	(ignore_reason = 'Ignoring line based on danger ignores.'; echo ignore_reason if $monitor_debug; return true) if test_line =~ $always_ignore_danger
+	#(ignore_reason = 'Ignoring lines based on capital letter ignores.'; echo ignore_reason if $monitor_debug; return true) if test_line =~ $always_ignore_capital
+	(ignore_reason = 'Ignoring lines based on total line length.'; echo ignore_reason if $monitor_debug; return true) if test_line.length > 200	
+	echo ignore_reason if $monitor_debug
+	return ignore_lines
+end
+
+#f $frontend == 'stormfront'
+	fam_window_begin = "<pushStream id=\"talk\" ifClosedStyle=\"watching\"/>"
+	fam_window_end   = "<popStream/>\r\n"
+#else
+#	fam_window_begin = "\034GSe\r\n"
+#	fam_window_end   = "\034GSf\r\n"
+
+#end
+
+
+## *** Start of main loop
+
+status_tags #enable XMLs
+while line = get
+	
+	## UNCOMMENT THIS LINE IF YOU WANT
+	#break unless running?('sbounty') or running?('grguild') or running?('bigshot') or $monitor_debug == true   ## Scripts that need to be running for monitor to stay running.
+	
+	## Always send emails if a prior script pattern is triggered.
+	next if line =~ $always_ignore_xml
+	if line =~ priorScriptTriggers
+		echo "Inside prior_script triggers." if $monitor_debug
+		echo line if $monitor_debug
+		echo "inside prior_script triggers, past next if for channels"
+		puts("#{fam_window_begin}#{line}\r\n#{fam_window_end}")
+		puts("#{fam_window_begin}Unrecognized game line. Prior scriptcheck pattern detected.\r\n#{Time.at(Time.now).strftime("%B %e, %Y at %I:%M %p")}\n#{fam_window_end}")
+		sendMail(line, "Prior scriptcheck patterns.") if $monitor_send_email
+		next
+	end
+
+	if line =~ capitalTriggers
+		echo "Inside capital triggers before ignore." if $monitor_debug
+		next if ignore_list(line)
+		echo "Inside capital triggers after ignore." if $monitor_debug
+		puts("#{fam_window_begin}#{line}\r\n#{fam_window_end}")
+		puts("#{fam_window_begin}Unrecognized game line. Capital letters pattern.\r\n#{Time.at(Time.now).strftime("%B %e, %Y at %I:%M %p")}\n#{fam_window_end}")
+		sendMail(line, "Capital letters patterns.") if $monitor_send_email
+		next
+	end
+	
+	if line =~ dangerTriggers
+		echo "Inside danger triggers before ignore." if $monitor_debug
+		next if ignore_list(line)
+		echo "Inside danger triggers after ignore." if $monitor_debug
+		puts("#{fam_window_begin}#{line}\r\n#{fam_window_end}")
+		puts("#{fam_window_begin}Unrecognized game line. Danger patterns detected.\r\n#{Time.at(Time.now).strftime("%B %e, %Y at %I:%M %p")}\n#{fam_window_end}")
+		sendMail(line, "Danger word patterns.") if $monitor_send_email
+		next
+	end
+end
+status_tags

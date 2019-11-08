@@ -1,0 +1,62 @@
+=begin
+	A Multiline chat sender!
+	
+	For all those times you want to spam LNet with your impressive text
+	
+	By: Drafix
+=end
+#quiet
+silence_me
+Gtk.queue {
+	@WINDOW = Gtk::Window.new("Multiline Chat Sender by Drafix")
+	@WINDOW.set_default_size(300,300)
+	@WINDOW.set_border_width(5)
+	@BOX = Gtk::VBox.new(false)
+	@BOX.set_border_width(2)
+	@TEXT = Gtk::TextView.new
+	@TEXT.wrap_mode=Gtk::TextTag::WRAP_WORD
+	
+	@buttonbox=Gtk::HButtonBox.new
+	
+	@SEND = Gtk::Button.new('_Send')
+	@CANCEL = Gtk::Button.new('_Close')
+	@SEND.signal_connect('clicked'){
+		buffer = @TEXT.buffer
+		result = ''
+		buffer.get_text.chars.each{|char|
+			result+= char.gsub("\n", "  ")
+			if result.length >= 350
+				send_to_script 'lnet', 'chat '+result
+				result=''
+			end
+		}
+		send_to_script('lnet', 'chat '+result) if result.length > 0
+	}
+	@CANCEL.signal_connect('clicked'){
+		@SETUP_COMPLETED=true
+	}
+	@buttonbox.pack_start(@SEND, false)
+	@buttonbox.pack_start(@CANCEL, false)
+	@BOX.pack_start(@TEXT)
+	@BOX.pack_start(@buttonbox, false, false)
+	@WINDOW.add(@BOX)
+}
+
+Gtk.queue {
+	@WINDOW.signal_connect("delete_event") {
+		@SETUP_COMPLETED = true
+	}
+}
+before_dying{
+	Gtk.queue {
+		@WINDOW.destroy
+	}
+}
+
+Gtk.queue {
+	
+	@WINDOW.show_all
+ }
+        
+@SETUP_COMPLETED = false
+wait_until{@SETUP_COMPLETED}

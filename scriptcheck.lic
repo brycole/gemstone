@@ -1,0 +1,69 @@
+#hide_me
+CharSettings['count'] ||= Hash.new
+
+#echo CharSettings['count']
+
+combat_strings_to_ignore = /^  (Awesome|Powerful|Explosive|Awkward|Spinning|Wild|Strike|Quick|Strong|Weak|Blindingly|Furious|Swift|Cross|Crossover|Furious|Amazing|Short|Palm|Descending|Well|Rib|Fully|Rotating|Stiffened|Uppercut|Crushing|Solid|Magnificent|Low|Minor|Backfist|Overhand|Crushing|Stiff|Fist) (crossover|haymaker|downward|punch|drive|fingers|attack|fast|strike|leaves|swing|blow|descending|fist|hand|shot|executed|extended|straight|backhand|compresses|to|chop|slams|drives|spear)|^  (Spine|Jugular|Larynx) (severed|crushed)|^   ?(The|A|An).+(is knocked|is stunned|starts to favor|seems at a loss|moans and drops|moans silently|chokes|appears to be moving|sniffs the air|searchs around)|^Your injuries hinder your attempts|^  A close miss|^By amazing chance|^(The|A|An) .+ (north|northeast|east|southeast|south|southwest|west|northwest|out|up|down|in)\.$/
+
+always_ignore_strings = /^Unconverting|^Obvious (paths|exits)|^You are (now|not)|You also see|Also here|^You (barely|fail|pick|deposit|put|move|evade|dodge|skillfully|gracefully|make|have|settle|struggle|discover|remove|skinned|carefully|swap|drop|gather|open)|^(She|He|It) (didn't|had|carried|left|also)|^Interesting, (he|she|it)|^  (UAF|AS)|^You botched|^Your lockpick|^Get what|^That is|^The gem dealer|^The pawnbroker|^You ask Dakris|^Dakris takes|^Please rephrase that|^   Physical|^     Mental|^Your mind is clear|^ \* |^Peering into|^      (a|an|some) |^For some reason, you feel especially|^Your \w+ won't |^You offer to sell|^You ask the dealer|^(A|The) spotted lynx (darts|charges|notices|struggles|roars|chokes)|discovers you in your hiding place\!$|^Training Points|is already missing that\.$|^A dark orc (grunts a challenge|stumps out)|tries to bite you\!$|^A .+ attempts to marshal (his|her)|stands up with a grunt\.$|but fails in the attempt\.$|^(The|A|An) \w+ centaur (ranger)? (notices|gallops|is already|fires|snorts|darts|intones|swings)/
+
+always_show_strings = /TELL|tell me|attention|RESPOND|RESPONSIVE|SILVERS|WRONG|A sudden fierce gust|gruff voice/
+
+stuff_inside_ands_to_ignore = /red orc|spotted lynx|dark orc|great boar|grey orc|darkwood/
+
+ands_to_ignore = /^You notice (a|an|some|the) (#{stuff_inside_ands_to_ignore}( \((dead|stunned|flying|prone|sitting|sleeping|kneeling)\))?)((((, )?((a|an|some|the) (#{stuff_inside_ands_to_ignore}( \((dead|stunned|flying|prone|sitting|sleeping|kneeling)\))?))){1,20})?( and (a|an|some|the) (#{stuff_inside_ands_to_ignore}( \((dead|stunned|flying|prone|sitting|sleeping|kneeling)\))?)))?\.$/
+
+ignore_spell_prepping = /^\w+ gestures while calling upon the lesser spirits for aid\.\.\.$|^\w+ traces a sign while petitioning the spirits for cognition\.\.\.$|^\w+ utters a light chant and raises (his|her) hands\, beckoning the lesser spirits to (his|her) aid\.\.\.$|^\w+ traces a sign while beseeching the spirits for empowerment\.\.\.$|^\w+ murmurs a simple\, mystical chant\.\.\.$|^\w+ appears to be focusing (his|her) thoughts while chanting softly\.\.\.$|^\w+ gestures while summoning the spirits of nature to (his|her) aid\.\.\.$|^\w+ makes a nearly imperceptible motion while whispering a soft phrase\.\.\.$|^\w+ makes a quick gesture while calling upon the powers of the elements\.\.\.$|^\w+ traces a simple rune while intoning a short, mystical phrase\.\.\.$|^\w+ intones a phrase of elemental power while raising (his|her) hands\.\.\.$|^\w+ recites a series of mystical phrases while raising (his|her) hands\.\.\.$|^\w+\'\w+ hands glow with power as s?he summons elemental energy to (his|her) command\.\.\.$|^\w+ traces a series of glowing runes while chanting an arcane phrase\.\.\.$|^\w+ begins a musical chant\.\.\.$|^\w+ traces a sign that contorts in the air while s?he forcefully incants a dark invocation\.\.\.$|^\w+ begins drawing a faint\, twisting symbol as s?he utters an arcane invocation in hushed tones\.\.\.$/
+
+ignore_spell_ups = /^A light blue glow surrounds \w+\.$|^The air thickens and begins to swirl around \w+\.$|^\w+ suddenly looks more powerful\.$|^\w+\'\w+ body seems to glow with an internal strength\.$|^\w+\'\w+ veins stand out briefly\.$|^A deep blue glow surrounds \w+\.$|^\w+\'\w+ eyes narrow in concentration\.$|^An aura of resolve suddenly fills \w+\'s expression\.$|^A misty halo surrounds \w+\.$|^Dark red droplets coalesce upon \w+\'s skin.  The sanguine liquid is visible for only an instant before it sinks into (his|her) flesh\.$|^\w+ gets an intense expression on (his|her) face\.$|^A dull golden nimbus surrounds \w+\.$|^\w+ is surrounded by a white light\.$|^A dim aura surrounds \w+\.$|^\w+ begins to breathe more deeply\.$|^A faint slick sheen makes the air about \w+ visible\, then sinks into him and disappears\.$|^\w+ stands tall and appears more confident\.$|^A brilliant aura surrounds \w+\.$|^An opalescent aura surrounds \w+\.$|^\w+ begins to sing of heroic deeds and appears to be bolstered\.$|^As \w+ sings\, the air sparkles briefly around him\.$|^\w+ sings of Kai\'s many triumphs\, lifting (his|her) spirits\.$|^\w+ begins singing and focuses (his|her) voice into a vortex of air centered on (his|her) left arm\.$|^\w+ begins to sing of valiant legends and appears to be more protected\.$|^\w+ begins singing and focuses (his|her) voice into a vortex of air shaped like a sonic .*\, centered on (his|her) right hand\.$|^\w+ begins singing and focuses (his|her) voice into a vortex of air centered around (his|her) body\.$|^As \w+ sings\, you sense the mana around him begin to swirl and move with a subtle grace\.$|^\w+ begins to sing a sibilant melody\.  Suddenly\, mirror images of \w+ appear in the area\, making it difficult to tell which is real and which are the illusions\.$|^As \w+ sings\, a squall of wind briefly swirls about him\.$|^\w+ appears to be keenly aware of (his|her) surroundings\.$|^A scintillating light surrounds \w+\'s hands\.$|^\w+ becomes calm and focused\.$|^A (silvery|bright|brilliant) luminescence surrounds \w+\.$|^\w+ stands taller\, as if bolstered with a sense of confidence\.$|^(His|Her) body is surrounded by a dim dancing aura\.$|^\w+ appears somewhat more powerful\.$|^\w+ begins moving faster than you thought possible\.$|^\w+ appears considerably more powerful\.$|^\w+ suddenly disappears\.$|^A translucent sphere forms around \w+\.$|^Glowing specks of light red energy begin to spin around \w+\.$|^\w+ is surrounded by a shimmering field of energy\.$|^\w+ appears somehow changed\.$|^\w+ looks considerably more imposing\.$|^\w+ bristles with energy\.$|^A layer of hard\, shifting stone forms around \w+\.$|^\w+ looks more aware of the surroundings\.$|^\w+ looks more nimble\.$|^Gold\-traced pale green ribbons of energy swirl about and coalesce upon \w+\.$|^\w+ seems to blend into the surroundings better\.$|^The air about \w+ shimmers slightly\.$|^\w+ appears to be listening intently to something\.$|^(His|Her) eyes begin to shine with an inner strength\.$|^\w+ is surrounded by an aura of natural confidence\.$|^\w+ begins to move with cat\-like grace\.$|^\w+ suddenly looks much more dextrous\.$|^\w+ looks charged with power\.$|^\w+ is surrounded by a writhing barrier of sharp thorns\.$|^A dense fog gathers around \w+\, but soon fills the room\.$|^An invisible force guides \w+\.$|^A wall of force surrounds \w+.$|^A shadowy patch of ether rises up through the floor to encompass \w+\, swiftly sinking into (his|her) skin\.$/
+
+movement_to_ignore = /^(Novice |Apprentice |Journeyman |Lord |Great Lord |High Lord |Grand Lord |Lady |Great Lady |High Lady |Grand Lady |Maiden |Chronicler |Mistress )?[a-zA-Z]+ (just went through|just came through|just|strides|begins to walk|just stumbled) (entered|came trudging |trudged away moving |strode |away moving |came crawling |skipped merrily |came sashaying |gracefully sashayed |came marching |went |crawled |limped |marched off to the )?(a half\-timbered pale grey stone guildhall|climbed a spiral staircase|a wooden hatch|a dark opening|arrived\, skipping merrily|north|northeast|east|southeast|south|southwest|west|northwest|out|up|down|in\,?|in gracefully|through an archway|arrived)( but suddenly trips and goes flailing out of sight| flailing (his|her) arms wildly while trying to right (himself|herself))?(\!|\.)$/
+
+if $frontend == 'stormfront'
+	fam_window_begin = "<pushStream id=\"familiar\" ifClosedStyle=\"watching\"/>"
+	fam_window_end   = "<popStream/>\r\n"
+else
+	fam_window_begin = "\034GSe\r\n"
+	fam_window_end   = "\034GSf\r\n"
+end
+
+while line = get
+
+	if line =~ /^You leap|^You make a|^You attempt to punch/
+		echo "Bypassing combat lines."
+		matchtimeout 30, /^Roundtime:/
+		next
+	end
+	
+	if line =~ /^\[[A-Z]|^You search/
+		echo "Bypassing Room descriptions."
+		matchtimeout 1, /^Obvious/
+		next
+	end
+	
+	next if line =~ /^\[.*?\]\-[A-z]+\:|^\[server\]\: "/
+	next if line =~ always_ignore_strings
+	next if line =~ ignore_spell_prepping
+	next if line =~ ignore_spell_ups
+	next if line =~ movement_to_ignore
+    next if line =~ ands_to_ignore
+	
+	mod_line = line.gsub(/[0-9\s]+/, '')
+	CharSettings['count'][mod_line] = CharSettings['count'][mod_line].to_i + 1
+	
+	if line =~ /([A-Z]{2,1000})/ and line !~ /^Your SIGN OF ([A-Z]+) is no longer effective.$/ and line !~ /\s*(Strength|Constitution|Dexterity|Agility|Discipline|Aura|Logic|Intuition|Wisdom|Influence)\s+\((STR|CON|DEX|AGI|DIS|AUR|LOG|INT|WIS|INF)\)\:\s+\d+\s+\(-?\d+\)\s+\.\.\.\s+\d+\s+\(-?\d+\)/
+		puts("#{fam_window_begin}#{line}\r\n#{fam_window_end}")
+		puts("#{fam_window_begin}Unrecognized game line.\r\n#{Time.at(Time.now).strftime("%B %e, %Y at %I:%M %p")}\n#{fam_window_end}")
+	end
+	
+	if line =~ always_show_strings
+		puts("#{fam_window_begin}#{line}\r\n#{fam_window_end}")
+		puts("#{fam_window_begin}Unrecognized game line.\r\n#{Time.at(Time.now).strftime("%B %e, %Y at %I:%M %p")}\n#{fam_window_end}")
+	end
+	
+	if CharSettings['count'][mod_line] < 5
+		puts("#{fam_window_begin}#{line}\r\n#{fam_window_end}")
+		puts("#{fam_window_begin}Unrecognized game line.\r\n#{Time.at(Time.now).strftime("%B %e, %Y at %I:%M %p")}\n#{fam_window_end}")
+	end
+
+end

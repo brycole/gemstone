@@ -1,0 +1,19 @@
+=begin
+Try to get rescued by Mofuggah if you die
+Must be trusted to send the LNet command
+=end
+
+no_pause_all
+hide_me
+no_kill_all
+status_tags
+while line = get
+if ( dead? )
+line = get?
+fput "'I'm not quite dead yet"
+LNet.send_message(h={'to'=>'Mofuggah', 'type'=>'private'}, "Dude, Im dead, you better come rescue me in #{Room.current.id}")
+fput "group open"
+echo "Help should be on the way, unless he's dead himself or off drinking again"
+sleep 120
+end
+end

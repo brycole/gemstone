@@ -1,0 +1,38 @@
+=begin
+	
+	This script opens links in your browser. 
+	It also has 2 extra functions, seaching krakiipedia and opening the last link that appears anywhere in the game. (usually LNet chat)
+	
+	Examples:
+	;www krakii armor use
+	;www google.com
+	;www last
+
+	-Drafix
+=end
+if RUBY_PLATFORM !~ /mswin|i386-mingw32/
+	echo "You're not using wind0wz.  Too bad, I don't know how to open links in your OS"
+	exit
+end
+
+
+if script.vars[1] == 'krakii'
+	#link = "http://www.krakiipedia.org/wiki/Special:Search?search=#{script.vars[2..-1].join('%20')}&amp;fulltext=Search"
+	link = "https://gswiki.play.net/mediawiki/index.php?search=#{script.vars[2..-1].join('%20')}&go=Go&title=Special%3ASearch"
+	system("start #{link}")
+	exit
+elsif script.vars[1] == 'last'
+	if reget.reverse.find{ |line| line =~ /((?:http:\/\/|www\.|http:\/\/www\.|https:\/\/)(?:[\d\w.\/?=#\-%,&'\+;]+))/ }
+		link = $1.gsub('"', '').gsub('&amp;', '^&')
+		system("start #{link}")
+	end
+	exit
+elsif script.vars[1] == 'ps'
+	link = "http://ps.lichproject.org/items?s="+script.vars[2..-1].join('+')+"&f=F_B"
+	system("start #{link}")
+else
+	link = script.vars[0]
+	link = "http://#{script.vars[0]}" if link !~ /^(http:\/\/|https:\/\/)/
+	system("start #{link}")
+	exit
+end

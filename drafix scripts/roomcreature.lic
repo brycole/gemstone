@@ -1,0 +1,80 @@
+=begin
+	Reports room creatures as they enter the room. 
+	
+	Known Bugs: reports a critter if you walk into a room too.. too lazy to fix it.
+	
+	By: Drafix
+	
+	Changelog:
+	1.0 (02/21/2016)
+		Original Author Drafix
+		Maintainer is now Kalros
+		Added automatic color highlighting to bandit announcement
+=end
+
+status_tags
+room = 0
+#[exec1: <compass><dir value="se"/><dir value="sw"/></compass>Your <pushBold/><a exist="12861925" noun="spirit">alpine spirit</a><popBold/> and your <pushBold/><a exist="12862968" noun="ptarmigan">rock ptarmigan</a><popBold/> followed.]
+Settings['exclude'] ||= Set.new ['alpine spirit', 'rock ptarmigan']
+while line = get
+	if line =~ /[Yy]our (.+?) and your (.+?) followed\./
+		Settings['exclude'].add($1)
+		Settings['exclude'].add($2)
+	elsif line =~ /[Yy]our (.+?) followed\./
+		Settings['exclude'].add($1)
+	elsif line =~ /<dialogData id='combat'>.*content_text="(.*)" content_value=.*<\/dialogData>/
+		monsters = $1.split(',')
+		if npc=monsters.find{|npc| npc =~ /\b(?:thief|rogue|bandit|mugger|outlaw|highwayman|marauder|brigand|thug|robber)\b/}
+			next if npc =~ /dark\-clad/
+			foundroom=Room.current.id
+			_respond("<preset id='thought'>Bandits Found!   entered the room.</preset>")
+			put 'justice status'
+			while line2 = get
+				if line2 =~ /There is no justice other than your own out here|minor transgressions/
+					break if foundroom != Room.current.id
+					if room != Room.current.id
+						if monsters.count{|npc1| npc1 =~ /\b(?:thief|rogue|bandit|mugger|outlaw|highwayman|marauder|brigand|thug|robber)\b/} > 1
+							put 'sym sleep'
+							put 'release' if checkprep !~ /#{Spell['elemental wave'].name}|none/i
+							if Spell['Rapid Fire'].active?
+								put 'prepare 410'
+								put 'cast'
+							else
+								put 'prepare 410'
+								put 'cast'
+								sleep 0.5
+								put 'prepare 410'
+								put 'cast'
+								sleep 0.5
+								put 'prepare 410'
+								put 'cast'
+							end
+						else
+							if reget(20).count{|item| item =~ /suddenly jumps out of the shadows!|suddenly leaps from (?:his|her) hiding place!/} == 0
+								put 'release' if checkprep !~ /#{Spell['elemental wave'].name}|none/i
+								put 'sym sleep'
+								put 'prep 909'
+								put 'cast'
+								put 'search' 
+							end
+						end
+					end
+					room = Room.current.id
+					break;
+				elsif line2 =~ /You sense that your surroundings are calm enough/
+					break;
+				end
+			end
+		end
+		
+		if monsters.length == 1
+			num_monsters = 0
+			next
+		end
+		num_monsters ||= monsters.length
+		if monsters.length > num_monsters
+			respond "#{monsters[1]} entered the room." if !Settings['exclude'].include?(monsters[1])
+		end
+		num_monsters = monsters.length
+	end
+end

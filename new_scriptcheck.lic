@@ -1,0 +1,122 @@
+#hide_me
+
+require 'mail'
+
+#send_emails = 'no'
+send_emails = 'yes'
+
+options = { :address              => "smtp.gmail.com",
+            :port                 => 587,
+            :domain               => 'gmail.com',
+            :user_name            => 'gemstoneruby.smtp',
+            :password             => 'Rubygemstone123!#',
+            :authentication       => 'plain',
+            :enable_starttls_auto => true  }
+
+Mail.defaults do
+  delivery_method :smtp, options
+end
+
+dangertriggers = /(ignor|continu|\btyp(e[sd]?|ing)\b|hello|respond|reply|answer|speak|spoken|whisper|scream|\bSEND\b|aloud|talk|\bscript(s?|ing|ed)\b|smil|frown|snort|\byell\b|exclaim|announc|declar|voic|say|claim|boom|shout|this place|you there|squeak|spider|alert|cheer|nod|jump|wav|stop|attention|\bsilver[s]?\b|responsive|wrong|spider|monkey|mouse|\brat\b|frog|demand)/i
+
+## *** Set room numbers for your city if not listed here.
+rivers_rest_rooms = /10863|10911|10949|10992|10915|10863|10935|11002|10934|10943/
+fwi_rooms = /3672|16349|12306|16363|3654|3845|16470|12285/
+landing_rooms = /1776|408|405|6256|3785|420|3809|5612/
+icemule_rooms = /XXXX/
+solhaven_rooms = /XXXX/
+tavaalor_rooms = /13930|13943|13938|10327|10379|10329|10325|10396|10364|10332|5906|5907|3523|3516|10332/
+teras_rooms = /5906|3727|3483|1957|1851|1838|1885|1886|1932|12511|1957/
+safe_rooms = /324/
+
+always_ignore_rooms = /#{rivers_rest_rooms}|#{fwi_rooms}|#{landing_rooms}|#{icemule_rooms}|#{solhaven_rooms}|#{tavaalor_rooms}|#{teras_rooms}|#{safe_rooms}/
+
+## *** Insert any known script triggers here, these will ALWAYS fire.
+prior_script_triggers = /^A sudden fierce gust|gruff voice|\[SEND\]|^You are buffeted by the wind|tell me|please respond|fairy|whatcha doin[g]?|^You hear someone applauding|^Roundtime changed to|^The ground begins to shake violently, making it hard to|answer that voice|what is wrong|how many silvers|^You have \d+ coins|^It seems you have died|^You are a ghost/i
+
+## ** Need to update these with additional magic casting
+ignore_magic_lines = /^\w+ (gestures while|makes a nearly)/
+
+## ** These are going to be specific to the creature/areas.  Some will pop the line when not needed.
+always_ignore_strings = /#{ignore_magic_lines}|^[A|An] \w+ centaur ranger (snorts|notices)|^A sleek red squirrel hops nervously|^A rat skitters accross the ground near your feet|^You hear the booming|^You (pick|put|remove|tap|gather|swap|open|carefully)|^Running your fingers|^Mana:|^With a quick flick of|^A crier hurries|^He continues, "Those citizens holding|^A jungle troll chieftain shouts, "Ird t'sum|^ With a satisfied rumble, it stalks off|^A fire giant shouts out|^A wave of dark ethereal|^You are buffeted by the dark|^As you place|^You have earned the following|^You hear the voice of the clerk|^A raggedly-dressed lass lopes by|^"Everybody is always in a hurry these|^The aardvark (surveys|narrows)|^A nearby shadow seems to shift, revealing|^A robed human priestess says|^A wailing and screaming|^A (carceris|nonomino|frenzied monk) waves a (decaying|rotting|spectral) hand|^Your body begins to respond|^Suddenly a loud *THUMP^|^You continue to feel much more aware|^The spirit whispers with a sinister voice/
+
+## *** These lines ignore whole blocks.  The first is combat, more lines likely needed here.
+ignore_start_lines_30wait = /(^You leap|^You make [a|an]|^You attempt to punch)/
+ignore_end_lines_30wait =  /^Roundtime:/
+
+## *** Short 1 second blocks to ignore. 
+ignore_start_lines_1wait = /(^\[[A-Z][a-z]|^You search |^    Maximum|^In the|^You rummage|^You are wearing|^  Skill Name|^Peering into|^You are currently wearing)/
+#ignore_end_lines_1wait =  /^Obvious|^Total|^Click|^Further information|^Roundtime:|^\(\d+ items displayed/
+ignore_end_lines_1wait =  /^>$/
+
+
+if $frontend == 'stormfront'
+	fam_window_begin = "<pushStream id=\"familiar\" ifClosedStyle=\"watching\"/>"
+	fam_window_end   = "<popStream/>\r\n"
+else
+	fam_window_begin = "\034GSe\r\n"
+	fam_window_end   = "\034GSf\r\n"
+end
+
+while line = get
+
+	if line =~ prior_script_triggers
+		next if line =~ /^\[LNet|^\[Merchant|^\[Prime/
+		puts("#{fam_window_begin}#{line}\r\n#{fam_window_end}")
+		puts("#{fam_window_begin}Unrecognized game line.\r\n#{Time.at(Time.now).strftime("%B %e, %Y at %I:%M %p")}\n#{fam_window_end}")
+		
+		if send_emails == 'yes' 
+		Mail.new(
+			to: 		'gemstoneruby.smtp@gmail.com',
+			from: 		'gemstoneruby.smtp@gmail.com',
+			subject: 	'Prior scriptcheck patterns detected.',
+			body: 		"#{line}\r\nUnrecognized game line.\r\n#{Time.at(Time.now).strftime("%B %e, %Y at %I:%M %p")}\n"
+		).deliver!
+		end
+	end
+
+	if line =~ ignore_start_lines_30wait
+		echo "Bypassing - 30 Wait, #{$1}"
+		matchtimeout 30, ignore_end_lines_30wait
+		next
+	end
+
+	if  line !~ /^\[Merchant|^\[Prime/ && line =~ ignore_start_lines_1wait
+		echo "Bypassing - 1 Wait, #{$1}"
+		matchtimeout 1, ignore_end_lines_1wait
+		next
+	end
+	
+	next if Room.current.id.to_s =~ always_ignore_rooms
+	next if line =~ always_ignore_strings
+	next if line =~ /^\[.*?\]\-[A-z]+\:|^\[server\]\: "/
+	
+	### Checks for CAPITAL letters length 5 to 1000.
+	if line =~ /([A-Z]{5,100})/ and line !~ /^Your SIGN OF ([A-Z]+)/ and line !~ /\s*(Strength|Constitution|Dexterity|Agility|Discipline|Aura|Logic|Intuition|Wisdom|Influence)\s+\((STR|CON|DEX|AGI|DIS|AUR|LOG|INT|WIS|INF)\)\:\s+\d+\s+\(-?\d+\)\s+\.\.\.\s+\d+\s+\(-?\d+\)/
+		puts("#{fam_window_begin}#{line}\r\n#{fam_window_end}")
+		puts("#{fam_window_begin}Unrecognized game line.\r\n#{Time.at(Time.now).strftime("%B %e, %Y at %I:%M %p")}\n#{fam_window_end}")
+		if send_emails == 'yes' 
+		Mail.new(
+			to: 		'gemstoneruby.smtp@gmail.com',
+			from: 		'gemstoneruby.smtp@gmail.com',
+			subject: 	'Capital letters scriptcheck patterns detected.',
+			body: 		"#{line}\r\nUnrecognized game line.\r\n#{Time.at(Time.now).strftime("%B %e, %Y at %I:%M %p")}\n"
+		).deliver!
+		end
+	end
+	
+	if line =~ dangertriggers
+		next if line =~ /\(marked\)/
+		puts("#{fam_window_begin}#{line}\r\n#{fam_window_end}")
+		puts("#{fam_window_begin}Unrecognized game line.\r\n#{Time.at(Time.now).strftime("%B %e, %Y at %I:%M %p")}\n#{fam_window_end}")
+		if send_emails == 'yes'
+		Mail.new(
+			to: 		'gemstoneruby.smtp@gmail.com',
+			from: 		'gemstoneruby.smtp@gmail.com',
+			subject: 	'Danger triggers scriptcheck patterns detected.',
+			body: 		"#{line}\r\nUnrecognized game line.\r\n#{Time.at(Time.now).strftime("%B %e, %Y at %I:%M %p")}\n"
+		).deliver!
+		end
+	end
+	
+end

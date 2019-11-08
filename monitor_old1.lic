@@ -1,0 +1,392 @@
+#hide_me
+
+=begin
+
+This script checks for certain lines and alerts the person to their presence.  It uses the familiar window in game, and an email system.  You must have the mail gem installed.
+SMS is also enabled if your carrier has "email to text".
+
+Note:  Any inattentive scripting is against Simutronics policy. This should NOT be used to script away from keyboard.  It is ONLY meant as a detection device
+so you can catch script checks through text scroll while at the keyboard. Simutronics has the power to issue script warnings
+even if you pass a script check. This is NOT designed to protect against AFK scripting.
+
+There is no AS/DS checks here. This will not protect against those types of checks.
+
+Since this is public as of 09/15/2016, expect many of the keywords below to not be used by GMs, and update accordingly.
+
+v. 02 by Kalros/Haldrik
+
+-- v.02 changelog
+
+Added more variables.
+
+***************
+**What it does
+***************
+
+This script parses every game line and checks it against 3 patterns. Known script checks,
+danger script checks, and capital letters.
+
+If any line is triggered, it passes through to the exceptions/exemptions.  If there is no exception,
+notification is sent. Script check patterns are ALWAYS sent.
+
+This tests against XML lines.
+
+****************
+** Instructions
+****************
+
+1. You must install "mail gem".  This may or may not work out of the box.
+Go to cmd prompt and type "gem install mail".  If not, you may need to google how to install gems.
+
+2. You must enable outgoing SMTP in gmail settings.
+
+3. You must update @sendUserName and @sendPassword and @email1/@email2.  You do not need to update the others if you use gmail.
+
+4. Update exception patterns as needed if things are popping that should not be.
+
+5. Review line 352, it contains a break if !running certain scripts. Uncomment if you want.
+
+=end
+
+require 'mail'
+
+$monitor_debug = true ## Debug option, turn off if you don't want to see patterns.  Recommened TRUE during initial runs.
+$monitor_send_email = true
+
+## Start variables
+
+@sendAddress = "smtp.gmail.com"
+@sendPort = 587
+@sendDomain = "gmail.com"
+## CHANGE THIS TO YOUR USER NAME
+@sendUserName = "gemstoneruby.smtp" # this is your username excluding @gmail.com
+@sendPassword = "Mail123!" # CHANGE
+@fromEmail = "gemstoneruby.smtp@gmail.com" # ex, gemstoneruby@gmail.com
+
+## TO EMAILS - Max of 2 emails currently
+@email1 = "4153775105@msg.fi.google.com"  # example of email to text for ATT
+@email2 = "brycole@gmail.com" # Email notification is sent here.
+
+options = { :address              => @sendAddress,
+            :port                 => @sendPort,
+            :domain               => @sendDomain,
+            :user_name            => @sendUserName,
+            :password             => @sendPassword,
+            :authentication       => 'plain', # this might need to change if you don't use gmail.
+            :enable_starttls_auto => true  }
+
+Mail.defaults do
+  delivery_method :smtp, options
+end
+
+
+## *** Trigger patterns
+## *** Insert any known script triggers here, these will ALWAYS fire.
+
+priorScriptTriggers = /(^A sudden fierce gust|gruff voice|\b\[SEND\\]\b|^You are buffeted by the wind|tell me|please respond|fairy|whatcha doin[g]?|^You hear someone applauding|answer that voice|what is wrong|speak with|how many silvers|This is a violation|SAY where|Where are|why are|a soft voice whispers|^You feel yourself being pulled away|GameMaster|^\[Consultation Lounge\]|^Roundtime changed to \d\d)/i
+
+## *** This is a list of certain keywords that GMS may/may not use.
+dangerTriggers = /(ignor|continu|\btyp(e[sd]?|ing)\b|hello|respond|reply|answer|speak|spoken|whisper|scream|\bSEND\b|aloud|talk|\bscript(s?|ing|ed)\b|smil|frown|snort|\byell\b|exclaim|announc|declar|voic|say|claim|boom|shout|this place|you there|squeak|spider|alert|cheer|nod|jump|wav|stop|attention|\bsilver[s]?\b|responsive|wrong|spider|monkey|mouse|\brat\b|frog|demand)/i
+
+### Checks for CAPITAL letters length 5 to 100. See ignores below.
+capitalTriggers = /([A-Z]{5,100})/
+
+## ***
+## *** Ignore line patterns below
+## ***
+
+## Rooms where all lines are ignored. Add rooms as necessary.
+## These are generally shops and/or resting nodes.
+rivers_rest_rooms = [10863,10911,10949,10992,10915,10863,10935,11002,10934,10943]
+fwi_rooms = [3672,3670,16349,12306,16363,3654,3845,16470,12285,12282]
+landing_rooms = [1776,408,405,6256,3785,420,3809,5612,3824,400,399,7389,7315,7000,16504,16393,16423,4141,1838,1837,9276, 325]
+icemule_rooms = [9999, 3778, 3370, 2466, 2464, 2422, 13055, 3363]
+solhaven_rooms = [12805,1507,5710,5719,13054,9397,5711,5719,5716,5722]
+tavaalor_rooms = [13930,13943,13938,10327,10379,10329,10325,10396,10364,10332,5906,5907,3523,3516,10332,10434,13954,37,13048,10082,3672,34,32,4019,640,4024,9687,4686,4663,13137,10070]
+teras_rooms = [5906,3727,3483,1957,1851,1838,1885,1886,1932,12511,11,1439,644]
+safe_rooms = [3668,10861,601,208,1572,3449,1263]
+#safe_rooms = [3668,10861,188,2300,228,601,208,1572] if $lmas_audience == true
+
+## This combins the ignore rooms list
+$always_ignore_rooms = /\b(#{(rivers_rest_rooms+fwi_rooms+landing_rooms+icemule_rooms+solhaven_rooms+tavaalor_rooms+teras_rooms+safe_rooms).join('|')})\b/
+
+## ***
+## ***
+## This section is a hodgepodge of ignore lines.  It does not really matter which category you put them under.
+## Just follow the same syntax.
+
+## ** Need to update these with additional magic casting
+ignore_magic_lines = [
+	'^w+ (gestures while|makes a nearly)',
+	'^The (elemental aura|air) around you',
+]
+
+ignore_environmentals = [
+	'^A sleek red squirrel hops nervously',
+	'^A rat skitters across the ground near your feet',
+	'^A raggedly-dressed lass lopes by',
+	'^Horrified screams suddenly pierce the air',
+	'^The rhythmic, basso belch of a bullfrog resounds',
+	'^A sudden silence falls over the area as the constant',
+	'^A sudden, loud squawking from the nearby fog',
+	'^The soft \'whuffing\' of wings attracts your attention',  # YOU MUST ESCAPE SOME CHARACTERS, SUCH AS SINGLE QUOTES
+	'^The sirenflowers whisper in soft, echoing tones to one another before',
+	'^You hear the booming',
+	'^A wailing and screaming',
+	'^A nearby shadow seems to shift, revealing',
+	'^The spirit whispers with a sinister voice',
+	'^The scent of ozone rains down',
+	'^A sudden rattling of chains',
+	'^Suddenly the winds begin to gust',
+	'^Dark flames arc toward the ground',
+	'^The nauseating stink of putrefaction moves',
+	'^An evil hiss fills the air',
+	'^   Hot steam spray to the',
+	'^A gravelly hiss announces',
+	'^A layer of heavy mist floats above the grass',
+	'^The web wavers back and forth',
+	'^Suddenly, the winds begin to gust',
+	'^Each step causes water to seep to the surface of the spongy soil',
+	'^The faint sounds of some large animal trudging',
+	'^Light screeching sounds draw your attention',
+	'^A scrawny black rat scurries over your feet',
+	'^The trap door aove your head',
+	'^Something moves in the shadows, a blur',
+	'^Waves of black anti-mana',
+	'^Waves of energy',
+	'^The air shakes and twists as waves',
+	'^The air ripples in sickening',
+	'^THA-THUMP',
+	'Some whispered voices',
+	'Streaks of blanched fire lance the air',
+	'Her smile so sweet',
+]
+
+ignore_creatures = [
+	#'^An? \w+ drags (herself|himself) in',
+	#'^An? \w+ centaur ranger (snorts|notices)',
+	#'^A jungle troll chieftain shouts, "Ird t\'sum',
+	#'^A fire giant shouts out',
+	#'^An? (ancient|grizzled)? ?(baesrukha|carceris|seeker|luminous spectre|nonomino|frenzied monk|frost giant|greater moor wight|phantasm|black forest ogre) (waves|points|nods) (an?|at|her|his|in|a few) (elongated, clawed|icy|decaying|rotting|spectral|skeletal|clawed|ghastly) (finger|hand)',
+	#'^An? (ancient|grizzled)? ?forest trali (shaman)? ?(stalks|kneels|faces|nods|scrutinizes)',
+	#'^A mammoth arachnid waves',
+	#'^The hairs on the mammoth arachnid\'s',
+	#'^(An?|The) (kiramon|snow)? ?(defender|worker|barghest|madrinol) (is buffeted|emits)',
+	#'^A wave of (dark|emerald) ethereal',
+	#'^A greater faeroth bellows causing the air to distort',
+	#'^An? (ancient|grizzled)? ?baesrukha (speaks|waves|screams|extends) (a few|her|his|in)',
+	#'^A (greater)? ?bog troll (says|shouts|yells|asks|mutters), (".+")',
+	#'^A hisskra chieftain (stalks|leaps) in',
+	#'^(The|An?) moor wight suddenly stops moving',
+	#'^A gaunt spectral servant whispers haunting',
+	#'^An? (ancient|grizzled)? ?(shadow|night|black|snow|hunch-backed) (steed|mare|forest ogre|madrinol|dogmatist) (rears|shakes|snorts|nods|waves) (back|her|his|at|as|and)',
+	#'^A spectral miner waves a hand through the',
+	#'^An? (\w+)? ?\w+ (stalks|trots) in',
+	#'^A moor witch screams an',
+	#'^A storm giant looks up at a passing',
+	#'^A shan (ranger|cleric|warrior|wizard) (slowly|waves|nods|swings)',
+	#'^A swamp hag screams an angry torrent of curses',
+	#'^A dreadnought raptor ignores the terrible',
+	#'^The (worker|defender) (clicks|chitters)',
+	#'^A giant weasel scampers',
+]
+
+ignore_spell_effects = [
+	'^You are buffeted by the (dark|emerald|icy|russet|formless|snapping)',
+	'^A wave of (dark|emerald|icy|russet|formless|snapping)',
+	'^The invisible rash',
+	'^The shockwave (impacts|leaves|ripples|lifts|flings)',
+	'^The swarm (darts forward|continues to surround)',
+	'^You continue to struggle on the ground as the swarm',
+	'^A violent whirlwind continues swirling',
+	'^The (long)? ?thorny vine suddenly stops',
+	'^Dozens of long thorns suddenly grow',
+	'^   Some of the acid sticks to',
+	'^Acid continues to eat away',
+	'^While you\'re still a bit shaky',  ## ESCAPED SINGLE QUOTE
+	'^The flames around you continue',
+	'^Your (heart|arm and fist|body|eyes) (stops|briefly|glaze|begins)',
+	'^You (continue|suddenly) (to)? ?feel',
+	'^A wave of power flows outward from you',
+	'^For a brief, terrible moment, your mind is opened',
+	'^The ground stops shaking as quickly',
+	'^You jump back, but',
+	'^You maintain your resolve',
+	'^You feel a powerful',
+	'^You stop singing',
+	'^You attempt to renew',
+	'^The air stops shimmering',
+	'You begin singing and focus ',
+	'Your SIGN',
+	'Glowing specks of sparkling',
+	'The air about you stops shimmering',
+]
+
+ignore_misc = [
+	'^You (attach|add|forage|pick|put|push|remove|tap|gather|swap|open|carefully|grab|tuck|drop|climb|close|settle|reach|rummage|slip|give|toss|take|seize)',
+	'^Running your fingers',
+	'^With a quick flick of',
+	'^As you place',
+	'^You have earned the following',
+	'^   Talk about a close shave',
+	'^You (work the blade|notice some)',
+	'^\w+ (picks up|removes|puts|works) an?',
+	#'^Mana:',
+	'^\w+ skillfully weaves',
+	'^\w+ makes a nearly imperceptible',
+	'"For we shall all walk in (his|her) light',
+	'\[If you wish to teleport',
+	'\[You have been awarded an Urchin',
+	'^A small rat scurries',
+	'^A quick count reveals',
+	'^The wave of white',
+	'^As you carefully forage',
+	'^There appears to be an item',
+	'^If you wish to continue, throw the item',
+	'^You have been tasked',
+	'^A rat scurries across the floor',
+	'^An announcer shouts',
+	'^The wagon (?:shakes|bounces)'
+]
+
+ignore_city_environmentals = [
+	'^A crier hurries',
+	'^He continues, "Those citizens holding',
+	'^With a satisfied rumble, it stalks off',
+	'^You hear the voice of the clerk',
+	'^"Everybody is always in a hurry these',
+	'^The aardvark (surveys|narrows)',
+	'^A (robed|young lithe|dark-haired) (human|elven|half-elven) priestess (says|removes|stops)',
+	'^A city guardsman walks in',
+	'^You hear the voice of a (lithe|blond) (Ardenai|Loenthran) (druid|merchant) yelling',
+	'^The soldier stops in particular area',
+	'^The glow from the tree pulses slightly, sending forth shimmering waves of',
+	'^From nearby, you hear a .+ yell, "Slow down\!"',
+	'^The Loenthran merchant says, "(I\'ve got strings|You too can play)',
+	'^Several small conical-snotted critters',
+	'^A shadow crosses the small beam',
+]
+
+consolidated = [
+	'^Mana:',
+	'^\(Use <d>SKILLS BASE</d>',
+	'^\d+ days remain until the annual',
+	'\s*(CMAN|USAGE|INVENTORY|ARMOR|WEAPONS|COMBAT|CONTAINERS|FLUFF|REGISTERED|BOOST|LUMNIS)',
+	'\s*(SHIELD|LOCKER|Stalking|Mana|SIMUCOIN)',
+	'^   <d>LOCKER',
+	'\s*(To specify|This includes 15)',
+	'^  (Awesome|Cross|Massive|Backfist|Jab|Fast grab|Jump|Powerful|Reverse|Sharp|Flying|Knee|Sweeping|Lightning-fast)',
+	'^   Incredible',
+	'^\[If you wish to teleport',
+	'^d100',
+	'^With a graceless',
+	'^1 day remains',
+	"^<style id=\"\"/><style id=\"roomDesc\"/>",  ## XML IGNORES, not part of automatic ignore
+	"^<streamWindow id=", ## XML IGNORES, not part of automatic ignore
+]
+
+$always_ignore_danger = /#{(consolidated+ignore_magic_lines+ignore_environmentals+ignore_creatures+ignore_spell_effects+ignore_misc+ignore_city_environmentals).join('|')}/
+
+## OLD IGNORE CODE FROM TGO, STILL USING. PROBALY DONT NEED.
+#$always_ignore_capital = /\s*(Strength|Constitution|Dexterity|Agility|Discipline|Aura|Logic|Intuition|Wisdom|Influence)\s+\((STR|CON|DEX|AGI|DIS|AUR|LOG|INT|WIS|INF)\)\:\s+\d+\s+\(-?\d+\)\s+\.\.\.\s+\d+\s+\(-?\d+\)/
+
+#$always_ignore_test1 = /#{consolidated.join('|')}/
+## ** Ignore XML
+
+## This will ignore all XML with these strings. It bypasses EVERYTHING, including script patterns.
+ignore_xml = [
+	"^<dialogData id=",
+	"^<indicator id=",
+	"<a exist=\"-?\\d+\" (noun|coord)=",
+	"^<pushStream id=",
+	"^<roundTime value=",
+	'.*<d cmd',
+	'<LaunchURL',
+	'^Where are you trying',
+	'^<right',
+	'^<left',
+]
+
+$always_ignore_xml = /#{ignore_xml.join('|')}/
+
+echo $always_ignore_xml
+echo $always_ignore_rooms
+echo $always_ignore_test1
+
+def sendMail(message, type)
+	for toEmail in [@email1, @email2]
+		Mail.new(
+			to:       toEmail,
+			from: 		@fromEmail,
+			subject: 	type,
+			body: 		message
+		).deliver!
+	end
+end
+
+## Section where exceptions are checked.
+def ignore_list(test_line)
+	echo "Inside def ignore_list. Line being tested is: #{test_line}" if $monitor_debug
+	ignore_reason = 'No ignore reason, returning false'; ignore_lines = false
+	#(ignore_reason = 'Ignoring line based on XML'; echo ignore_reason if $monitor_debug; return true) if test_line =~ $always_ignore_xml
+	#(ignore_reason = 'Ignoring consolidated lines'; ignore_lines = true) if test_line =~ $always_ignore_test1
+	(ignore_reason = 'Ignoring line based on excluded rooms.'; echo ignore_reason if $monitor_debug; return true) if Room.current.id.to_s =~ $always_ignore_rooms
+	(ignore_reason = 'Ignoring line based on danger ignores.'; echo ignore_reason if $monitor_debug; return true) if test_line =~ $always_ignore_danger
+	#(ignore_reason = 'Ignoring lines based on capital letter ignores.'; echo ignore_reason if $monitor_debug; return true) if test_line =~ $always_ignore_capital
+	(ignore_reason = 'Ignoring lines based on total line length.'; echo ignore_reason if $monitor_debug; return true) if test_line.length > 200
+	echo ignore_reason if $monitor_debug
+	return ignore_lines
+end
+
+if $frontend == 'stormfront'
+	fam_window_begin = "<pushStream id=\"familiar\" ifClosedStyle=\"watching\"/>"
+	fam_window_end   = "<popStream/>\r\n"
+else
+	fam_window_begin = "\034GSe\r\n"
+	fam_window_end   = "\034GSf\r\n"
+end
+
+## *** Start of main loop
+
+status_tags #enable XMLs
+while line = get
+
+	## UNCOMMENT THIS LINE IF YOU WANT
+	#break unless running?('sbounty') or running?('grguild') or running?('bigshot') or $monitor_debug == true   ## Scripts that need to be running for monitor to stay running.
+
+	## Always send emails if a prior script pattern is triggered.
+	next if line =~ $always_ignore_xml
+	if line =~ priorScriptTriggers
+		echo "Inside prior_script triggers." if $monitor_debug
+		echo line if $monitor_debug
+		echo "inside prior_script triggers, past next if for channels"
+		puts("#{fam_window_begin}#{line}\r\n#{fam_window_end}")
+		puts("#{fam_window_begin}Unrecognized game line. PRIOR SCRIPTCHECK pattern detected.\r\n#{fam_window_end}")
+		puts("#{fam_window_begin}#{Time.at(Time.now).strftime("%B %e, %Y at %I:%M %p")}\r\n#{fam_window_end}")
+		sendMail(line, "Prior scriptcheck patterns.") if $monitor_send_email
+		next
+	end
+
+	if line =~ capitalTriggers
+		echo "Inside capital triggers before ignore." if $monitor_debug
+		next if ignore_list(line)
+		echo "Inside capital triggers after ignore." if $monitor_debug
+		puts("#{fam_window_begin}#{line}\r\n#{fam_window_end}")
+		puts("#{fam_window_begin}Unrecognized game line. CAPITAL letters pattern.\r\n#{fam_window_end}")
+		puts("#{fam_window_begin}#{Time.at(Time.now).strftime("%B %e, %Y at %I:%M %p")}\r\n#{fam_window_end}")
+		sendMail(line, "Capital letters patterns.") if $monitor_send_email
+		next
+	end
+
+	if line =~ dangerTriggers
+		echo "Inside danger triggers before ignore." if $monitor_debug
+		next if ignore_list(line)
+		echo "Inside danger triggers after ignore." if $monitor_debug
+		puts("#{fam_window_begin}#{line}\r\n#{fam_window_end}")
+		puts("#{fam_window_begin}Unrecognized game line. DANGER patterns detected.\r\n#{fam_window_end}")
+		puts("#{fam_window_begin}#{Time.at(Time.now).strftime("%B %e, %Y at %I:%M %p")}\r\n#{fam_window_end}")
+		sendMail(line, "Danger word patterns.") if $monitor_send_email
+		next
+	end
+end
+status_tags

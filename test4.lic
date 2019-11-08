@@ -1,0 +1,40 @@
+acid_msg = /^The lock appears to be free/
+crystal_msg = /^Looking closely into the keyhole of the lock, you spy.*crystal/
+cloud_msg = /^Looking closely into the keyhole of the lock, you spy a small vial of liquid/
+fire_msg = /^Looking closely into the keyhole of the lock, you spy a small vial of fire-red liquid/
+jaws_msg = /^You notice a discolored oval ring around the outside of the/
+needle_msg = /^Hmmm, you can see what appears to be a tiny hole/
+scarab_msg = /^Peering closely into the lock, you spy a/
+sphere_msg = /^Examining the .*(box|strongbox|chest|trunk|coffer), you locate.*sphere held/
+spore_msg = /^Peering into the box's lock, you see a small tube/
+springs_msg = /^After carefully examining the lock, you move on to the hinges of the/
+plate_msg = /^You see a metal/
+all_disarm_msg = /#{acid_msg}|#{crystal_msg}|#{fire_msg}|#{jaws_msg}|#{needle_msg}|#{scarab_msg}|#{sphere_msg}|#{spore_msg}|#{springs_msg}|#{plate_msg}/
+
+echo all_disarm_msg
+
+$disarm_msg = /^Roundtime|^You discover no|^Contortionist|^The lock appears to be free|#{all_disarm_msg}/
+$put_msg = /^You tuck|^You put|^Your .+ won't/
+
+#### ***** New Section
+
+
+
+disarm_messages =[]
+
+disarm_messages << acid_msg = "^The lock appears to be free"
+disarm_messages << crystal_msg = "^Looking closely into the keyhole of the lock, you spy.*crystal"
+disarm_messages << cloud_msg = "^Looking closely into the keyhole of the lock, you spy a small vial of liquid"
+disarm_messages << fire_msg = "^Looking closely into the keyhole of the lock, you spy a small vial of fire-red liquid"
+disarm_messages << jaws_msg = "^You notice a discolored oval ring around the outside of the"
+disarm_messages << needle_msg = "^Hmmm, you can see what appears to be a tiny hole"
+disarm_messages << scarab_msg = "^Peering closely into the lock, you spy a"
+disarm_messages << sphere_msg = "^Examining the .*(box|strongbox|chest|trunk|coffer), you locate.*sphere held"
+disarm_messages << spore_msg = "^Peering into the box's lock, you see a small tube"
+disarm_messages << springs_msg = "^After carefully examining the lock, you move on to the hinges of the"
+disarm_messages << plate_msg = "^You see a metal"
+all_traps_disarm_messages = "#{disarm_messages.join('|')}"
+
+$disarm_msg = /^Roundtime|^You discover no|^Contortionist|^The lock appears to be free|#{all_traps_disarm_messages}/
+
+echo $disarm_msg

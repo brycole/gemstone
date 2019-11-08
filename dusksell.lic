@@ -1,0 +1,12 @@
+sellsack = "cloak"
+sellsack = GameObj.inv.find { |obj| obj.noun == "#{sellsack}"}
+
+sellsack.contents.find_all {|i|
+	echo i.type
+	if i.type =~ /uncommon|weapon|scroll|herb/
+		fput "get ##{i.id}" 
+		fput "sell ##{i.id}"
+		fput "put #{righthand} in #{sellsack}" if !righthand.nil?
+		fput "put #{lefthand} in #{sellsack}" if !lefthand.nil?
+	end
+	}

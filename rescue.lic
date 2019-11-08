@@ -1,0 +1,32 @@
+=begin
+Pretty simple script to rescue someone, it is what it is!
+=end
+
+
+target=script.vars[1].downcase
+
+if checkmana <= 55
+	respond ("Not enough mana!")
+	exit
+else
+
+fput "prep 225"
+fput "cast #{target}"
+
+spellresult = waitfor("A silvery fog envelops you.  You feel a sudden lurching motion, and as the fog dissipates you see..." , "Your spell misfires.")
+
+
+
+	if spellresult =~ /Your spell misfires/
+		respond ("Can't fog to target")
+		exit
+	end
+
+
+	if spellresult =~ /A silvery fog envelops you/
+		fput "group #{target}"
+		waitcastrt?
+		fput "incant 130"
+	end
+
+end

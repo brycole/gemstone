@@ -1,0 +1,13 @@
+fput 'look in my hooded cloak'
+
+sleep 1
+
+for container in ['hooded cloak']
+  for shards in ['chunk', 'fragment', 'shard', 'sliver', 'strip', 'sphere', 'stone']
+      items = GameObj["#{container}"].contents.find_all {|i| i.noun =~ /\b#{shards}\b/}
+      items.each {|i| 
+        put "_drag ##{i.id} ##{GameObj[/case/].id}"
+        sleep 0.02
+      }
+  end
+end

@@ -1,0 +1,57 @@
+=begin
+
+For use with bounty boost.
+
+v.01 by Kalros
+
+=end
+
+
+echo "You must activate your bounty boost via BOOST BOUNTY"
+sleep 1
+
+start_script 'go2', [ 'advguild' ]
+wait_while { running?('go2') }
+
+$gemtask = false
+$herbtask = false
+$uncut = false
+
+ start_exec_script( <<-eos
+        while(line = get);
+            break unless running?('boost');
+            $gemtask = true if line =~ /The local gem dealer/;
+            $herbtask = true if line =~ /The local (healer|herbalist)/;
+            $uncut = true if line =~ /in purchasing an? (uncut (ruby|emerald|diamond)|aster|dragon's tear|moonglae|selanthan|black diamond|wyrdshard|purple thunderstone|opalescent thunderstone|wyrm's tooth|dragon's fang|black pearl|riftshard)/;
+            $uncut = true if line =~ /The local (healer|herbalist)/;
+        end;
+        eos
+        )
+
+while line = get
+	npc = GameObj.npcs.find { |t| t.name =~ /taskmaster/i }
+	fput "ask ##{npc.id} about bounty"
+	sleep 0.2
+	if $gemtask == false && $herbtask == false
+		fput "ask ##{npc.id} about removal"
+		fput "ask ##{npc.id} about removal"
+		sleep 5
+	else
+		start_script 'go2', [ 'gemshop' ] if $gemtask
+    start_script 'go2', [ 'npchealer' ] if $herbtask
+		wait_while { running?('go2') }
+		npc = GameObj.npcs.find { |t| t.name =~ /(dealer|zirconia|kahlyr|tanz|diam|areac|mirtag)/i }
+		fput "ask ##{npc.id} for bounty"
+		sleep 0.2
+		if $uncut == true
+			puts 'Found uncut gem!'
+			print "\a"
+			break
+		else
+			$gemtask = false
+      $herbtask = false
+			start_script 'go2', [ 'advguild' ]
+			wait_while { running?('go2') }
+		end
+	end
+end

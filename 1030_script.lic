@@ -1,0 +1,60 @@
+## Quick 1030 cast loop for DR Arena
+## by Kalros
+
+check_lines = <<-eos
+  while line = get
+    break if !running?('1030_loop')
+    kill_script '1030_loop' if line =~ /^An arena guard escorts you from/
+    put 'incant 1030' if line =~ /^Your armor/
+    if line =~ /^An announcer boasts, "Combatant \\w+ is triumphant/
+      put 'stop 1018'
+      put 'renew all'
+    end
+  end
+eos
+
+start_exec_script(check_lines, :quiet => true)
+
+while true
+  if GameObj.npcs.find {|i| i.noun =~ /\w+/}
+    put 'sigil of power' if stamina > 51 and mana < 240 if Spell[9718].known?
+    dothistimeout "sign of wracking", 0.5, /^You shudder/ if spirit > 5 and mana < 20 if Spell[9918].known?
+    if mana > 10
+      dothistimeout "incant 1030", 0.5, /^Your spellsong|^Your armor/
+      waitcastrt?
+    else
+      dothistimeout "pray", 0.5, /^An announcer/
+    end
+  else sleep 0.5
+  end
+end
+
+
+## Sell DR Shards
+## v.01 by Kalros
+
+containers_list = ['longcloak', 'cloak', 'bag', 'rucksack', 'harness', 'case', 'pack']
+containers_list = script.vars[0].to_s if script.vars[0]
+containers_list = containers_list.split(",") if script.vars[0]
+
+
+for container in containers_list
+  dothistimeout "look in #{container}", 1, /In|I could/
+end
+
+
+for container in containers_list
+   for shards in ['chunk', 'fragment', 'shard', 'sliver', 'strip', 'sphere', 'stone']
+    if GameObj.npcs.find {|i| i.noun == 'archaeologist'}
+      items = GameObj["#{container}"].contents.find_all {|i| i.noun =~ /\b#{shards}\b/}
+      items.each {|i| 
+        put "get ##{i.id}"
+        put "give ##{i.id} to arch"
+        dothistimeout "give ##{i.id} to arch", 1, /^You exchange/
+      }
+    end
+  end
+end
+
+#;e 3.times {fput 'get blood from back';fput 'put blood in pou';sleep 0.2}
+#;e GameObj.loot.each {|i| fput "_drag ##{i.id} ##{GameObj[/cloak/].id}" if i.noun != 'backpack';sleep 0.2}

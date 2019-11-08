@@ -1,0 +1,144 @@
+## Duskruin Sewer Script
+## v.01 by Kalros
+
+#;e GameObj[/shawl/].contents.find_all{|i| i.type == 'jewelry'}.each{|i| put "_drag ##{i.id} ##{GameObj[/backpack/].id}";wait}
+
+start_script 'monitor'
+
+@container = 'sack'
+@container_jar = 'sack'
+@container_bs = 'sack'
+
+def check_hands(one_hand)
+	if (!righthand.nil? and !lefthand.nil?) or one_hand
+		@stow_bs = Array.new
+		@stow_items = Array.new
+		if righthand =~ /bloodscrip/
+			@stow_bs << GameObj.right_hand.id
+		else 
+			@stow_items << GameObj.right_hand.id if righthand
+		end
+		if lefthand =~ /bloodscrip/
+			@stow_bs << GameObj.left_hand.id
+		else 
+			@stow_items << GameObj.left_hand.id if lefthand
+		end
+
+		@container = 'link satchel'
+		container_bs_id = GameObj['harness'].id
+		r_container_id = GameObj['sack'].id
+		h_container_id = GameObj['cloak'].id
+		b_container_id = GameObj['harness'].id
+		c_container_id = GameObj['cloak'].id
+
+		while !righthand.nil? or !lefthand.nil?
+			container_id = container_bs_id if @container == 'harnes'
+			container_id = r_container_id if @container == 'cloak'
+			container_id = h_container_id if @container == 'sack'
+			container_id = b_container_id if @container == 'cloak'
+			container_id = c_container_id if @container == 'harness'
+
+			@stow_bs.each{ |i| 
+				put "put ##{i} in my sack" if GameObj.right_hand.id == i or GameObj.left_hand.id == i
+				sleep 0.2
+			}
+			@stow_items.each{ |i| 
+				put "_drag ##{i} ##{container_id}" if GameObj.right_hand.id == i or GameObj.left_hand.id == i
+				sleep 0.2
+			}
+			matchtimeout(1, "You")
+
+			@container = 'sack' if @container == 'case'
+			@container = 'case' if @container == 'harness'
+			@container = 'harness' if @container == 'bag'
+			@container = 'bag' if @container == 'cloak'
+			@container = 'cloak' if @container == 'link satchel'
+				
+		end
+	end
+end
+
+if script.vars[0] == 'check'
+	check_hands(true)
+	exit
+end
+
+def bundle_bloodscrip
+	GSC.bput "get blood from #{@container_bs}", '^You remove' if GameObj[/#{@container_bs}/].contents.find {|i| i.noun == 'bloodscrip'}
+
+	while GameObj[/#{@container_bs}/].contents.find {|i| i.noun == 'bloodscrip'}
+		GSC.bput "get blood from #{@container_bs}", '^You remove'
+		GSC.bput "bundle", "^With great"
+	end
+	GSC.bput "look blood", "It is worth"
+	put "_drag ##{GameObj.right_hand.id} ##{GameObj[/#{@container_bs}/].id}"
+	return
+end
+
+if script.vars[0] == 'bundle'
+	bundle_bloodscrip
+	exit
+end
+
+def search_sewers
+	while true
+		GSC.bput 'stand', '^You stand|^You struggle' until standing?
+		walk
+		found = GSC.bput 'search', "Roundtime:|^You plunge|^You've recently|Cesspool|^You need|^As you begin"
+		echo found
+		check_hands(false) if !stunned?
+		return if found =~ /Cesspool/
+		next
+	end
+end
+
+sewer_exec = <<-eos
+while line = get
+  break unless running?('dr_sewers')
+  if line =~ /^Thick beads of phosphorescent slime dribble|^You can't go there/
+    fput 'look'
+    while line2 = get
+      if line2 =~ /Obvious exits: (\\w+)/
+        put $1
+        break
+      end
+    end
+  end
+end
+eos
+
+ExecScript.start(sewer_exec, :quiet => true)
+
+def start_sewers
+	start_script "go2", ["23759"]
+	wait_while {running?('go2')}
+
+	if righthand != 'booklet'
+		GSC.bput "get my booklet", '^You reach|^Get what'
+
+		if righthand == 'booklet' 
+			put 'tear my booklet'
+			GSC.bput "put my booklet in my #{@container_jar}", '^You put|^You toss|^I could not' if righthand == 'jar'
+		else 
+			GSC.bput "get my slip", '^You reach|^Get what'
+		end
+	end
+
+		if lefthand != 'slip' and righthand != 'slip'
+			echo 'No token in hand, exiting.'
+			exit
+		end
+
+	GSC.bput 'stand', '^You stand|^You are' if !standing?
+	GSC.bput "go grate", "^Obvious"
+end
+
+loop {
+	GSC.run_wait_script('go2', '23759')
+	GSC.startDR(23759, "jar")
+	search_sewers
+	wait_until { !stunned? }
+	check_hands(true)
+	GSC.bput 'climb rope', '^Obvious'
+	bundle_bloodscrip
+}

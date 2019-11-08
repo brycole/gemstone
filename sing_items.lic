@@ -1,0 +1,43 @@
+## Sing to item type
+## Move from one container to second container
+## v.01 by Haldrik
+
+Person = Vars.client
+
+def output(person)
+  
+  item = GameObj.right_hand.name
+
+  choose = ["Here's what it sang to me:", "It sings its secrets sweet and bade me tell you about it:", "The properties I heard in its song:", "The loresong details for:", "This proud song hopes it can serve you well:" ]
+  prefix = choose[rand(choose.length)]
+
+  fput "whisper ooc #{person} #{prefix} #{script.vars[0]}"
+
+  Script.log "#{Time.now.strftime("%Y-%m-%d %H:%M:%S")}: For #{Person}: #{script.vars[0]}"
+end
+
+start_container = script.vars[1]
+end_container = script.vars[2]
+item_type = script.vars[3]
+
+dothistimeout "look in #{start_container}", 1, /In|I could/
+sleep 1
+
+  items = GameObj["#{start_container}"].contents.find_all {|i| i.type =~ /#{item_type}/}
+  items.each {|i| 
+    dothistimeout "_drag ##{i.id} right hand", 5, /^You/
+    start_script 'newsong'
+    wait_while { running?('newsong') }
+    echo("\a")
+    result = dothistimeout "wealth", 100000000, /Please rephrase|Sell what/
+    echo result
+    if result == "Sell what?"
+      dothistimeout "sell #{i.noun}", 100000000, /You offer/
+      dothistimeout "sell #{i.noun}", 100000000, /You offer|What/
+      dothistimeout "stow note", 5, /You put/ if lefthand == "note"
+    else
+      #output(Person)
+      dothistimeout "put #{i.noun} in my #{end_container}", 1, /You|I could/
+    end
+    wait_until { mana >= 40 }
+  }

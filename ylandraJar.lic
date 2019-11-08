@@ -1,0 +1,28 @@
+
+
+$jargiven = false
+$jarstuff = false
+  
+Thread.new {
+while line = true
+  if line =~ /gives you jar/
+    $jargiven = true
+  elsif line =~ /jar has stuff inside it/
+    $jarstuff = true
+  end
+end
+}
+
+
+while true
+  sleep 0.3 until $jargiven == true
+  $jargiven = false
+  fput 'look in jar'
+  if $jarstuff == true
+    fput 'put jar in cloak'
+    $jarstuff = false
+  else
+    fput 'put jar in backpack'
+    $jarstuff = false
+  end
+end

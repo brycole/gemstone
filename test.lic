@@ -1,0 +1,189 @@
+=begin
+	gem_sack = GameObj.inv.find{ |i| i.name =~ /orc hide sack/}
+	jar_sack = GameObj.inv.find{ |i| i.name =~ /coat/}
+	fput "look in ##{gem_sack.id}"
+	fput "look in ##{jar_sack.id}"
+	fput "stow right" if checkright != nil
+	fput "stow left" if checkleft != nil
+	gem_sack.contents.each{ |gem|
+		gem_name = gem.name
+		jar_sack.contents.each { |i|
+			if (i.name =~ /jar/) && (i.name =~ /#{gem.name}/)
+				fput "get ##{i.id}"
+			else
+				fput "get jar from my coat"
+			end
+		}
+	fput "get ##{gem.id}"
+	fput "put ##{gem.id} in my jar"
+	}
+	
+=end
+
+	doloop = "yes"
+	while doloop =~ /yes/
+	dupe = GameObj['back-basket'].contents.find { 
+		|o| o.noun =~ /jar|bottle/ and not o.after_name.nil? and GameObj['back-basket'].contents.any? { 
+		|o2| o2.noun =~ /jar|bottle/ and o2.after_name == o.after_name 
+		}
+	}
+	dothistimeout "get ##{dupe.id}", 2, /^You remove/
+	if !righthand.nil? then
+		output = "You give"
+		while output =~ /You give/
+			output = dothistimeout "shake my jar", 10, /(^You give|^You shake)/ 
+			dothistimeout "put my #{lefthand} in orc sack", 10, /^You put/ if !lefthand.nil?
+		end
+		if output =~ /^You shake/ then
+			dothistimeout "put my jar in my harn", 3, /^You put/
+			next
+		end
+	end
+	end
+	
+	exit
+
+output = "You put"
+	while output =~ /You put/ do
+		dothistimeout "get jar from bin", 3, /^You remove|Get what/
+		output = dothistimeout "put jar in my coat", 3, /^You put/
+	end
+	exit
+
+	;e i = 0;while i < 100 do;multifput "get my jar", "put jar in locker";i+=1;end
+	
+	
+	
+	#gem_sack.contents.each{ |gem| echo gem.name}
+	
+	#gem_sack = gem_sack.contents.sort { |a,b| a.name.downcase <=> b.name.downcase }
+	#gem_sack = gem_sack.contents.uniq
+	
+	#echo "SORTED!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+	
+	#gem_sack.contents.each{ |gem| echo gem_sack.gem.name}
+	#echo gem_sack
+	
+	#exit
+	
+	
+	;e count = Hash.new; GameObj['orc hide sack'].contents.each { |o| count[o.name] = count[o.name].to_i + 1 }; count.each_pair { |name,num| echo(name) if num > 1 }
+	
+	;e count = Hash.new; GameObj['back'].contents.each { |o| count[o.after_name] = count[o.after_name].to_i + 1 }; count.each_pair { |name,num| echo(name) if num > 1 }
+	
+	;e count = Hash.new; GameObj['coat'].contents.each { |o| count[o.after_name] = count[o.after_name].to_i + 1 }; count.each_pair { |after_name,num| echo(after_name) if num >= 1 };print count
+	
+	gem_sack = GameObj.inv.find{ |i| i.name =~ /orc hide sack/}
+	gem_sack.contents.collect { |o| echo o.name }.uniq
+	
+	exit
+	gem_sack = GameObj.inv.find{ |i| i.name =~ /orc hide sack/}
+	gem_sack.contents.each{ |gem| 
+	
+	fput "get jar from coat" if righthand.nil?
+	dothistimeout "get ##{gem.id}", 3, /^You remove|Get what/
+	next if lefthand.nil?
+	dothistimeout "put my #{gem.noun} in my jar", 3, /^You put|^You add/
+	
+		gem_sack.contents.each{ |nextgem|
+			if "#{nextgem.name}" == "#{gem.name}" then
+				dothistimeout "get ##{nextgem.id}", 3, /^You remove|^Get what/
+				next if lefthand.nil?
+				output = dothistimeout "put my #{gem.noun} in my jar", 3, /^You put|^You add|^The/
+				if output =~ /^The .+ is full/ 
+					multifput "put jar in back", "get jar from coat", "put my #{gem.noun} in my jar"
+					output = xxx
+				end				
+			end
+		}
+	fput "put jar in back"
+	}
+	
+
+dothistimeout "look in backpack", 3, /In the/
+GameObj[/backpack/].contents.each {|i| 
+	fput "get #{i.id}"
+	start_script 'loresing', [ "ability #{i.name}" ] 
+	wait_while {running?('loresing')}
+	fput "put #{i.id} in backpack"
+}
+	
+
+
+;e GameObj.npcs.find{ |i| echo true if i.name =~ /Master Footpad/}
+
+
+#GameObj[/satchel/].contents.find_all{|i| i.type == 'jar'}.each{|i| put "_drag ##{i.id} ##{GameObj[/locker/].id}"}
+
+
+
+exit
+	output = "You place"
+	while output =~ /You place/ do
+		dothistimeout "get jar from back", 3, /^You remove|Get what/
+		output = dothistimeout "put my jar in locker", 3, /^You place/
+	end
+	
+	exit
+
+
+output = "You put"
+	while output =~ /You put/ do
+		dothistimeout "get jar from locker", 3, /^You remove|Get what/
+		output = dothistimeout "put jar in my back", 3, /^You put/
+	end
+
+	exit
+
+	
+	exit
+	#GameObj[/satchel/].contents.find_all{|i| i.type == 'jar'}.each{|i| put "_drag ##{i.id} ##{GameObj[/locker/].id}"}
+	
+	
+	def get_all_containers
+        containers=nil
+        action = proc { |server_string|
+                        if server_string =~ /^You are wearing/
+                                containers = server_string.scan(/<a exist="([^"]+)"/).flatten
+                                DownstreamHook.remove("get_all_containers")
+                                nil
+                        else
+                                server_string
+                        end
+                }
+                DownstreamHook.add("get_all_containers", action)
+                $_SERVER_.puts "#{$cmd_prefix}inventory containers\n"
+                wait_until { containers }
+                containers.collect!{|id| GameObj[id]}
+	end
+	
+	#echo get_all_containers
+	get_all_containers.each{|i| fput "look in #{i}";i.contents.each{|y| print y.name}}
+
+
+	#GameObj[/coat/].contents.find_all{|i| i.type == 'herb'}.each{|i| put "_drag ##{i.id} ##{GameObj[/spidersilk sack/].id}"}
+	
+	#GameObj.inv.each {|i| if !i.contents.nil? && !i.contents.empty?; echo i.contents; end}
+	
+	#;e GameObj[/coat/].contents.find_all{|i| i.type == 'gem'}.each{|i| put "_drag ##{i.id} ##{GameObj[/spidersilk sack/].id}"}
+	
+	;e GameObj[/vest/].contents.find_all{|i| i.type == 'jewelry'}.each{|i| fput "get ##{i.id}";fput "put ##{i.id} in locker"}
+		
+	;e GameObj[/cloak/].contents.find_all{|i| i.type == 'scroll'}.each{|i| put "_drag ##{i.id} ##{GameObj[/coat/].id}"}		
+		
+
+****  REMOVE ALL GEMS FROM JARS ******
+while true
+	dothistimeout "get jar from cloak", 2, /^You/
+	if !righthand.nil? then
+		output = "You give"
+		while output =~ /You give/
+			output = dothistimeout "shake my jar", 10, /(^You give|^You shake)/ 
+			dothistimeout "put my #{lefthand} in my case", 10, /^You put/ if !lefthand.nil?
+		end
+		if output =~ /^You shake/ then
+			dothistimeout "put my jar in my pack", 3, /^You put/
+			next
+		end
+	end
+end

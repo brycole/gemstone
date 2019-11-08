@@ -1,0 +1,151 @@
+=begin
+# Title: filljars
+# Author: Caithris
+# Creation Date: 1/25/2013
+# Version: 0.1
+# Description: Based off of loot-be-gone's stockpile option with changes listed below.
+#   By user request, fills jars from your gemsack.
+#   Takes empty jars from your bin
+#   Puts full jars in your wardrobe
+#   Partially filled jars go in the chest.
+=end
+
+
+if UserVars.gemsack.nil? or UserVars.gemsack.empty?
+	echo 'error: gemsack is not set. (;set change gemsack <container name>)'
+	exit
+end
+unless lootsack = (GameObj.inv.find { |obj| obj.name =~ /\b#{Regexp.escape(UserVars.gemsack.strip)}$/i } || GameObj.inv.find { |obj| obj.name =~ /\b#{Regexp.escape(UserVars.gemsack).sub(' ', ' .*')}$/i } || GameObj.inv.find { |obj| obj.name =~ /\b#{Regexp.escape(UserVars.gemsack).sub(' ', ' .*')}/i })
+	echo 'error: failed to find your gemsack'
+	exit
+end
+close_lootsack = false
+if lootsack.contents.nil?
+	open_result = dothistimeout "open ##{lootsack.id}", 5, /^You open|^That is already open\.$/
+	if open_result =~ /^You open/
+		close_lootsack = true
+	else
+		dothistimeout "look in ##{lootsack.id}", 5, /In .*? you see/
+		if lootsack.contents.nil?
+			echo 'error: failed to find lootsack contents'
+			exit
+		end
+	end
+end
+
+	fput "close locker"
+	status_tags
+	open_result = dothistimeout 'open locker', 5, /exist=".*?" noun="(?:locker|chest)"/
+	status_tags
+	if open_result =~ /exist="(\d+)" noun="(locker|chest)"/
+		locker_id = $1
+		locker_contents = GameObj.containers[locker_id]
+		unless locker_contents
+			dothistimeout "look in ##{locker_id}", 3, /^In the/
+			locker_contents = GameObj.containers[locker_id]
+		end
+		if locker_contents
+
+			empty_hands
+			not_suitable = Array.new
+			for jar in locker_contents.find_all { |obj| obj.noun =~ /^(?:jar|beaker|bottle)$/ }
+				if jar.after_name =~ /^containing /
+					gem_list = lootsack.contents.find_all { |obj| (jar.after_name.gsub(/^containing |large |medium |small |tiny |some /, '') =~ /^#{obj.name.gsub(/large |medium |small |tiny |some /, '').sub(/y\b/, '(?:y|ie)').sub(/z\b/, 'ze?').gsub(/\b\s/, 's? ')}s?$/) }
+					gem_list.delete_if { |obj| not_suitable.include?(obj.id) }
+					unless gem_list.empty?
+						dothistimeout "get ##{jar.id} from ##{locker_id}", 3, /^You remove/
+						for gem in gem_list
+							result = dothistimeout "_drag ##{gem.id} ##{jar.id}", 3, /^You add|is full|does not appear to be a suitable container for/
+							if result =~ /^You add .* filling it/
+								fput "put ##{jar.id} in wardrobe"
+							elsif result =~ /^You add/
+
+							elsif result =~ /is full/
+								fput "put ##{jar.id} in wardrobe"
+								dothistimeout "put ##{gem.id} in ##{lootsack.id}", 3, /^You put/
+								break
+							elsif result =~ /does not appear to be a suitable container for/
+								dothistimeout "put ##{gem.id} in ##{lootsack.id}", 3, /^You put/
+								not_suitable.push(gem.id)
+							else
+								dothistimeout "put ##{gem.id} in ##{lootsack.id}", 3, /^You put/
+							end
+						end
+						if checkright
+						dothistimeout "put ##{jar.id} in ##{locker_id}", 3, /^You (?:put|place)/
+						end
+				end
+				else
+					fput "get ##{jar.id} in ##{locker_id}"
+					fput "put ##{jar.id} in bin"
+
+
+			end
+end
+
+	fput "close locker"
+		status_tags
+	open_result = dothistimeout 'open locker', 5, /exist=".*?" noun="(?:locker|bin)"/
+	status_tags
+	if open_result =~ /exist="(\d+)" noun="(locker|bin)"/
+		locker_id = $1
+		locker_contents = GameObj.containers[locker_id]
+		unless locker_contents
+			dothistimeout "look in ##{locker_id}", 3, /^In the/
+			locker_contents = GameObj.containers[locker_id]
+		end
+		if locker_contents
+
+			empty_hands
+			not_suitable = Array.new
+			for jar in locker_contents.find_all { |obj| obj.noun =~ /^(?:jar|beaker|bottle)$/ }
+
+					gem_count = Hash.new
+					lootsack.contents.each { |obj|
+						if (obj.type =~ /gem/) and (obj.name !~ /oblivion quartz$/) and not locker_contents.any? { |o| o.after_name.gsub(/^containing |large |medium |small |tiny |some /, '') =~ /^#{obj.name.gsub(/large |medium |small |tiny |some /, '').sub(/y\b/, '(?:y|ie)').sub(/z\b/, 'ze?').gsub(/\b\s/, 's? ')}s?$/ and not not_suitable.include?(obj.id) }
+							gem_count[obj.name.gsub(/large |medium |small |tiny |some /, '')] = gem_count[obj.name.gsub(/large |medium |small |tiny |some /, '')].to_i + 1
+						end
+					}
+					next if gem_count.empty?
+					gem_name = nil
+					gem_num = 0
+					gem_count.each_pair { |name,num|
+						if num > gem_num
+							gem_name = name
+							gem_num = num
+						end
+					}
+
+#					dothistimeout "get ##{jar.id} from ##{locker_id}", 3, /^You remove/
+					dothistimeout "get jar from bin", 3, /^You remove/					
+					lootsack.contents.each { |obj|
+						if obj.name.gsub(/large |medium |small |tiny |some /, '') == gem_name
+							result = dothistimeout "_drag ##{obj.id} ##{jar.id}", 3, /^You (?:add|put)|is full|filling it|^You add|^You put|does not appear to be a suitable container for/
+							if result =~ /is full|filling it/
+								dothistimeout "put ##{jar.id} in wardrobe", 3, /^You (?:put|place)/
+								fput "put ##{obj.id} in ##{lootsack.id}"
+							elsif result =~ /does not appear to be a suitable container for/
+								not_suitable.push(obj.id)
+								fput "put ##{obj.id} in ##{lootsack.id}"
+							end
+						end
+					}
+						if checkright
+						dothistimeout "put ##{jar.id} in chest", 3, /^You (?:put|place)/
+						end
+
+
+				end
+			end
+			dothistimeout "close locker", 3, /^You close|^That is already closed\.$/
+			fill_hands
+		else
+			dothistimeout "close locker", 3, /^You close|^That is already closed\.$/
+			echo 'error: failed to find locker contents'
+		end
+	else
+		dothistimeout "close locker", 3, /^You close|^That is already closed\.$/
+		echo 'error: failed to find locker'
+	end
+
+end

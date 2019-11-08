@@ -1,0 +1,34 @@
+#echo File.expand_path(File.dirname(__FILE__))
+
+#content = File.read('venice.txt')
+
+#venice_array = []
+
+#content.each_line do |line|
+#    venice_array << line.chop
+#end
+
+#content = content.delete("\n")
+
+#venice_array = content.scan(".+")
+#echo venice_array[0..50]
+#venice_array.each_slice(5) {|a| p a}
+
+
+
+#=begin
+msg = "Fair sir, you spit on me on Wednesday last, You spurn'd me such a day; another time, You call'd me dog; and for these courtesies, I'll lend you thus much moneys'?,I am as like to call thee so again, To spit on thee again, to spurn thee too, What if my house be troubled with a rat, And I be pleased to give ten thousand ducats, To have it baned? What, are you answered yet?, Some men there are love not a gaping pig"
+ 
+
+c = 0
+
+while true
+  c += 1
+  LNet.send_message(attr={'type'=>'private', 'to'=>'Mogonis'}, msg)
+  sleep 5
+  if c > 15
+    sleep 15
+    c = 0
+  end
+end
+#=end

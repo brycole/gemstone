@@ -1,0 +1,7 @@
+run_wait_script('go2', '9687')
+run_wait_script('useherbs', 'xx')
+sell_skins('pack')
+sell_skins('cloak')
+
+run_wait_script('go2', '4686')
+GSC.track_deposit("#{$global_creature_name}")

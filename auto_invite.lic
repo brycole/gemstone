@@ -1,0 +1,6 @@
+
+
+
+while line = get
+	fput "invite kalros" if line =~ /You see Kalros waving at your table/
+end

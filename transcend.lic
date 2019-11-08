@@ -1,0 +1,390 @@
+=begin
+
+=end
+
+$transcend_debug = false
+$bless_feet = false
+$bless_hands = false
+$current_favor = 1
+$Provoke = false
+cast_spells = Array.new
+
+
+  trans_count = Script.running.find_all { |s| s.name == 'transcend' }.length
+  exit if trans_count > 1
+
+
+#Thread.new {
+#	while true
+#		wait_until{(not Spell[9049].active? and not Spell[9812].active? and not dead? and running?('sbounty')) and percenthealth <= 80 and (!standing? or stunned? or webbed?) and ((GameObj.npcs.any? { |npc| npc.type !~ /passive/ and npc.status !~ /dead/ }) or (GameObj.loot.each { |i| i.noun =~ /cloud/}))}
+#    echo 'sym trans loop'
+#		bigshotPaused = GSC.pauseScript 'bigshot'
+#		GSC.bput "sym trans confirm", "space between the corporeal|^You have already|^You strain"
+#		unpause_script 'bigshot' if bigshotPaused
+#	end
+#}
+
+#	while true
+#		wait_until{(percenthealth <= 50 and not dead? and not stunned? and running?('sbounty')) }
+#		echo 'sym resto loop'
+#    bigshotPaused = GSC.pauseScript 'bigshot'#
+#		GSC.bput "sym restoration", "^You have already|^You strain/"
+#		unpause_script 'bigshot' if bigshotPaused
+#	end
+#}
+
+Thread.new {
+  while true
+    wait_until { webbed? or stunned? }
+    echo 'web or stunned!'
+    fput 'shout 1040'
+  end
+}
+
+Thread.new {
+  while true
+    wait_until { !calmed? }
+    echo 'calm loop'
+    fput 'unhide'
+    bigshotPaused = GSC.pauseScript 'bigshot'
+    wait_until { calmed? }
+    unpause_script 'bigshot' if bigshotPaused
+  end
+}
+
+Thread.new {
+  while true
+    wait_until{(percenthealth < 40) and !checkpoison and !checkdisease}
+    fput "quit"
+    fput "quit"
+    fput "quit"
+    kill_script 'sbounty' if running? 'sbounty'
+    kill_script 'bigshot' if running? 'bigshot' 
+  end
+}
+
+Thread.new {
+  while true
+    wait_until{ dead? }
+    if Char.name == 'Kalros'
+      Script.kill 'sbounty'
+      Script.kill 'bigshot'
+      fput 'depart confirm'
+      fput 'depart confirm'
+      sleep 10
+      Script.kill 'monitor'
+      Script.kill 'transcend'
+    else
+      sleep 10
+    end
+  end
+}
+
+Thread.new {
+
+  def cast_now(cast_spells)
+    waitrt?
+    ## Any script that can interfere needs to be paused
+    bigshotPaused = GSC.pauseScript 'bigshot'
+    slootPaused = GSC.pauseScript 'sloot'
+    ubermonkPaused = GSC.pauseScript 'ubermonk'
+
+    # Uses an exec thread to cast the spell so dothistimeout does not
+    # interefere with matches from method .cast
+    cast_spells.each {|do_spell|
+      $do_spell = do_spell
+      sleep 0.5
+      waitrt?
+      cast_exec = <<-eos
+      if $do_spell == 909
+        put "prep #{$do_spell}"
+        put 'evoke'
+      elsif $do_spell == 411
+        Spell[411].cast righthand
+      elsif $do_spell == 9603
+        waitcastrt?
+        waitrt?
+        fput 'cman smastery' if Spell[9603].affordable?
+      else
+        Spell[$do_spell].cast
+      end
+      eos
+      cast_exec_script = ExecScript.start(cast_exec, :quiet => false)
+      wait_until {!running? cast_exec_script.name}
+    }
+
+	## This section should mirror the pause section
+    if !Script.paused?('transcend')
+      unpause_script 'bigshot' if bigshotPaused
+      unpause_script 'sloot' if slootPaused
+      unpause_script 'ubermonk' if ubermonkPaused
+      cast_spells.clear
+    end
+  end
+
+  while true
+    if GameObj.npcs.find{ |npc| npc.type =~ /aggressive/ } # Only cast when aggresive monsters present
+      # 9699 is for popped muscles. No cmans during this time.
+      if Spell[9699].timeleft < 0.01
+        cast_spells << 9605 if Spell[9605].timeleft < 0.01 and GSC.can_cast?(9605)
+        cast_spells << 9625 if Spell[9625].timeleft < 0.01 and GSC.can_cast?(9625)
+        cast_spells << 1213 if Spell[1213].timeleft < 0.01 and GSC.can_cast?(1213)
+      end
+      if $current_favor > 0
+        if Char.name == 'Atilio'
+          cast_spells << 9805 if Spell[9805].timeleft < 0.5 and GSC.can_cast?(9805)
+        end
+        if Char.name == 'Vlaggen'
+          #cast_spells << 9806 if Spell[9806].timeleft < 0.5 and GSC.can_cast?(9806)
+          cast_spells << 9903 if Spell[9903].timeleft < 0.5 and GSC.can_cast?(9903)
+          cast_spells << 9907 if Spell[9907].timeleft < 0.5 and GSC.can_cast?(9907)
+          cast_spells << 9910 if Spell[9910].timeleft < 0.5 and GSC.can_cast?(9910)
+          cast_spells << 9913 if Spell[9913].timeleft < 0.5 and GSC.can_cast?(9913) and spirit > 2
+          cast_spells << 9914 if Spell[9914].timeleft < 0.5 and GSC.can_cast?(9914) and spirit > 2
+          cast_spells << 1035 if Spell[1035].timeleft < 0.5 and GSC.can_cast?(1035)
+          #cast_spells << 9816 if Spell[9816].timeleft < 0.5 and GSC.can_cast?(9816)
+        end
+      end
+      if $Provoke == false
+        if GSC.can_cast?(1235)
+          cast_spells << 1235 
+          $Provoke = true
+          Thread.new {
+            sleep 180
+            $Provoke = false
+          }
+        end
+      end
+      cast_now(cast_spells) if !cast_spells.empty?
+    end
+    sleep 0.03
+  end
+
+}
+
+delayed_favor = <<-eos
+  wait_until {(get =~ /Obvious/)}
+  $current_favor = 0
+eos
+
+while line = get
+  if line =~ /The power from your symbol dissipates/
+    $current_favor = 0
+    ExecScript.start(delayed_favor, :quiet => true)
+  end
+  if line =~ /You open your eyes and blink twice/
+    if !running? 'sbounty'
+      sleep 2
+      start_script 'sbounty'
+    end
+  end
+
+if line =~ /An ancient vaespilon draws an ancient sigil in the air/
+  3.times {GSC.bput "sym holi vaesp", "What were|A wave of power|not affected"; waitrt?}
+end
+
+if line =~ /A high-pitched hum fills the air as an enormous rift crawler twists/
+  if not Spell[9049].active? and not Spell[9812].active?
+      echo "CRAWLER ATTACK"
+      sleep 10
+      dothistimeout "sym trans confirm", 3, /space between the corporeal|^You have already|^You strain/
+  else
+      start_exec_script( <<-eos
+      kill_script 'sbounty' if running? 'sbounty';
+      kill_script 'bigshot' if running? 'bigshot'
+      kill_script 'go2' if running? 'go2';
+      force_start_script 'go2', [ '228' ];
+      sleep 0.5;
+      sleep 60;
+      start_script 'sbounty';
+      eos
+      )
+    end
+end
+
+if line =~ /quickly swoops down and releases you several feet/
+  sleep 5
+  kill_script 'bigshot' if running? 'bigshot'
+  kill_script 'go2' if running? 'go2'
+  start_script 'bigshot';
+end
+
+
+=begin
+  GSC.bput 'out', 'Obvious' if line =~ /You walk into a gaping/
+  
+  if line =~ /^A vaespilon draws an ancient sigil/
+    pause_script 'bigshot' if running? 'bigshot'
+    pause_script 'ubermonk' if running? 'ubermonk'
+
+    for targetNum in ['first', 'second', 'third']
+      waitrt?
+      result = GSC.bput "sym holi #{targetNum} vaesp", "^What were|^A wave of power flows out of you and toward a vaespilon.+"
+      echo result
+      redo if result !~ /Suddenly|What were|wait|^A wave of power flows out of you and toward a vaespilon\.$/
+    end
+    
+    unpause_script 'bigshot' if running? 'bigshot'
+    unpause_script 'ubermonk' if running? 'ubermonk'
+  end
+
+if line =~ /An ancient vaespilon draws an ancient sigil in the air/
+  3.times {GSC.bput "sym holi vaesp", "What were|A wave of power|not affected"; waitrt?}
+end
+
+
+  #break unless running?('sbounty') or running?('loot-be-gone') or running?('bigshot') or running?('fbigshot')
+	if line =~ /A roa'ter suddenly lurches/
+		if not Spell[9049].active? and not Spell[9812].active?
+			echo "ROATER ATTACK"
+			sleep 10
+			dothistimeout "sym trans confirm", 3, /space between the corporeal|^You have already|^You strain/
+		else
+			start_exec_script( <<-eos
+        	kill_script 'sbounty' if running? 'sbounty';
+			kill_script 'bigshot' if running? 'bigshot' or running? 'fbigshot';
+			kill_script 'go2' if running? 'go2';
+			force_start_script 'go2', [ 'town' ];
+			sleep 0.5;
+			sleep 60;
+			start_script 'sbounty';
+        	eos
+        	)
+		end
+	end
+
+=end
+
+#An Ithzir herald reaches into a pocket and produces a small silvery disc
+
+  if line =~ /^You suddenly feel angered beyond all reason|^(A|The) pall of silence/
+    start_exec_script( <<-eos
+    kill_script 'sbounty' if running? 'sbounty';
+    kill_script 'bigshot' if running? 'bigshot'
+    kill_script 'go2' if running? 'go2';
+    kill_script 'transcend' if running? 'transcend';
+    force_start_script 'go2', [ '20' ];
+    sleep 0.5;
+    sleep 120;
+    start_script 'sbounty';
+    start_script 'transcend';
+    eos
+    )
+  end
+
+  if line =~ /sticky web/
+    pause_script 'bigshot' if running? 'bigshot'
+    pause_script 'sbounty' if running? 'sbounty'
+    pause_script 'go2' if running? 'go2'
+    put 'prep 417'
+    fput 'cast web'
+    unpause_script 'bigshot' if running? 'bigshot'
+    unpause_script 'sbounty' if running? 'sbounty'
+    unpause_script 'go2' if running? 'go2'
+  end
+
+  if line =~ /[He|She] had an? \S+ crystal-edged/
+    @crysal_weapon = nil
+    GameObj.loot.find {|i| @crystal_weapon = i if i.name =~ /crystal-edged/}
+    fput "_drag ##{@crystal_weapon.id} ##{GameObj[/cloak/].id}" if !@crystal_weapon.nil?
+  end
+
+  puts "<pushStream id=\"speech\"/>#{line}\n<popStream/>\n" if line =~ /^\[Private/
+
+  if line =~ /^You can't reachxxxx/
+    bigshotPaused = GSC.pauseScript 'bigshot'
+    put 'unhide'
+    sleep 3
+    unpause_script 'bigshot' if bigshotPaused
+  end
+
+  if line =~ /^You will have to stand up/ and Room.current.id == 12093
+    kill_script 'go2'
+  end
+
+  $sellnow = true if line =~ /^You are unable to hold the number of items|^Your .+ won't fit/
+
+  
+
+  if line =~ /^Your armor prevents the spell from working/
+    GameObj.inv.find {|i| @remove_item = i if i.name =~ /#{$armorshort}/}; (put "_drag ##{@remove_item.id} ##{GameObj[/sack/].id}"; waitrt?) if @remove_item and !running? 'bigshot'
+  end
+
+  if line =~ /That only works/
+    echo "Some sort of error with movement."
+    5.times { put 'quit' }
+  end
+  #UserVars.rescue_child = true if line =~ /^Out of the corner of your eye, you notice/
+
+
+
+=begin
+
+if line =~ /Your tiger skin (footwraps|handwraps) returns to normal/ or $bless_feet == true or $bless_hands == true
+    $bless_feet = true if $1 == 'footwraps'
+    $bless_hands = true if $1 == 'handwraps'
+    if GameObj.npcs.find{ |npc| npc.type =~ /undead/}
+      pause_script 'bigshot' if running? 'bigshot'
+      dothistimeout "symbol of bless footwrap", 5, /^A wave of power|^You strain/ if $bless_feet == true
+      $bless_feet = false if $bless_feet == true
+      dothistimeout "symbol of bless handwrap", 5, /^A wave of power|^You strain/ if $bless_hands == true
+      $bless_hands = false if $bless_hands == true
+      unpause_script 'bigshot' if running? 'bigshot'
+    end
+  end
+
+  if line =~ /^Your muscles are starting to ache with exhaustion/
+    start_exec_script( <<-eos
+                       kill_script 'sbounty' if running? 'sbounty';
+                       kill_script 'go2' if running? 'go2';
+                       sleep 0.5;
+                       fput 'symbol of return';
+                       start_script 'sbounty';
+                       eos
+                       )
+  end
+
+  rescue_child = true if line =~ /^Out of the corner of your eye, you notice/
+  if line =~ /^The bronze gate appears to be closed/
+    if $rescue_child == false
+      start_exec_script( <<-eos
+                         kill_script 'sbounty' if running? 'sbounty';
+                         kill_script 'go2' if running? 'go2';
+                         sleep 0.5;
+                         fput 'symbol of return';
+                         start_script 'sbounty';
+                         eos
+                         )
+    else
+      fput 'stance off'
+      while Room.current.id == 4141
+        my_target = GameObj.npcs.find{ |npc| npc.type =~ /aggressive/ }
+        fput "kick #{my_target}" if not my_target.nil?
+        sleep 0.5
+        fput 'loot' if GameObj.npcs.any? { |npc| npc.status =~ /dead/}
+      end
+      $rescue_child = false
+    end
+  end
+
+  if line =~ /^If you try to swim/
+    #fput 'tickle my armor'
+    fput 'remove my breast'
+    waitrt?
+    fput 'put my breast in my pouch'
+    sleep 5
+    fput 'swim southeast' if Room.current.id == 11442
+  end
+
+  if line =~ /^You lose your balance on the slanted deck|^The tilt of the deck causes you to mistep|^The slant of the deck/
+    start_exec_script( <<-eos
+                       kill_script 'sbounty' if running? 'sbounty';
+                       kill_script 'go2' if running? 'go2';
+                       sleep 0.5;
+                       fput 'symbol of return';
+                       start_script 'sbounty';
+                       eos
+                       )
+  end
+=end
+end

@@ -1,0 +1,5 @@
+fput 'go tunnel' if Room.current.id == 23773
+fput 'buy vambrace'
+fput 'buy vambrace'
+fput 'buy leather'
+fput 'buy leather'

@@ -1,0 +1,1661 @@
+=begin
+
+	Big Loader
+
+	;bloader help
+
+	This script is a loader for bigshot.  It lets you set a bunch 
+	of hunting area settings in a single XML file and then have those 
+	choices presented to you in a menu.
+
+	Once your choice is made, it will load those settings into bigshot 
+	and start it up.
+
+	Leave a message on the Player's Corner for boardergeek if you have questions
+
+	 author: boardergeek	
+	   game: gemstone
+	version: 1.0.3
+
+	changelog:
+		1.0.3 (2015-04-21):
+			fixes for Lich 4.6 compatibility (Tillmen)
+
+=end
+
+class BigLoader
+	VERSION ||= '1.0.3'
+	attr_accessor :loaderSettings, :loaderSettingsFile
+
+	def initialize(filePath = nil)
+		@loaderSettings = BigLoaderSettings.new
+
+		setFilepath(filePath)
+	end
+
+	def setFilepath(filePath)
+		if filePath
+			UserVars.bigLoaderSettingsFile = filePath
+			#respond "Set Loader Settings File to #{filePath}"
+		end
+	
+		if UserVars.bigLoaderSettingsFile
+			@loaderSettingsFile = UserVars.bigLoaderSettingsFile
+		else
+			@loaderSettingsFile = "bigloader.xml"
+		end
+	end
+
+	def doLoad()
+		@loaderSettings.doLoad(@loaderSettingsFile)
+	end
+
+	def doSave(file)
+		@loaderSettings.doSave(file)
+	end
+
+	def listAreas()
+
+		list = getSortedAreaList()
+		respond "#{list.length} hunting areas found:"
+	
+		for i in 1 .. list.length
+			use = 0
+			if  list[i-1][1]
+				use = 1
+			end
+			respond "#{(i).to_s.rjust(5)}: #{list[i-1][use]}"
+		end
+	end
+	
+	def areaToOp(area)
+		
+		unless area
+			#respond "Unable to setup Bigshot's OP datastructure"
+			return false
+		end
+
+		while running? 'bigshot'
+			sleep 1
+			stop_script 'bigshot'
+		end
+
+ 		UserVars.op["dead_man_switch"] = area.getSetting("dead_man_switch") == "true"
+		UserVars.op["depart_switch"] = area.getSetting("depart_switch") == "true"
+		UserVars.op["flee_clouds"] = area.getSetting("flee_clouds")
+		UserVars.op["monitor_interaction"] = area.getSetting("monitor_interaction") == "true"
+	
+		UserVars.op["resting_scripts"] = area.getSetting("resting_scripts")		
+		UserVars.op["resting_commands"] = area.getSetting("resting_commands")
+		UserVars.op["resting_room_id"] = area.getSetting("resting_room_id")
+		UserVars.op["rest_till_spirit"] = area.getSetting("rest_till_spirit")
+		UserVars.op["rest_till_exp"] = area.getSetting("rest_till_exp")
+		UserVars.op["rest_till_mana"] = area.getSetting("rest_till_mana")
+
+
+		UserVars.op["wand_if_oom"] = area.getSetting("wand_if_oom") == "true"
+		UserVars.op["loot_script"] = area.getSetting("loot_script")
+		UserVars.op["flee_count"] =  area.getSetting("flee_count")
+
+
+		UserVars.op["oom"] = area.getSetting("oom")
+		UserVars.op["fried"] = area.getSetting("fried")
+		UserVars.op["wounded_eval"] = area.getSetting("wounded_eval")
+
+		UserVars.op["hunting_scripts"] = area.getSetting("hunting_scripts") 		
+		UserVars.op["hunting_prep_commands"] = area.getSetting("hunting_prep_commands")
+		UserVars.op["signs"] = area.getSetting("signs")
+		UserVars.op["hunting_stance"] = area.getSetting("hunting_stance")
+
+
+		UserVars.op["hunting_room_id"] = area.getSetting("hunting_room_id", false)
+		UserVars.op["hunting_boundaries"] = area.getSetting("hunting_boundaries", false)
+		UserVars.op["targets"] = area.getSetting("targets", false)
+
+
+		UserVars.op["invalid_targets"] = area.getSetting("invalid_targets")
+		UserVars.op["always_flee_from"]  = area.getSetting("always_flee_from") 
+
+		UserVars.op["hunting_commands"] = area.getSetting("hunting_commands")
+		UserVars.op["hunting_commands_b"] = area.getSetting("hunting_commands_b")
+		UserVars.op["hunting_commands_c"] = area.getSetting("hunting_commands_c") 	
+		UserVars.op["disable_commands"] = area.getSetting("disable_commands") 
+		UserVars.op["spam"] = area.getSetting("spam") 
+
+	
+		UserVars.op["wand"] = area.getSetting("wand")
+		UserVars.op["lone_targets_only"] = area.getSetting("lone_targets_only") == "true"
+		UserVars.op["encumbered"] = area.getSetting("encumbered")
+
+
+		UserVars.op["hide_for_ammo"] = area.getSetting("hide_for_ammo") == "true"
+		UserVars.op["ammo"] = area.getSetting("ammo")
+		UserVars.op["ammo_container"] = area.getSetting("ammo_container")
+		UserVars.op["dead_wand_container"] = area.getSetting("dead_wand_container")
+		UserVars.op["fresh_wand_container"] = area.getSetting("fresh_wand_container")
+
+		UserVars.op["wracking_spirit"] = area.getSetting("wracking_spirit")
+		UserVars.op["use_wracking"] = area.getSetting("use_wracking") == "true"	
+
+		return true
+	end
+
+	def startBigshot(mode=nil)
+		if mode
+			start_script 'bigshot', [mode]
+		else
+			start_script 'bigshot'
+		end
+	end
+
+	def getSortedAreaList()
+		list = Array.new
+		@loaderSettings.huntingAreas.each{|name, area|
+			displayName = name
+			if area.getSetting("desc", false)
+				txt = area.getSetting("desc")
+				if txt.length>0	
+					displayName = txt
+				end
+			end
+
+			if area.getSetting("primary") == "true"
+				displayName += " (Primary)"
+			end
+			list << [name, displayName]
+		}
+		list.sort!{|a,b|
+			a[1]<=>b[1]
+		}
+		return list
+	end
+
+	def getThisPlayerSetting()
+		name = Char.name.downcase
+		return @loaderSettings.getPlayerSetting(name)
+	end
+
+	def getPrimaryHuntingArea()	
+		return @loaderSettings.getPrimaryHuntingArea()
+	end
+
+	def getBestGuessHuntingAreaUsingLevel(lvl)	
+		return @loaderSettings.getBestGuessHuntingAreaUsingLevel(lvl)
+	end
+
+	def getHuntingArea(name)	
+		return @loaderSettings.getHuntingArea(name)
+	end
+
+	def getBounty(critter, area)
+		return @loaderSettings.getBounty(critter, area)
+	end
+
+	def bountyToOp(bounty)
+		areaName = bounty.getSetting("huntingAreaName")
+		area = getHuntingArea(areaName)
+		if area
+			areaToOp(area)
+		end
+	end
+	
+	def getAreaFromUser()
+		area = nil
+		first = 1
+		show_size = 20
+
+		list = getSortedAreaList()
+		respond "#{list.length} hunting areas found:"
+	
+		while list and first <= list.length
+			respond
+			
+			for i in (first) .. ([(first+show_size-1), list.length].min)
+				use = 0
+				if  list[i-1][1]
+					use = 1
+				end
+				respond "#{(i).to_s.rjust(5)}: #{list[i-1][use]}"
+			end			
+			
+			respond
+			respond "select an area (;send <#{first}-#{[first+show_size-1,list.length].min}>)#{ " or ';send next' for more" if (first+show_size-1) < list.length}"
+			respond
+			clear
+			line = nil
+			line = get until line.strip =~ /^[0-9]+$|^next$/i
+			if line =~ /^next$/
+				first += show_size
+			else
+				area = list[line.to_i-1][0]
+				area = @loaderSettings.getHuntingArea(area)
+				break
+			end
+		end
+		
+		
+		unless area
+			respond "end of hunting area list"
+			exit
+		end
+		
+		respond "you have selected the \"#{area.name}\" hunting area"
+		return area
+	end
+end
+
+class BigLoaderSettings
+	attr_accessor :huntingAreas, :defaults,
+	:bountyMappings,
+	:players
+
+	def initialize()	
+		@bountyMappings = Array.new		
+		@huntingAreas = Hash.new
+		@players = Hash.new
+	end	
+
+	def getPrimaryHuntingArea()
+		retArea = nil
+		@huntingAreas.each{|name, area|
+			if area.getSetting("primary") == "true"
+				#respond "Found #{area.name}"
+				retArea = area
+				break
+			end
+		}
+		return retArea
+	end
+
+	def getBestGuessHuntingAreaUsingLevel(desiredLevel)
+		retArea = nil		
+		areasByLevel = []
+		
+		@huntingAreas.each{|name, area|
+			areaLevel = area.getSetting("level")
+			if !areaLevel or areaLevel.to_s.length == 0
+				areaLevel = 150
+			end
+
+			areasByLevel << [areaLevel.to_i, area]
+		}
+		
+		areasByLevel.sort!{|a,b|
+			a[0]<=>b[0]
+		}
+		
+		areasByLevel.reverse!
+
+		areasByLevel.each{|level, area|
+			if desiredLevel>=level
+				retArea = area
+				break
+			end			
+		}
+		
+		return retArea
+	end
+
+	def getHuntingArea(name)
+		return @huntingAreas[name.downcase.strip]
+	end
+
+	def getPlayerSetting(name)
+		return @players[name.downcase.strip]
+	end
+	
+	def getBounty(critter, area)
+		retBounty = nil
+		@bountyMappings.each{ |mapping|
+			critCheck = mapping.getSetting("critter").downcase
+			areaCheck = mapping.getSetting("area").downcase
+			if critCheck and critCheck.include?(critter.downcase) and
+				 areaCheck and 
+					(areaCheck.include?(area.downcase) or areaCheck=="any")
+				retBounty = mapping
+			end
+		}
+		return retBounty
+	end
+
+	def doLoad(fileName)
+		filePath = $data_dir + fileName
+		if(!File.exists?(filePath))		
+			#respond("Loader Settings File: #{filePath} does not exist")
+			return
+		end
+		#respond("Using Loader Settings File: #{filePath}")
+
+		file = File.open(filePath, 'r') 
+		file.sync = true
+		
+		doc = REXML::Document.new file
+	
+		default = nil
+		doc.elements.each("root/default") {|d|
+			default = BigLoaderSetting.new(d)
+			#respond("Loaded default settings")
+		}
+		@defaults = default
+		
+		doc.elements.each("root/players/player") {|player|
+			playerSetting = BigLoaderSetting.new(player, default)
+			@players[playerSetting.name] = playerSetting
+			#respond("Loaded Settings for Player: #{playerSetting.name}")
+		}
+
+		thisPlayerSetting = getPlayerSetting(Char.name)
+		if thisPlayerSetting
+			default = thisPlayerSetting
+		end
+
+		doc.elements.each("root/huntingAreas/huntingArea") {|area|
+			huntArea = BigLoaderSetting.new(area, default)
+			@huntingAreas[huntArea.name] = huntArea
+			#respond("Loaded Settings for Hunting Area: #{huntArea.name}")
+		}
+
+		doc.elements.each("root/bountyMappings/bountyMapping") {|bounty|
+			bountySetting = BigLoaderSetting.new(bounty, nil)
+			@bountyMappings << bountySetting
+			#respond("Loaded Bounty Mapping: #{bountySetting.getSetting("critter")}")
+		}
+
+		file.close
+	end
+
+	def doSave(fileName)
+		
+		doc = REXML::Document.new("<root></root>", { :compress_whitespace => :all})
+		root = doc.root
+		
+		if @defaults
+			root.add_text("\n")
+			ele = root.add_element "default"
+			@defaults.toXML(ele)
+			root.add_text("\n")
+		end
+		
+		if @players
+			root.add_text("\n")
+			playerCollection = root.add_element "players"
+			
+			@players.each{|key, player|
+				playerCollection.add_text("\n")
+				pXML = playerCollection.add_element "player"
+				playerCollection.add_text("\n")
+				player.toXML(pXML)
+			}
+			
+			root.add_text("\n")
+		end
+		
+		if @huntingAreas
+			root.add_text("\n")
+			areaCollection = root.add_element "huntingAreas"
+			
+			@huntingAreas.each{|key, area|
+				areaCollection.add_text("\n")
+				aXML = areaCollection.add_element "huntingArea"
+				areaCollection.add_text("\n")
+				area.toXML(aXML)
+			}
+			
+			root.add_text("\n")
+		end
+		
+		if @bountyMappings
+			root.add_text("\n")
+			mapCollection = root.add_element "bountyMappings"
+			
+			@bountyMappings.each{|map|
+				mapCollection.add_text("\n")
+				bXML = mapCollection.add_element "bountyMapping"
+				mapCollection.add_text("\n")
+				map.toXML(bXML)
+			}
+			
+			root.add_text("\n")
+		end
+		
+		filePath = $data_dir + fileName
+		file = File.open(filePath, 'w') 
+		file.sync = true
+		doc.write( file )
+		file.close
+	end
+end
+
+
+class BigLoaderSetting
+	attr_accessor :default, :name, :settingsHash, :primary
+
+	def initialize(xmlSetting=nil, default=nil)	
+		@primary = false
+		@settingsHash = Hash.new	
+		@default = default
+
+		unless xmlSetting
+			return
+		end	
+
+
+		if xmlSetting.attributes["name"]
+			@name = xmlSetting.attributes["name"]
+			if @name
+				@name.downcase!.strip!
+			end
+		end
+
+		xmlSetting.elements.each {|setting|			
+			value = ""
+			name = setting.name
+			if(setting.text)
+				value += setting.text
+			end
+			set(name, value)
+		}
+		@name.downcase!.strip!
+	end
+
+	def getSetting(name, tryDefault = true)
+		val = ""
+		if @settingsHash[name] 
+			val = @settingsHash[name]
+		end		
+		
+		if tryDefault and @default and (!val or val.length==0)
+			val = @default.getSetting(name)
+		end
+		val = val.to_s
+		return val.strip
+	end
+
+	def set(name, value)
+		@settingsHash[name]=value
+	end
+	
+	def toXML(element)
+		if @name
+			element.attributes["name"] = @name
+		end
+			
+		@settingsHash.each{|key, value|
+			element.add_text "\n"
+			element.add_text "\t"
+			sub = element.add_element key
+			sub.text = value
+		}
+		element.add_text "\n"
+	end
+end
+
+
+def fillCharSettingNoteBook(nb, asHuntingArea = false)
+
+	controls = {}
+	
+	if !asHuntingArea
+		# Bounty Options
+		controls['turn_in_percent'] = Gtk::Entry.new
+		controls['dangerous_enable'] = Gtk::CheckButton.new('Kill dangerous')
+		controls['dangerous_enable'].set_inconsistent("true")
+		controls['dangerous_enable'].signal_connect('toggled') { 
+				if controls['dangerous_enable'].inconsistent?
+					controls['dangerous_enable'].inconsistent = false
+				end
+		}
+		
+		controls['kill_enable'] = Gtk::CheckButton.new('Cull')
+		controls['kill_enable'].set_inconsistent("true")
+		controls['kill_enable'].signal_connect('toggled') { 
+				if controls['kill_enable'].inconsistent?
+					controls['kill_enable'].inconsistent = false
+				end
+		}
+		
+		controls['heirloom_enable'] = Gtk::CheckButton.new('Heirloom (loot)')
+		controls['heirloom_enable'].set_inconsistent("true")
+		controls['heirloom_enable'].signal_connect('toggled') { 
+				if controls['heirloom_enable'].inconsistent?
+					controls['heirloom_enable'].inconsistent = false
+				end
+		}
+		
+		controls['skin_enable'] = Gtk::CheckButton.new('Skin (N/A)')
+		controls['skin_enable'].set_inconsistent("true")
+		controls['skin_enable'].signal_connect('toggled') { 
+				if controls['skin_enable'].inconsistent?
+					controls['skin_enable'].inconsistent = false
+				end
+		}
+		
+		controls['rescue_enable'] = Gtk::CheckButton.new('Rescue child')
+		controls['rescue_enable'].set_inconsistent("true")
+		controls['rescue_enable'].signal_connect('toggled') { 
+				if controls['rescue_enable'].inconsistent?
+					controls['rescue_enable'].inconsistent = false
+				end
+		}
+		
+		controls['gem_enable'] = Gtk::CheckButton.new('Gems')
+		controls['gem_enable'].set_inconsistent("true")
+		controls['gem_enable'].signal_connect('toggled') { 
+				if controls['gem_enable'].inconsistent?
+					controls['gem_enable'].inconsistent = false
+				end
+		}
+		
+		controls['heirloom_search_enable'] = Gtk::CheckButton.new('Heirloom (search)')
+		controls['heirloom_search_enable'].set_inconsistent("true")
+		controls['heirloom_search_enable'].signal_connect('toggled') { 
+				if controls['heirloom_search_enable'].inconsistent?
+					controls['heirloom_search_enable'].inconsistent = false
+				end
+		}
+		controls['herb_enable'] = Gtk::CheckButton.new('Forage (N/A)')
+		controls['herb_enable'].set_inconsistent("true")
+		controls['herb_enable'].signal_connect('toggled') { 
+				if controls['herb_enable'].inconsistent?
+					controls['herb_enable'].inconsistent = false
+				end
+		}
+			
+		controls['force_complete'] = Gtk::CheckButton.new('Force complete')
+		controls['force_complete'].set_inconsistent("true")
+		controls['force_complete'].signal_connect('toggled') { 
+				if controls['force_complete'].inconsistent?
+					controls['force_complete'].inconsistent = false
+				end
+		}
+	else
+		controls['targets'] = Gtk::Entry.new
+		
+		controls['resting_room_id'] = Gtk::Entry.new
+		controls['resting_room_id'].signal_connect("populate-popup") {|entry, m, param|
+			setRestWithMapMI = Gtk::MenuItem.new("Set with map")
+			m.append(setRestWithMapMI)
+			m.show_all
+			setRestWithMapMI.signal_connect("activate") {
+				
+			}
+		}
+		
+		controls['hunting_room_id'] = Gtk::Entry.new
+		controls['hunting_room_id'].signal_connect("populate-popup") {|entry, m, param|
+			setStartWithMapMI = Gtk::MenuItem.new("Set with map")
+			m.append(setStartWithMapMI)
+			m.show_all
+			setStartWithMapMI.signal_connect("activate") {
+				
+			}
+		}
+		
+		controls['hunting_boundaries'] = Gtk::Entry.new
+		controls['hunting_boundaries'].signal_connect("populate-popup") {|entry, m, param|
+			setBoundariesWithMapMI = Gtk::MenuItem.new("Set with map")
+			m.append(setBoundariesWithMapMI)
+			m.show_all
+			setBoundariesWithMapMI.signal_connect("activate") {
+				
+			}
+		}
+		
+		controls['primary'] = Gtk::CheckButton.new('Primary Hunting Ground')
+		controls['primary'].set_inconsistent("true")
+		controls['primary'].signal_connect('toggled') { 
+			if controls['primary'].inconsistent?
+				controls['primary'].inconsistent = false
+			end
+		}
+
+		controls['undead_present'] = Gtk::CheckButton.new('Undead Creatures Present')
+		controls['undead_present'].set_inconsistent("true")
+		controls['undead_present'].signal_connect('toggled') { 
+			if controls['undead_present'].inconsistent?
+				controls['undead_present'].inconsistent = false
+			end
+		}
+		
+		controls['level'] = Gtk::Entry.new
+	end
+	
+	
+	controls['desc'] = Gtk::Entry.new
+	# Hunting
+	controls['hunting_stance'] = Gtk::Entry.new
+	controls['hunting_commands'] = Gtk::Entry.new
+	controls['hunting_commands_b'] = Gtk::Entry.new
+	controls['hunting_commands_c'] = Gtk::Entry.new
+	controls['disable_commands'] = Gtk::Entry.new
+	controls['flee_count'] = Gtk::Entry.new
+	controls['targets'] = Gtk::Entry.new
+	controls['invalid_targets'] = Gtk::Entry.new
+	controls['always_flee_from'] = Gtk::Entry.new
+	controls['fried'] = Gtk::Entry.new
+	controls['oom'] = Gtk::Entry.new
+	controls['encumbered'] = Gtk::Entry.new
+	
+	# Resting
+	controls['wounded_eval'] = Gtk::Entry.new
+	controls['rest_till_exp'] = Gtk::Entry.new
+	controls['rest_till_mana'] = Gtk::Entry.new
+	controls['rest_till_spirit'] = Gtk::Entry.new
+	controls['resting_commands'] = Gtk::Entry.new
+	controls['resting_scripts'] = Gtk::Entry.new
+	controls['hunting_prep_commands'] = Gtk::Entry.new
+	controls['hunting_scripts'] = Gtk::Entry.new
+	controls['signs'] = Gtk::Entry.new
+	controls['loot_script'] = Gtk::Entry.new
+	controls['wracking_spirit'] = Gtk::Entry.new
+	
+	controls['use_wracking'] = Gtk::CheckButton.new("Use wracking")
+	controls['use_wracking'].set_inconsistent("true")
+	controls['use_wracking'].signal_connect('toggled') { 
+			if controls['use_wracking'].inconsistent?
+				controls['use_wracking'].inconsistent = false
+			end
+	}
+
+	controls['undead_enable'] = Gtk::CheckButton.new('Undead Hunting')
+		controls['undead_enable'].set_inconsistent("true")
+		controls['undead_enable'].signal_connect('toggled') { 
+			if controls['undead_enable'].inconsistent?
+				controls['undead_enable'].inconsistent = false
+			end
+	}
+	
+	controls['spam'] = Gtk::CheckButton.new('Spam commands')
+	controls['spam'].set_inconsistent("true")
+	controls['spam'].signal_connect('toggled') { 
+			if controls['spam'].inconsistent?
+				controls['spam'].inconsistent = false
+			end
+	}
+	
+	# Ammo & Wands
+	controls['ammo_container'] = Gtk::Entry.new
+	controls['ammo'] = Gtk::Entry.new
+	controls['fresh_wand_container'] = Gtk::Entry.new
+	controls['dead_wand_container'] = Gtk::Entry.new
+	controls['wand'] = Gtk::Entry.new
+	
+	controls['hide_for_ammo'] = Gtk::CheckButton.new('Hide to gather')
+	controls['hide_for_ammo'].set_inconsistent("true")
+	controls['hide_for_ammo'].signal_connect('toggled') { 
+			if controls['hide_for_ammo'].inconsistent?
+				controls['hide_for_ammo'].inconsistent = false
+			end
+	}
+	
+	controls['wand_if_oom'] = Gtk::CheckButton.new('Use wands')
+	controls['wand_if_oom'].set_inconsistent("true")
+	controls['wand_if_oom'].signal_connect('toggled') { 
+			if controls['wand_if_oom'].inconsistent?
+				controls['wand_if_oom'].inconsistent = false
+			end
+	}
+
+	#
+	# Hunting Area Page
+	#
+	if asHuntingArea
+		vb_nb = Gtk::VBox.new(false,1).set_border_width(3)
+		nb.append_page(vb_nb, Gtk::Label.new('Hunting Area'))
+		
+		hb = Gtk::HBox.new(false,1)
+		hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(controls['primary']),false)
+		vb_nb.pack_start(hb,false)
+
+		hb = Gtk::HBox.new(false,1)
+		hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(controls['undead_present']),false)
+		vb_nb.pack_start(hb,false)
+		
+		vb_fr = Gtk::VBox.new(false,1).set_border_width(3)
+		pg_fr = Gtk::Frame.new.set_border_width(5).set_label_widget(Gtk::Label.new.set_markup('<big><b>Description</b></big>'))
+		pg_fr.add(vb_fr)
+		vb_nb.pack_start(pg_fr, false)
+		
+
+		hb = Gtk::HBox.new(false,1)
+		hb.pack_start(Gtk::Alignment.new(1,0,0,1).add(Gtk::Label.new('Hunting Level:')).set_width_request(100),false)
+		hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(controls['level'].set_width_request(100)),false)
+		vb_fr.pack_start(hb,false)
+
+		hb = Gtk::HBox.new(false,1)
+		hb.pack_start(Gtk::Alignment.new(1,0,0,1).add(Gtk::Label.new('Description:')).set_width_request(100),false)
+		hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(controls['desc'].set_width_request(469)),false)
+		vb_fr.pack_start(hb,false)
+		
+		vb_fr = Gtk::VBox.new(false,1).set_border_width(3)
+		pg_fr = Gtk::Frame.new.set_border_width(5).set_label_widget(Gtk::Label.new.set_markup('<big><b>Hunting Area Setup</b></big>'))
+		pg_fr.add(vb_fr)
+		vb_nb.pack_start(pg_fr, false)
+		
+		hb = Gtk::HBox.new(false,1)
+		hb.pack_start(Gtk::Alignment.new(1,0,0,1).add(Gtk::Label.new('Resting Room ID: ')).set_width_request(150),false)
+		hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(controls['resting_room_id'].set_width_chars(5)),false)
+		vb_fr.pack_start(hb,false)
+		
+		hb = Gtk::HBox.new(false,1)
+		hb.pack_start(Gtk::Alignment.new(1,0,0,1).add(Gtk::Label.new('Starting Room ID: ')).set_width_request(150),false)
+		hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(controls['hunting_room_id'].set_width_chars(5)),false)
+		vb_fr.pack_start(hb,false)
+	
+		hb = Gtk::HBox.new(false,1)
+		hb.pack_start(Gtk::Alignment.new(1,0,0,1).add(Gtk::Label.new('Hunting Boundaries:')).set_width_request(150),false)
+		hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(controls['hunting_boundaries'].set_width_request(469)),false)
+		vb_fr.pack_start(hb,false)
+
+
+		vb_fr = Gtk::VBox.new(false,1).set_border_width(3)
+		pg_fr = Gtk::Frame.new.set_border_width(5).set_label_widget(Gtk::Label.new.set_markup('<big><b>Target Setup</b></big>'))
+		pg_fr.add(vb_fr)
+		vb_nb.pack_start(pg_fr, false)
+
+
+		hb = Gtk::HBox.new(false,1)
+		hb.pack_start(Gtk::Alignment.new(1,0,0,1).add(Gtk::Label.new('Targets List:')).set_width_request(150),false)
+		hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(controls['targets'].set_width_request(469)),false)		
+		vb_fr.pack_start(hb,false)
+
+		hb = Gtk::HBox.new(false,1)
+		hb.pack_start(Gtk::Alignment.new(1,0,0,1).add(Gtk::Label.new('Flee Count:')).set_width_request(150),false)
+		hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(controls['flee_count'].set_width_request(469)),false)
+		vb_fr.pack_start(hb,false)
+		
+		hb = Gtk::HBox.new(false,1)
+		hb.pack_start(Gtk::Alignment.new(1,0,0,1).add(Gtk::Label.new('Invalid Targets:')).set_width_request(150),false)
+		hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(controls['invalid_targets'].set_width_request(469)),false)
+		vb_fr.pack_start(hb,false)
+
+		hb = Gtk::HBox.new(false,1)
+		hb.pack_start(Gtk::Alignment.new(1,0,0,1).add(Gtk::Label.new('Always Flee From:')).set_width_request(150),false)
+		hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(controls['always_flee_from'].set_width_request(469)),false)
+		vb_fr.pack_start(hb,false)
+	end
+	
+	#
+	# Hunting Page
+	#
+	vb_nb = Gtk::VBox.new(false,1).set_border_width(3)
+
+	if !asHuntingArea
+		vb_fr = Gtk::VBox.new(false,1).set_border_width(3)
+		
+		pg_fr = Gtk::Frame.new.set_border_width(5).set_label_widget(Gtk::Label.new.set_markup('<big><b>Description</b></big>'))
+		pg_fr.add(vb_fr)
+		vb_nb.pack_start(pg_fr, false)
+		
+		hb = Gtk::HBox.new(false,1)
+		hb.pack_start(Gtk::Alignment.new(1,0,0,1).add(Gtk::Label.new('Description:')).set_width_request(100),false)
+		hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(controls['desc'].set_width_request(469)),false)
+		vb_fr.pack_start(hb,false)
+	end
+	
+	vb_fr = Gtk::VBox.new(false,1).set_border_width(3)
+	
+	pg_fr = Gtk::Frame.new.set_border_width(5).set_label_widget(Gtk::Label.new.set_markup('<big><b>Attack Commands</b></big>'))
+	pg_fr.add(vb_fr)
+	vb_nb.pack_start(pg_fr, false)
+	
+	hb = Gtk::HBox.new(false,1)
+	hb.pack_start(Gtk::Alignment.new(1,0,0,1).add(Gtk::Label.new('A:')).set_width_request(50),false)
+	hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(controls['hunting_commands'].set_width_request(469)),false)
+	vb_fr.pack_start(hb,false)
+		
+	hb = Gtk::HBox.new(false,1)
+	hb.pack_start(Gtk::Alignment.new(1,0,0,1).add(Gtk::Label.new('B:')).set_width_request(50),false)
+	hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(controls['hunting_commands_b'].set_width_request(469)),false)
+	vb_fr.pack_start(hb,false)
+		
+	hb = Gtk::HBox.new(false,1)
+	hb.pack_start(Gtk::Alignment.new(1,0,0,1).add(Gtk::Label.new('C:')).set_width_request(50),false)
+	hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(controls['hunting_commands_c'].set_width_request(469)),false)
+	vb_fr.pack_start(hb,false)
+
+	hb = Gtk::HBox.new(false,1)
+	hb.pack_start(Gtk::Alignment.new(1,0,0,1).add(Gtk::Label.new('Fried:')).set_width_request(50),false)
+	hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(controls['disable_commands'].set_width_request(469)),false)
+	vb_fr.pack_start(hb,false)
+
+	#
+	# Hunting, Frame 2
+	#
+	vb_fr = Gtk::VBox.new(false,1).set_border_width(3)
+	pg_fr = Gtk::Frame.new.set_border_width(5).set_label_widget(Gtk::Label.new.set_markup('<big><b>Hunting Setup</b></big>'))
+	pg_fr.add(vb_fr)
+	vb_nb.pack_start(pg_fr,false)
+	
+	hb = Gtk::HBox.new(false,1)
+	hb.pack_start(Gtk::Alignment.new(1,0,0,1).add(Gtk::Label.new('Pre Hunt Commands:')).set_width_request(150),false)
+	hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(controls['hunting_prep_commands'].set_width_request(418)),false)
+	vb_fr.pack_start(hb,false)
+	
+	hb = Gtk::HBox.new(false,1)
+	hb.pack_start(Gtk::Alignment.new(1,0,0,1).add(Gtk::Label.new('Active Scripts:')).set_width_request(150),false)
+	hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(controls['hunting_scripts'].set_width_request(418)),false)
+	vb_fr.pack_start(hb,false)
+	
+	hb = Gtk::HBox.new(false,1)
+	hb.pack_start(Gtk::Alignment.new(1,0,0,1).add(Gtk::Label.new('Active Spells:')).set_width_request(150),false)
+	hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(controls['signs'].set_width_request(418)),false)
+	vb_fr.pack_start(hb,false)
+	
+	hb = Gtk::HBox.new(false,1)
+	hb.pack_start(Gtk::Alignment.new(1,0,0,1).add(Gtk::Label.new('Loot script:')).set_width_request(100),false)
+	hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(controls['loot_script']),false)
+	hb.pack_start(Gtk::Alignment.new(1,0,0,1).add(Gtk::Label.new('Wracking spirit:')).set_width_request(100),false)
+	hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(controls['wracking_spirit']),false)
+	vb_fr.pack_start(hb,false)
+	
+	hb = Gtk::HBox.new(false,1)
+	hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(controls['undead_enable'].set_width_request(175)),false)
+	hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(controls['use_wracking'].set_width_request(175)),false)
+	hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(controls['spam'].set_width_request(175)),false)
+	vb_fr.pack_start(hb,false)
+	
+	#
+	# Hunting, Frame 3
+	#
+	vb_fr = Gtk::VBox.new(false,1).set_border_width(3)
+	pg_fr = Gtk::Frame.new.set_border_width(5).set_label_widget(Gtk::Label.new.set_markup('<big><b>Should Hunt</b></big>'))
+	pg_fr.add(vb_fr)
+	vb_nb.pack_start(pg_fr,false)
+	
+	hb = Gtk::HBox.new(false,1)
+	hb.pack_start(Gtk::Alignment.new(1,0,0,1).add(Gtk::Label.new('mind <=')).set_width_request(100),false)
+	hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(controls['rest_till_exp'].set_max_length(3).set_width_chars(3)),false)
+	hb.pack_start(Gtk::Alignment.new(1,0,0,1).add(Gtk::Label.new('mana >=')).set_width_request(110),false)
+	hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(controls['rest_till_mana'].set_max_length(3).set_width_chars(3)),false)
+	hb.pack_start(Gtk::Alignment.new(1,0,0,1).add(Gtk::Label.new('spirit >=')).set_width_request(110),false)
+	hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(controls['rest_till_spirit'].set_max_length(3).set_width_chars(3)),false)
+	vb_fr.pack_start(hb,false)
+	
+	nb.append_page(vb_nb, Gtk::Label.new('Hunting Setup'))
+	
+	
+	
+	#
+	# Resting Page
+	#
+	vb_nb = Gtk::VBox.new(false,1).set_border_width(3)
+				
+	#
+	# Page 3, Frame 1 - Resting
+	#
+	vb_fr = Gtk::VBox.new(false,1).set_border_width(3)
+	pg_fr = Gtk::Frame.new.set_border_width(5).set_label_widget(Gtk::Label.new.set_markup('<big><b>Resting Setup</b></big>'))
+	pg_fr.add(vb_fr)
+	vb_nb.pack_start(pg_fr,false)
+	
+	hb = Gtk::HBox.new(false,1)
+	hb.pack_start(Gtk::Alignment.new(1,0,0,1).add(Gtk::Label.new('Commands:')).set_width_request(100),false)
+	hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(controls['resting_commands'].set_width_request(418)),false)
+	vb_fr.pack_start(hb,false)
+		
+	hb = Gtk::HBox.new(false,1)
+	hb.pack_start(Gtk::Alignment.new(1,0,0,1).add(Gtk::Label.new('Scripts:')).set_width_request(100),false)
+	hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(controls['resting_scripts'].set_width_request(418)),false)
+	vb_fr.pack_start(hb,false)
+				
+	#
+	# Page 3, Frame 2 - Should Rest
+	#
+	vb_fr = Gtk::VBox.new(false,1).set_border_width(3)
+	pg_fr = Gtk::Frame.new.set_border_width(5).set_label_widget(Gtk::Label.new.set_markup('<big><b>Should Rest</b></big>'))
+	pg_fr.add(vb_fr)
+	vb_nb.pack_start(pg_fr,false)
+				
+	hb = Gtk::HBox.new(false,1)
+	hb.pack_start(Gtk::Alignment.new(1,0,0,1).add(Gtk::Label.new('Wounded:')).set_width_request(100),false)
+	hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(controls['wounded_eval'].set_width_request(418)),false)
+	vb_fr.pack_start(hb,false)
+		
+	hb = Gtk::HBox.new(false,1)
+	hb.pack_start(Gtk::Alignment.new(1,0,0,1).add(Gtk::Label.new('mind >=')).set_width_request(100),false)
+	hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(controls['fried'].set_max_length(3).set_width_chars(3)),false)
+	hb.pack_start(Gtk::Alignment.new(1,0,0,1).add(Gtk::Label.new('mana <=')).set_width_request(110),false)
+	hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(controls['oom'].set_max_length(3).set_width_chars(3)),false)
+	hb.pack_start(Gtk::Alignment.new(1,0,0,1).add(Gtk::Label.new('encumbrance >=')).set_width_request(110),false)
+	hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(controls['encumbered'].set_max_length(3).set_width_chars(3)),false)
+	vb_fr.pack_start(hb,false)	
+	nb.append_page(vb_nb, Gtk::Label.new('Resting'))
+	
+	
+		
+		#
+		# Notebook Page 4 - Ammo & Wands
+		#
+		vb_nb = Gtk::VBox.new(false,1).set_border_width(3)\
+		
+		vb_fr = Gtk::VBox.new(false,1).set_border_width(3)
+		pg_fr = Gtk::Frame.new.set_border_width(5).set_label_widget(Gtk::Label.new.set_markup('<big><b>Information</b></big>'))
+		pg_fr.add(vb_fr)
+		
+		#
+		# Page 4, Frame 1 - Ammo
+		#
+		vb_fr = Gtk::VBox.new(false,1).set_border_width(3)
+		pg_fr = Gtk::Frame.new.set_border_width(5).set_label_widget(Gtk::Label.new.set_markup('<big><b>Ammo</b></big>'))
+		pg_fr.add(vb_fr)
+		vb_nb.pack_start(pg_fr,false)
+		
+		hb = Gtk::HBox.new(false,1)
+		hb.pack_start(Gtk::Alignment.new(1,0,0,1).add(Gtk::Label.new('Container:')).set_width_request(100),false)
+		hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(controls['ammo_container']),false)
+		hb.pack_start(Gtk::Alignment.new(1,0,0,1).add(Gtk::Label.new('Ammo:')).set_width_request(100),false)
+		hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(controls['ammo']),false)
+		vb_fr.pack_start(hb,false)
+		
+		hb = Gtk::HBox.new(false,1)
+		hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(controls['hide_for_ammo']),false)
+		vb_fr.pack_start(hb,false)
+		
+		#
+		# Page 4, Frame 2 - Wands
+		#
+		vb_fr = Gtk::VBox.new(false,1).set_border_width(3)
+		pg_fr = Gtk::Frame.new.set_border_width(5).set_label_widget(Gtk::Label.new.set_markup('<big><b>Wands</b></big>'))
+		pg_fr.add(vb_fr)
+		vb_nb.pack_start(pg_fr,false)
+		
+		hb = Gtk::HBox.new(false,1)
+		hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(controls['wand_if_oom']),false)
+		vb_fr.pack_start(hb,false)
+		
+		hb = Gtk::HBox.new(false,1)
+		hb.pack_start(Gtk::Alignment.new(1,0,0,1).add(Gtk::Label.new('Fresh container:')).set_width_request(100),false)
+		hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(controls['fresh_wand_container']),false)
+		hb.pack_start(Gtk::Alignment.new(1,0,0,1).add(Gtk::Label.new('Dead container:')).set_width_request(100),false)
+		hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(controls['dead_wand_container']),false)
+		vb_fr.pack_start(hb,false)
+		
+		hb = Gtk::HBox.new(false,1)
+		hb.pack_start(Gtk::Alignment.new(1,0,0,1).add(Gtk::Label.new('Wand:')).set_width_request(100),false)
+		hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(controls['wand']),false)
+		vb_fr.pack_start(hb,false)
+		
+		nb.append_page(vb_nb, Gtk::Label.new('Ammo & Wands'))
+	
+	if !asHuntingArea
+		#
+		# Notebook Page 5 - Bounties
+		#
+		vb_nb = Gtk::VBox.new(false,1).set_border_width(3)\
+		
+		vb_fr = Gtk::VBox.new(false,1).set_border_width(3)
+		pg_fr = Gtk::Frame.new.set_border_width(5).set_label_widget(Gtk::Label.new.set_markup('<big><b>Information</b></big>'))
+		pg_fr.add(vb_fr)
+		
+		
+		lbl = Gtk::Label.new.set_markup("The bounties tab allows configuration of what bounties you want " +
+			"bbounty to handle as well as turn in options for bounties. Critter bounties are bounties that " +
+			"require killing a critter while gather bounties generally don't involve killing. Gems uses loot-be-gone with stockpile=on.")
+		lbl.set_wrap(true).set_width_request(525).set_padding(0,10)
+		vb_fr.pack_start(lbl,false)
+		vb_nb.pack_start(pg_fr,false)
+		
+		#
+		# Page 5, Frame 1 - Critter tasks
+		#
+		vb_fr = Gtk::VBox.new(false,1).set_border_width(3)
+		pg_fr = Gtk::Frame.new.set_border_width(5).set_label_widget(Gtk::Label.new.set_markup('<big><b>Critter Bounties</b></big>'))
+		pg_fr.add(vb_fr)
+		vb_nb.pack_start(pg_fr,false)
+		
+		hb = Gtk::HBox.new(false,1)
+		hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(controls['dangerous_enable'].set_width_request(129)),false)
+		hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(controls['kill_enable'].set_width_request(129)),false)
+		hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(controls['heirloom_enable'].set_width_request(129)),false)
+		hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(controls['skin_enable'].set_width_request(129)),false)
+		vb_fr.pack_start(hb,false)
+		
+		hb = Gtk::HBox.new(false,1)
+		hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(controls['rescue_enable'].set_width_request(129)),false)
+		vb_fr.pack_start(hb,false)
+		
+		#
+		# Page 5, Frame 2 - Gather tasks
+		#
+		vb_fr = Gtk::VBox.new(false,1).set_border_width(3)
+		pg_fr = Gtk::Frame.new.set_border_width(5).set_label_widget(Gtk::Label.new.set_markup('<big><b>Gather Bounties</b></big>'))
+		pg_fr.add(vb_fr)
+		vb_nb.pack_start(pg_fr,false)
+		
+		hb = Gtk::HBox.new(false,1)
+		hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(controls['gem_enable'].set_width_request(129)),false)
+		hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(controls['heirloom_search_enable'].set_width_request(129)),false)
+		hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(controls['herb_enable'].set_width_request(129)),false)
+		vb_fr.pack_start(hb,false)
+		
+		#
+		# Page 5, Frame 3 - Options
+		#
+		vb_nb_3 = Gtk::VBox.new(false,1).set_border_width(3)
+		fr_pg1_3 = Gtk::Frame.new.set_border_width(5).set_label_widget(Gtk::Label.new.set_markup('<big><b>Options</b></big>'))
+		fr_pg1_3.add(vb_nb_3)
+		vb_nb.pack_start(fr_pg1_3,false)
+		
+		hb = Gtk::HBox.new(false,1)
+		hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(controls['force_complete'].set_width_request(129)),false)
+		hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(Gtk::Label.new('Turn in:')).set_width_request(60),false)
+		hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(controls['turn_in_percent'].set_max_length(3).set_width_chars(3)))
+		vb_nb_3.pack_start(hb,false)
+		
+		nb.append_page(vb_nb, Gtk::Label.new('Bounties'))
+	end
+		
+	return controls
+end
+
+def fillMappingFrameWithControls(box)
+	controls = {}
+	controls['critter'] = Gtk::Entry.new
+	controls['area'] = Gtk::Entry.new
+	controls['huntingAreaName'] = Gtk::Entry.new
+	
+	hb = Gtk::HBox.new(false,1)
+	hb.pack_start(Gtk::Alignment.new(1,0,0,1).add(Gtk::Label.new('Critters to match:')).set_width_request(150),false)
+	hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(controls['critter'].set_width_request(418)),false)
+	box.pack_start(hb, false)
+	
+	hb = Gtk::HBox.new(false,1)
+	hb.pack_start(Gtk::Alignment.new(1,0,0,1).add(Gtk::Label.new('Area to match:')).set_width_request(150),false)
+	hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(controls['area'].set_width_request(418)),false)
+	box.pack_start(hb, false)
+	
+	hb = Gtk::HBox.new(false,1)
+	hb.pack_start(Gtk::Alignment.new(1,0,0,1).add(Gtk::Label.new('Hunting Area Name:')).set_width_request(150),false)
+	hb.pack_start(Gtk::Alignment.new(0,0,0,1).add(controls['huntingAreaName'].set_width_request(418)),false)
+	box.pack_start(hb, false)
+	
+	return controls
+end
+
+def loadSettingsIntoControls(controls, settings)
+	controls.each {|key, value|
+		setting = settings.getSetting(key, false)
+		if setting
+			if value.class.to_s.include?("CheckButton")
+				if setting.to_s.length>0
+					value.inconsistent = false
+					value.active = setting=="true"
+				else
+					value.inconsistent = true
+					value.active = false
+				end
+			else
+				value.set_text(setting)
+			end
+		else
+			if value.class.to_s.include?("CheckButton")
+				value.inconsistent = true
+				value.active = false
+			else
+				value.set_text("")
+			end
+		end
+	}
+end
+
+def loadControlsIntoSetting(settings, controls)
+	controls.each {|key, value|
+		if value.class.to_s.include?("CheckButton")
+			if !value.inconsistent?
+				settings.set(key, value.active?.to_s)
+			end
+		else
+			settings.set(key, value.text)
+		end
+	}
+end
+
+
+def setup(loader)
+	loader.doLoad
+	
+	window = window_action = nil
+
+
+	Gtk.queue {	
+		#
+		# Primary window
+		#
+		window = Gtk::Window.new
+		window.title = "bloader setup: editing #{loader.loaderSettingsFile}"
+		window.border_width = 1
+		window.resizable = true
+		window.resize(800, 600)
+		window.signal_connect('delete_event') { 
+			window_action = :exit 
+		}
+		
+		# Primary VerticalBox to split up Notebook and Save/Close buttons
+		mainBox = Gtk::VBox.new(false,5)
+		mainBox.border_width = 3
+		
+			
+		#
+		# Notebook for tabs at top
+		#
+		notebook = Gtk::Notebook.new.set_show_border(true).set_tab_border(3)
+		mainBox.pack_start(notebook,true)
+		
+		#
+		# Save/Close buttons
+		#
+		hb_saveclose = Gtk::HBox.new
+		save = Gtk::Button.new('_Save')
+		close = Gtk::Button.new('E_xit')
+
+				
+		hb_saveclose.pack_start(save,false)
+		hb_saveclose.pack_start(close,false)
+		mainBox.pack_start(Gtk::Alignment.new(1,0,1,0).add(hb_saveclose),false)
+		
+		#
+		# Notebook Page 1 - Default Settings
+		#
+		page1 = Gtk::VBox.new(false,1).set_border_width(3)
+		notebook.append_page(page1, Gtk::Label.new('Default'))
+		
+		defaultNotebook = Gtk::Notebook.new.set_show_border(true).set_tab_border(3)
+		page1.pack_start(defaultNotebook, false)	
+	
+		defaultControls = fillCharSettingNoteBook(defaultNotebook)
+		loadSettingsIntoControls(defaultControls, loader.loaderSettings.defaults)
+		
+		#
+		# Notebook Page 2 - Characters Settings
+		#
+		page2 = Gtk::VBox.new(false,1).set_border_width(3)
+		notebook.append_page(page2, Gtk::Label.new('Characters'))
+		
+		page2_outer = Gtk::HBox.new
+		page2.pack_start(page2_outer, true)
+		
+		page2_innerLeft = Gtk::VBox.new
+		page2_outer.pack_start(page2_innerLeft, true)
+		
+		char_store = Gtk::ListStore.new(BigLoaderSetting, String)
+		
+		# Renderer for columns
+		renderer = Gtk::CellRendererText.new
+		renderer.foreground = 'black'
+		renderer.background = 'white'	
+		
+		charNotebook = Gtk::Notebook.new.set_show_border(true).set_tab_border(3)
+				
+		char_fr = Gtk::Frame.new.set_border_width(5)
+		page2_outer.pack_start(char_fr, false)	
+		char_fr.add(charNotebook)
+		
+		charControls = fillCharSettingNoteBook(charNotebook)		
+	
+		character_list = Gtk::TreeView.new(char_store)
+		character_list.height_request = 400
+		character_list.width_request = 200
+		page2_innerLeft.pack_start(character_list, true)
+		
+		oldPlayer=nil
+		character_list.signal_connect("row-activated"){ |tree, path, column|
+			if oldPlayer
+				loadControlsIntoSetting(oldPlayer, charControls)
+			end
+			player = tree.selection.selected[0]
+			loadSettingsIntoControls(charControls, player)
+			char_fr.set_label_widget(Gtk::Label.new.set_markup("<big><b>#{player.name}</b></big>"))
+			char_fr.show_all
+			oldPlayer = player
+		}
+
+		#Character Settings
+		loadUp = true
+		loader.loaderSettings.players.values.each{|player|
+			p = char_store.append
+			p[0] = player
+			p[1] = player.name
+			
+			if loadUp
+				loadSettingsIntoControls(charControls, player)
+				char_fr.set_label_widget(Gtk::Label.new.set_markup("<big><b>#{player.name}</b></big>"))
+				char_fr.show_all
+				loadUp = false
+				oldPlayer=player
+			end
+		}
+		
+		character_list.append_column(Gtk::TreeViewColumn.new('Character', renderer, :text => 1).set_sizing(2).set_fixed_width(175).set_sort_column_id(1))
+		
+		#
+		# New Character Button
+		#
+		addChar_button = Gtk::Button.new('_Add Character')
+		addChar_button.signal_connect('clicked') { 
+			Gtk.queue {
+				addChar_window = Gtk::Window.new
+				addChar_window.title = 'Name?'
+				name_entry = Gtk::Entry.new
+				add_button = Gtk::Button.new('Ok')
+				name_entry.signal_connect('activate') {
+					Gtk.queue { add_button.clicked }
+				}
+				add_button.signal_connect('clicked') {
+					Gtk.queue {
+						new_char = BigLoaderSetting.new(nil, loader.loaderSettings.defaults)
+						new_char.name = name_entry.text.downcase.strip
+						ns = char_store.append
+						ns[0] = new_char
+						ns[1] = new_char.name
+						loader.loaderSettings.players[new_char.name] = new_char
+						addChar_window.destroy
+					}
+				}
+				addChar_box = Gtk::HBox.new
+				addChar_box.pack_start(name_entry, false, false, 2)
+				addChar_box.pack_start(add_button, false, false, 2)
+				addChar_window.add(addChar_box)
+				addChar_window.show_all
+				addChar_window.keep_above = true
+			}
+		}
+		nb = page2_innerLeft.pack_start(addChar_button,false)
+		
+		
+		#
+		# Notebook Page 3 - Bounty Areas
+		#
+		page3 = Gtk::VBox.new(false,1).set_border_width(3)
+		notebook.append_page(page3, Gtk::Label.new('Hunting Areas'))
+		
+		page3_outer = Gtk::HBox.new
+		page3.pack_start(page3_outer, true)
+		
+		page3_innerLeft = Gtk::VBox.new
+		page3_outer.pack_start(page3_innerLeft, true)
+		
+		area_store = Gtk::ListStore.new(BigLoaderSetting, String)
+		
+		areaNotebook = Gtk::Notebook.new.set_show_border(true).set_tab_border(3)
+		area_fr = Gtk::Frame.new.set_border_width(5)
+		page3_outer.pack_start(area_fr, false)	
+		area_fr.add(areaNotebook)
+		
+		areaControls = fillCharSettingNoteBook(areaNotebook, true)		
+	
+		area_list = Gtk::TreeView.new(area_store)
+		area_list.height_request = 400
+		area_list.width_request = 200
+		page3_innerLeft.pack_start(area_list, true)
+		
+		oldArea = nil
+		area_list.signal_connect("row-activated"){ |tree, path, column|
+			if oldArea
+				loadControlsIntoSetting(oldArea, areaControls)
+			end
+			
+			area = tree.selection.selected[0]
+			loadSettingsIntoControls(areaControls, area)
+			area_fr.set_label_widget(Gtk::Label.new.set_markup("<big><b>#{area.name}</b></big>"))
+			area_fr.show_all
+			
+			oldArea = area
+		}
+
+		#Area Settings
+		loadUp = true
+		loader.loaderSettings.huntingAreas.values.each{|area|
+			a = area_store.append
+			a[0] = area
+			a[1] = area.name
+			
+			if loadUp
+				loadSettingsIntoControls(areaControls, area)
+				area_fr.set_label_widget(Gtk::Label.new.set_markup("<big><b>#{area.name}</b></big>"))
+				area_fr.show_all
+				loadUp = false
+				oldArea=area
+			end
+		}
+		
+		area_list.append_column(Gtk::TreeViewColumn.new('Area', renderer, :text => 1).set_sizing(2).set_fixed_width(175).set_sort_column_id(1))
+		
+		#
+		# New Area Button
+		#
+		addArea_button = Gtk::Button.new('_Add Area')
+		addArea_button.signal_connect('clicked') { 
+			Gtk.queue {
+				addArea_window = Gtk::Window.new
+				addArea_window.title = 'Name?'
+				name_Area_entry = Gtk::Entry.new
+				add_Area_button = Gtk::Button.new('Ok')
+				name_Area_entry.signal_connect('activate') {
+					Gtk.queue { add_Area_button.clicked }
+				}
+				add_Area_button.signal_connect('clicked') {
+					Gtk.queue {
+						new_area = BigLoaderSetting.new(nil, loader.loaderSettings.defaults)
+						new_area.name = name_Area_entry.text.downcase.strip
+						ns = area_store.append
+						ns[0] = new_area
+						ns[1] = new_area.name
+						loader.loaderSettings.huntingAreas[new_area.name] = new_area
+						addArea_window.destroy
+					}
+				}
+				addArea_box = Gtk::HBox.new
+				addArea_box.pack_start(name_Area_entry, false, false, 2)
+				addArea_box.pack_start(add_Area_button, false, false, 2)
+				addArea_window.add(addArea_box)
+				addArea_window.show_all
+				addArea_window.keep_above = true
+			}
+		}
+		nb = page3_innerLeft.pack_start(addArea_button,false)
+		
+		
+		#
+		# Notebook Page 4 - Bounty Area Mappings
+		#
+		page4 = Gtk::VBox.new(false,1).set_border_width(3)
+		notebook.append_page(page4, Gtk::Label.new('Bounty Area Mappings'))
+		
+		page4_outer = Gtk::HBox.new
+		page4.pack_start(page4_outer, true)
+		
+		page4_innerLeft = Gtk::VBox.new
+		page4_outer.pack_start(page4_innerLeft, true)
+		
+		mapping_store = Gtk::ListStore.new(BigLoaderSetting, String)
+		
+		mapping_fr = Gtk::Frame.new.set_border_width(5)
+		page4_outer.pack_start(mapping_fr, false)	
+		
+		page4_innerRight = Gtk::VBox.new
+		mapping_fr.add(page4_innerRight)
+		
+		mappingControls = fillMappingFrameWithControls(page4_innerRight)		
+	
+		mapping_list = Gtk::TreeView.new(mapping_store)
+		area_list.height_request = 400
+		area_list.width_request = 200
+		page4_innerLeft.pack_start(mapping_list, true)
+		
+		oldMapping = nil
+		
+		mapping_list.signal_connect("row-activated"){ |tree, path, column|
+			if oldMapping
+				loadControlsIntoSetting(oldMapping, mappingControls)
+			end
+			mapping = tree.selection.selected[0]
+			loadSettingsIntoControls(mappingControls, mapping)
+			name = mapping.getSetting("critter") + " - " + mapping.getSetting("area")
+			mapping_fr.set_label_widget(Gtk::Label.new.set_markup("<big><b>#{name}</b></big>"))
+			mapping_fr.show_all
+			oldMapping = mapping
+			
+		}
+
+		#Mapping Settings
+		loadUp = true
+		i = 0
+		loader.loaderSettings.bountyMappings.each{|mapping|
+			name = mapping.getSetting("critter") + " - " + mapping.getSetting("area")
+			a = mapping_store.append
+			a[0] = mapping
+			a[1] = name
+			
+			if loadUp
+				loadSettingsIntoControls(mappingControls, mapping)
+				mapping_fr.set_label_widget(Gtk::Label.new.set_markup("<big><b>#{name}</b></big>"))
+				mapping_fr.show_all
+				loadUp = false
+				oldMapping=mapping
+			end
+		}
+		
+		mapping_list.append_column(Gtk::TreeViewColumn.new('Mapping', renderer, :text => 1).set_sizing(2).set_fixed_width(175).set_sort_column_id(1))
+		
+		#
+		# New Mapping Button
+		#
+		addMapping_button = Gtk::Button.new('_Add Mapping')
+		addMapping_button.signal_connect('clicked') { 
+			Gtk.queue {
+				addMapping_window = Gtk::Window.new
+				addMapping_window.title = 'Temporary Name?'
+				name_Mapping_entry = Gtk::Entry.new
+				add_Mapping_button = Gtk::Button.new('Ok')
+				name_Mapping_entry.signal_connect('activate') {
+					Gtk.queue { add_Mapping_button.clicked }
+				}
+				add_Mapping_button.signal_connect('clicked') {
+					Gtk.queue {
+						new_Mapping = BigLoaderSetting.new(nil, loader.loaderSettings.defaults)
+						new_Mapping.name = name_Mapping_entry.text.downcase.strip
+						ns = mapping_store.append
+						ns[0] = new_Mapping
+						ns[1] = new_Mapping.name
+						loader.loaderSettings.bountyMappings << new_Mapping
+						addMapping_window.destroy
+					}
+				}
+				addMapping_box = Gtk::HBox.new
+				addMapping_box.pack_start(name_Mapping_entry, false, false, 2)
+				addMapping_box.pack_start(add_Mapping_button, false, false, 2)
+				addMapping_window.add(addMapping_box)
+				addMapping_window.show_all
+				addMapping_window.keep_above = true
+			}
+		}
+		nb = page4_innerLeft.pack_start(addMapping_button,false)
+		
+		save.signal_connect('clicked') { 
+			Gtk.queue {
+				fName_window = Gtk::Window.new
+				fName_window.title = 'File Name?'
+				filename_entry = Gtk::Entry.new
+				filename_entry.text = loader.loaderSettingsFile
+				filename_button = Gtk::Button.new('Ok')
+				filename_entry.signal_connect('activate') {
+					Gtk.queue { filename_button.clicked }
+				}
+				filename_button.signal_connect('clicked') {
+					Gtk.queue {
+						fName = filename_entry.text.downcase.strip
+						if fName.length > 0
+							if loader.
+								loadControlsIntoSetting(loader.loaderSettings.defaults, defaultControls)
+							end
+
+							if oldPlayer
+								loadControlsIntoSetting(oldPlayer, charControls)
+							end
+
+							if oldArea
+								loadControlsIntoSetting(oldArea, areaControls)
+							end	
+
+							if oldMapping
+								loadControlsIntoSetting(oldMapping, mappingControls)
+							end		
+
+							loader.doSave(fName)
+						end
+						fName_window.destroy
+					}
+				}
+				fName_box = Gtk::HBox.new
+				fName_box.pack_start(filename_entry, false, false, 2)
+				fName_box.pack_start(filename_button, false, false, 2)
+				fName_window.add(fName_box)
+				fName_window.show_all
+				fName_window.keep_above = true
+			}
+		}
+		close.signal_connect('clicked') { window_action = :done }
+		
+
+		window.add(mainBox)	
+		window.show_all
+		window.keep_above = true # On windows keep_above is required AFTER show_all
+	}
+
+	before_dying { Gtk.queue { window.destroy } }
+	wait_while { window_action.nil? }
+	undo_before_dying # Don't ask me what this does - I stripped it from Tillmen's code
+	Gtk.queue { window.destroy }
+end
+
+##################################################################################
+#                            Program Start                                       #
+##################################################################################
+unless $SAFE == 0
+	echo "error: this script must be trusted to work (;trust #{script.name})"
+	exit
+end
+loader = BigLoader.new
+
+if script.vars.empty? or script.vars[1].downcase == 'help'
+	respond
+	respond "   #{$clean_lich_char}#{script.name} Version: #{BigLoader::VERSION}"
+	respond
+	respond 'Usage:'
+	respond "   #{$clean_lich_char}#{script.name} help                        show this message"
+	respond
+	respond "   #{$clean_lich_char}#{script.name} setup                       enters a GUI to generate your setup"
+	respond
+	respond "   #{$clean_lich_char}#{script.name} solo                        start big shot in solo mode"
+	respond "   #{$clean_lich_char}#{script.name} tail                        start big shot in tail mode"
+	respond "   #{$clean_lich_char}#{script.name} head                        start big shot in head mode"
+	respond
+	respond "   #{$clean_lich_char}#{script.name} list                        show configured hunting areas"
+	respond
+	respond "   #{$clean_lich_char}#{script.name} load areaName|primary       loads the area with the matching name"
+	respond "   #{$clean_lich_char}#{script.name}                             or the primary hunting ground if one is set as primary"
+	respond "   #{$clean_lich_char}#{script.name}                             if multiple grounds are set as primary, this will"
+	respond "   #{$clean_lich_char}#{script.name}                             set bigshot to first \"primary\" area that is found."
+	respond "   #{$clean_lich_char}#{script.name}                             if searching for the primary ground and"
+	respond "   #{$clean_lich_char}#{script.name}                             no primary area is found, it will try to load up an"
+	respond "   #{$clean_lich_char}#{script.name}                             area based on character's level, if levels are setup" 
+	respond "   #{$clean_lich_char}#{script.name}                             ***note that the name is listed in the config file,"
+	respond "   #{$clean_lich_char}#{script.name}                             but the menu displays the description, not the name***"
+	respond
+	respond "   #{$clean_lich_char}#{script.name} load-level [level]          loads a hunting area based on desired level.  If no"
+	respond "   #{$clean_lich_char}#{script.name}                             level is passed, it uses your character's level"
+	respond 
+	respond "   #{$clean_lich_char}#{script.name} show-guess                  shows what bloader thinks is a good hunting area based"
+	respond "   #{$clean_lich_char}#{script.name}                             your character's level and the levels set in the config"
+	respond
+	respond "   #{$clean_lich_char}#{script.name} use filename                will tell bigloader which settings file to use"
+	respond "   #{$clean_lich_char}#{script.name}                             this file should reside in the Lich Data sub-directory"
+	respond "   #{$clean_lich_char}#{script.name}                             if no file is chosen, it will look for bigloader.xml"
+	respond "   #{$clean_lich_char}#{script.name}                             once a file is chosen, bigloader will remember that file until a different file is chosen"
+	exit
+elsif script.vars[1].downcase == 'list'
+	loader.doLoad
+	loader.listAreas
+elsif script.vars[1].downcase == 'use'
+	loader.setFilepath(script.vars[2])
+elsif script.vars[1].downcase == 'load'
+	loader.doLoad
+	area = nil
+
+	if script.vars[2]
+		if script.vars[2].downcase == 'primary'
+			area = loader.getPrimaryHuntingArea()
+			if !area	
+				area = loader.getBestGuessHuntingAreaUsingLevel(Char.level.to_i)
+			end
+		else
+			area = loader.getHuntingArea(script.vars[2])
+		end
+	else
+		area = loader.getAreaFromUser
+	end	
+	if area
+		loader.areaToOp(area)
+		displayName = area.name
+		if area.getSetting("desc", false)
+			txt = area.getSetting("desc")
+			if txt.length>0	
+				displayName = txt
+			end
+		end
+		respond "Loaded settings for Hunting Area: #{displayName}"
+	elsif script.vars[2]
+		respond "Unable to find settings for Hunting Area: #{script.vars[2]}"
+	end
+elsif script.vars[1].downcase == 'load-level'
+	loader.doLoad
+	area = nil
+
+	level = Char.level.to_i
+	if script.vars[2]
+		if script.vars[2].length>0 and script.vars[2].to_i>0
+			level = script.vars[2].to_i
+		end
+	end	
+	area = loader.getBestGuessHuntingAreaUsingLevel(level)
+	if area
+		loader.areaToOp(area)
+		displayName = area.name
+		if area.getSetting("desc", false)
+			txt = area.getSetting("desc")
+			if txt.length>0	
+				displayName = txt
+			end
+		end
+		respond "Loaded settings for Hunting Area: #{displayName}"
+	elsif script.vars[2]
+		respond "Unable to find hunting area for level #{script.vars[2]}"
+	end
+elsif script.vars[1].downcase == 'solo'
+	loader.doLoad
+	area = loader.getAreaFromUser
+	if loader.areaToOp(area)
+		loader.startBigshot
+	end
+elsif script.vars[1].downcase == 'head'
+	loader.doLoad
+	area = loader.getAreaFromUser
+	if loader.areaToOp(area)
+		loader.startBigshot('head')
+	end
+elsif script.vars[1].downcase == 'tail'
+	loader.doLoad
+	area = loader.getAreaFromUser
+	if loader.areaToOp(area)
+		loader.startBigshot('tail')
+	end
+elsif script.vars[1].downcase == 'load-bounty'
+	loader.doLoad
+	critter = script.vars[2].downcase.strip
+	area = script.vars[3].downcase.strip
+	bounty = loader.getBounty(critter, area)
+	if bounty
+		loader.bountyToOp(bounty)
+	end
+elsif script.vars[1].downcase == 'find-bounty'
+	loader.doLoad
+	critter = script.vars[2].downcase.strip
+	area = script.vars[3].downcase.strip
+	#respond "Looking for #{critter} and #{area}"
+	bounty = loader.getBounty(critter, area)
+	if bounty
+		send_to_script "bbounty", "found bounty settings for #{critter} and #{area}"
+		#respond "found bounty settings for #{critter} and #{area}"
+	else
+		send_to_script "bbounty", "could not find bounty settings"
+		#respond "could not find bounty settings"
+	end
+	sleep 2
+elsif script.vars[1].downcase == 'setup'
+	setup(loader)
+elsif script.vars[1].downcase == 'show-guess'
+	loader.doLoad
+	respond loader.getBestGuessHuntingAreaUsingLevel(Char.level.to_i).inspect
+end
+

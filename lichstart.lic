@@ -1,0 +1,3 @@
+#pause 10
+#Room['10935'].location='River\'s Rest'
+#Map.save

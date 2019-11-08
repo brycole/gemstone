@@ -1,0 +1,135 @@
+
+      def vaalin_lockpick()
+        vaalin_error = false
+        if !GameObj.inv.find {|i| i.name =~ /twisted-wire vaalin bracelet/}.nil?
+          hand_location = 'none'
+          hand_location = 'left' if lefthand.nil?
+          hand_location = 'right' if righthand.nil?
+          bput 'rub my vaalin bracelet', 'Your vaalin bracelet begins'
+          vaalin_error = 'get_error' if (hand_location == 'right' and GameObj.right_hand.name != 'vaalin lockpick') or (hand_location == 'left' and GameObj.left_hand.name != 'vaalin lockpick')
+        elsif GameObj.right_hand.name == 'vaalin lockpick' or GameObj.left_hand.name == 'vaalin lockpick'
+          bput 'pull my vaalin lockpick', 'As you pull on your vaalin'
+          vaalin_error = 'wear_error' if GameObj.inv.find {|i| i.name =~ /twisted-wire vaalin bracelet/}.nil?
+        else
+          vaalin_error = 'get_error'
+        end
+        if vaalin_error == 'get_error'
+          echo "Error in vaalin lockpick script 'get'.  Pausing until user can intervene."
+          echo "There is no lockpicks in your hands. right: #{righthand} left: #{lefthand}"
+        elsif vaalin_error == 'wear_error'
+          echo "The vaalin bracelet is not located in the inventory.  Something is wrong.  Pausing until user can interview."
+        end
+        pause_script 'tpick' if vaalin_error
+      end
+      module_function :vaalin_lockpick
+
+
+
+      
+      def vaalin_lockpick(swap_pick)
+        vaalin_error = false
+        if swap_pick == 'recover'
+          if GameObj.inv.find {|i| i.name =~ /twisted-wire vaalin bracelet/}.nil?
+            bput 'get my vaalin lockpick', "^You (get|reach|grab|already)|^Get what"
+            abort if GameObj.right_hand.name == 'vaalin lockpick' or GameObj.left_hand.name == 'vaalin lockpick' and @old_swap == 'get'
+            bput 'get my vaalin bracelet', "^You (get|reach|grab|already)|^Get what"
+            if GameObj.right_hand.name == 'vaalin bracelet' or GameObj.left_hand.name == 'vaalin bracelet'
+                bput 'wear my vaalin bracelet', "^You (attach|are)"
+                if GameObj.inv.find {|i| i.name =~ /twisted-wire vaalin bracelet/}
+                  vaalin_lockpick(@old_swap)
+                else
+                  vaalin_error = true
+                end
+            end
+          end
+        end        
+        if swap_pick == 'get' and GameObj.right_hand.name != 'vaalin lockpick' and GameObj.left_hand.name != 'vaalin lockpick'
+          if GameObj.inv.find {|i| i.name =~ /twisted-wire vaalin bracelet/}
+            bput 'rub my vaalin bracelet', 'Your vaalin bracelet begins'
+          else
+            @old_swap = 'get'
+            vaalin_lockpick('recover')
+          end
+        end
+        if swap_pick == 'stow' and GameObj.inv.find {|i| i.name =~ /twisted-wire vaalin bracelet/}.nil?
+          if GameObj.right_hand.name == 'vaalin lockpick' or GameObj.left_hand.name == 'vaalin lockpick'
+            bput 'pull my vaalin lockpick', 'As you pull on your vaalin'
+          else
+            @old_swap ='stow'
+            vaalin_lockpick('recover')
+          end
+        end
+        if vaalin_error and old_swap = 'get'
+          echo "Error in vaalin lockpick script 'get'.  Pausing until user can intervene."
+          echo "There is no lockpicks in your hands. right: #{righthand} left: #{lefthand}"
+        elsif vaalin_error and old_swap = 'stow'
+          echo "The vaalin bracelet is not located in the inventory.  Something is wrong.  Pausing until user can interview."
+        end
+        pause_script 'tpick' if vaalin_error
+      end
+      module_function :vaalin_lockpick
+
+
+      #GameObj.inv.find {|i| @remove_item = i if i.name =~ /coral and emerald crown/}; (put "_drag ##{@remove_item.id} ##{GameObj[/satchel/].id}"; waitrt?; @remove_item = nil) if !@remove_item.id.nil?
+#GameObj.inv.find {|i| @remove_item = i if i.name =~ /plain star ruby bracelet/}; (put "_drag ##{@remove_item.id} ##{GameObj[/satchel/].id}"; waitrt? @remove_item = nil) if !@remove_item.id.nil?
+#GameObj.inv.find {|i| @remove_item = i if i.name =~ /twisted-wire vaalin bracelet/}; (put "_drag ##{@remove_item.id} ##{GameObj[/harness/].id}"; waitrt?) if !@remove_item.id.nil?
+
+ #GameObj[i.id].contents.find{|z| @wear_items << z.id if z.name =~ /plain star ruby bracelet/ }
+  #GameObj[i.id].contents.find{|z| @wear_items << z.id if z.name =~ /tooled sterling silver pin/ }
+  #GameObj[i.id].contents.find{|z| @wear_items << z.id if z.name =~ /copper and smoky topaz buckle/ }
+  #GameObj[i.id].contents.find{|z| @wear_items << z.id if z.name =~ /ivory and pink sapphire pin/ }
+  #GameObj[i.id].contents.find{|z| @wear_items << z.id if z.name =~ /flame-cut red dreamstone clasp/ }
+
+  #GameObj[containers.id].contents.find{|contents| @wear_items << contents.id if contents.name =~ /full plate/}
+
+get_all_containers.each{|containers|
+
+  fput "look in #{containers}"
+
+  ## Enhancive start
+  if !running? 'treasure_hunt'
+  $combat_enhancives.each {|enhancive| 
+    GameObj[containers.id].contents.find{|contents| 
+      @wear_items << contents if contents.name =~ /#{enhancive}/
+      }
+    }
+  end
+ 
+  ## Armor start
+  GameObj[containers.id].contents.find{|contents| @wear_items << contents if contents.name =~ /full plate/}
+  GameObj[containers.id].contents.find{|contents| @wear_items << contents if contents.name =~ /greathelm/} if !running? 'treasure_hunt'
+}
+
+def get_all_containers
+  containers=nil
+  action = proc { |server_string|
+    if server_string =~ /^You are wearing/
+      containers = server_string.scan(/<a exist="([^"]+)"/).flatten
+      DownstreamHook.remove("get_all_containers")
+      nil
+    else
+      server_string
+    end
+  }
+  DownstreamHook.add("get_all_containers", action)
+  $_SERVER_.puts "#{$cmd_prefix}inventory containers\n"
+  wait_until { containers }
+  containers.collect!{|id| GameObj[id]}
+end
+
+
+def travel(zone_name)
+  echo zone_name
+  if zone_name == "Ta'Vaalor" && $zone_now != "Ta'Vaalor"
+    echo "Moving to #{zone_name}."
+    GSC.run_wait_script('go2', '9686')
+    GSC.goto_teleport_setting(12)
+    $zone_now = "Ta'Vaalor"
+  end
+  if zone_name == "home" && $zone_now != "Ta'Illistim"
+    echo "Moving to #{zone_name}."
+    GSC.run_wait_script('go2', '10168')
+    GSC.goto_teleport_setting(1)
+    $zone_now = "Ta'Illistim"
+  end
+end

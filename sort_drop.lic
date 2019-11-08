@@ -1,0 +1,12 @@
+
+for container in ['cloak', 'backpack']
+  GSC.bput "look in #{container}", "In|That is closed"
+end
+
+
+
+for container in ['cloak', 'backpack']
+      GameObj["#{container}"].contents.each {|i|
+        put "_drag ##{i.id} drop"
+      }
+end

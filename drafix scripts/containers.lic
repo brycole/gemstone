@@ -1,0 +1,50 @@
+=begin
+	
+	This script emulates the containers function in Psinet
+	
+	Ex: 
+	'cloak' => 'look in my cloak'
+	'cloak item' => 'put item in my cloak'
+
+	update: a rename of containers2 to containers1. -thx to whoever upped containers2.
+	update: merged containers3 with my code (thanks to whoever did that one)
+	
+	By Drafix
+
+=end
+
+hide_me
+i_stand_alone
+
+bags = ['kilt', 'sheath', 'cloak', 'greatcloak','great', 'sack', 'pouch', 'boot', 'belt', 'knapsack', 'backpack', 'case', 'tool', 'toolkit', 'rucksack', 'ruck', 'long', 'longcoat', 'harness', 'scabbard', 'quiv', 'quiver', 'pack', 'purse', 'disk', 'glove', 'bodice', 'vest', 'kit', 'satchel', 'satch', 'ph', 'sat', 'key', 'knap', 'hat', 'longc', 'har', 'tunic', 'hav', 'gear', 'robe', 'jack', 'pants', 'shirt', 'trou', 'bag', 'reti', 'jar', 'beaker', 'backp', 'harn', 'band', 'coat', 'cape', 'robes', 'scarf', 'tube', 'burn', 'bur']
+
+begin
+	action = proc { |client_string|
+		if client_string =~ /^(?:<c>)?\b(#{bags.join('|')})\b(.*)/o
+			container = $1
+			item = $2.strip
+			preposition = 'in'
+			preposition = 'on' if container == 'key'
+			
+			if container == 'disk'
+				container = Char.name + ' ' + (GameObj["#{Char.name} disk"].noun || GameObj["#{Char.name} coffin"].noun || '')
+			elsif container == 'key'
+        		container = "my keyring"
+			else
+				container = "my #{container}"
+			end
+
+			if item.empty?
+				"look #{preposition} #{container}"
+			else
+				"put #{item} #{preposition} #{container}"
+			end			
+		else
+			client_string
+		end
+	}
+	UpstreamHook.add('containers', action)
+	loop { sleep 1 }
+ensure
+	UpstreamHook.remove('containers')
+end

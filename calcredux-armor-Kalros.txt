@@ -1,0 +1,1 @@
+# Just put your armor type on the next line to avoid calcredux.lic trying to detect it every run (skin/leather/scale/chain/plate)

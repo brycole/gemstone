@@ -1,0 +1,29 @@
+	
+	noun = script.vars[1]
+	verb = script.vars[2]
+	container = script.vars[3]
+   
+
+
+	status_tags
+	open_result = dothistimeout 'open locker', 5, /exist=".*?" noun="#{noun}"/
+	echo open_result
+	status_tags
+	open_result =~ /exist="(\d+)" noun="#{noun}"/
+	echo open_result
+	echo locker_id = $1
+	dothistimeout "look #{verb} ##{locker_id}", 3, /^In the|On the/
+	sleep 3
+	locker_contents = GameObj.containers[locker_id]
+	echo locker_contents
+
+	locker_contents.each {|i|
+        echo i
+        fput "get ##{i.id}"
+        fput "put ##{i.id} in my #{container}"
+      }
+
+fput 'close locker'
+
+	#[get_locker: <component id='room objs'>  You also see an <a exist="130585280" noun="stand">armor stand</a> with some stuff on it, a <a exist="130585286" noun="rack">weapon rack</a> with some stuff on it, a <a exist="130585297" noun="bin">magical item bin</a>, a <a exist="130585311" noun="wardrobe">clothing wardrobe</a>, a <a exist="130585312" noun="chest">deep chest</a> and a <a exist="-1841" noun="opening">curtained opening</a>.</component>]
+

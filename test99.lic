@@ -1,0 +1,17 @@
+status_tags
+open_result = dothistimeout 'open locker', 5, /exist=".*?" noun="(bin|locker|chest)"/
+pause 1
+  status_tags
+  if open_result =~ /exist="(\d+)" noun="(locker)"/
+    locker_id = $1
+    locker_contents = GameObj.containers[locker_id]
+    unless locker_contents
+      dothistimeout "look in ##{locker_id}", 5, /^In the/
+      locker_contents = GameObj.containers[locker_id]
+    end
+  end
+  locker_contents.each {|i| 
+
+    fput "get #{i.noun} from locker"
+    fput "put #{i.noun} in my harness"
+}

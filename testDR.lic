@@ -1,0 +1,197 @@
+## Duskruin Cleric Run
+## Libraries Removed for Common Use
+## By Kalros
+ 
+## CHANGE USER COMMANDS ON LINE 99
+## CHANGE USER SPELLS ON LINE 120s
+ 
+  $containerJar = 'backpack' if Char.name == 'Januk'
+  $containerJar = 'shawl' if Char.name == 'Iloru'
+  $containerJar = 'backpack' if Char.name == 'Lumino'
+ 
+def run_wait_script(script, var1)
+  start_script "#{script}", ["#{var1}"] if var1 !~ /xx/
+  start_script "#{script}" if var1 =~ /xx/
+  sleep 1
+  wait_while { running?("#{script}")}
+  waitrt?
+  sleep 1
+end
+ 
+def bput(message, *matches)
+    waitrt?
+    timer = Time.now
+    log = []
+    matches.flatten!
+    matches.map! { |item| item.is_a?(Regexp) ? item : /#{item}/i }
+      clear
+      put message
+      while Time.now - timer < 5
+        response = get?
+ 
+        if response.nil?
+          pause 0.1
+          next
+        end
+ 
+        log += [response]
+ 
+        case response
+        when /((?:\.\.\.wait |Wait |\.\.\. wait )([0-9]+)|^You are still stunned)/
+        pause Regexp.last_match(1).to_i
+        put message
+        timer = Time.now
+        next
+      when /Sorry, you may only type ahead/
+          pause 1
+          put message
+          timer = Time.now
+          next      
+      end
+ 
+          matches.each do |match|
+            if (result = response.match(match))
+              waitrt?
+              return result.to_a.first
+            end
+          end
+        end
+        echo '*** No match was found after 15 seconds, dumping info'
+        echo "messages seen length: #{log.length}"
+        log.each { |message| echo "message: #{message}" }
+        echo "checked against #{matches}"
+        $FAILED_COMMAND
+end
+ 
+def startDR(room, tokenType)
+    if tokenType == 'booklet'
+      token = 'slip'
+      entrance = 'entrance'
+    else
+      token = 'jar'
+      entrance = 'grate'
+    end
+    containerJar = $containerJar
+    run_wait_script("go2", room)
+ 
+    bput "get my #{tokenType}", '^You reach|^Get what|^You remove'
+ 
+  if lefthand != tokenType and righthand != tokenType
+    echo 'No token in hand, exiting.'
+    exit
+  end
+ 
+  bput 'stand', '^You stand|^You are' if !standing?
+  bput "go #{entrance}", "^Obvious"
+ 
+  bput "put my #{tokenType} in my #{containerJar}", '^You put|^You toss|^I could not'
+end
+ 
+def checkCol()
+  Spell[9903].cast if Spell[9903].timeleft < 0.01 and mana > 12 ## SIGN WARDING
+##  Spell[9904].cast if Spell[9904].timeleft < 0.01 and mana > 12 ## SIGN STRIKING
+  Spell[9907].cast if Spell[9907].timeleft < 0.01 and mana > 12 ## SIGN DEFENDING
+##  Spell[9908].cast if Spell[9908].timeleft < 0.01 and mana > 12 ## SIGN SMITING
+  Spell[9910].cast if Spell[9910].timeleft < 0.01 and mana > 12 ## SIGN DEFLECTION
+##  Spell[9912].cast if Spell[9912].timeleft < 0.01 ## SIGN SWORD
+  Spell[9913].cast if Spell[9913].timeleft < 0.01 ## SIGN SHIELD
+##  Spell[9914].cast if Spell[9914].timeleft < 0.01 ## SIGN DISSIPATION
+end
+ 
+## Watch for traps
+## Also uses Exec Script from duskRuinArena
+def arenaWatch()
+  res = "You glance around"
+  while res == "You glance around"
+    res = bput "watch", "You appraise|^You've already|^You glance around|^You survey"
+  end
+  matchtimeout(1, "You set yourself|^You've already spotted")
+  $watchAgain = false
+end
+ 
+## Main combat loop
+def duskruinArena()
+  $breakDuskruin = false
+  ## Exec script to monitor lines. it also cancels duskruin loop
+  ## based on line triggers. Also watchs for traps.
+  check_lines = <<-eos
+    while line = get
+      $breakDuskRuin = true if line =~ /^You've been defeated.  You'll/
+      if line =~ /^An announcer boasts, "Combatant \\w+ is triumphant|^An announcer shouts, "You've run out of time|^You've been defeated|^You surrender/
+        ## CHANGE THE BELOW
+        ## ON EXIT
+        if Char.name == 'Iloru'
+          dothistimeout "wear shield", 3, /You/
+          dothistimeout "stow all", 3, /You/
+        end
+        if Char.name == 'Lumino'
+          dothistimeout "stow all", 3, /You/
+        end
+        if Char.name == 'Januk'
+          dothistimeout "sheath", 3, /You/
+        ## dothistimeout "stow all", 3, /You/
+        end
+        $breakDuskRuin = true
+        exit
+      elsif line =~ /You appraise.+/
+        echo line
+        put $trapCommand = /\\b(roll|bob|lean|pedal|jump|duck)\\b/.match(line)
+      elsif line =~ /fall victim/
+        $watchAgain = true
+      end
+    end
+  eos
+ 
+start_exec_script(check_lines, :quiet => true)
+ 
+checkCol ## check for COL spells
+ 
+ 
+  while $breakDuskRuin == false  
+    while checknpcs == false # Attack Loop
+      if stunned?
+        sleep 1 until !stunned?
+        $watchAgain = true
+      end
+      arenaWatch() if $watchAgain
+      fput "stand" unless standing?
+      bput "sign of wracking", "You shudder" if spirit > 6 and mana < 2 if Spell[9918].known?
+      if mana > 1
+        bput "incant 302", "You"
+      else
+        bput "incant 1700", "You"
+      end
+   
+      ## CHECK FOR MYSTIC FOCUS
+      if !Spell[1711].active?
+        bput "get my quartz orb", "You remove a heavy quartz orb"
+        bput "rub my orb", "You rub"
+        bput "stow my orb", "You put a heavy quartz orb in your forest green backpack|What were you trying"
+      end
+    end
+    $watchagain = false
+  end
+end
+ 
+## Driver Loop
+@container = $containerJar
+while true
+  startDR(23780, 'booklet')
+  duskruinArena
+ 
+ 
+  waitfor "closes an arena"
+##  bput "open my package", "You"
+##  bput "get my blood", "You"
+##  bput "redeem my blood", "You"
+##  bput "remove my #{@container}", "You"
+##  bput "empty package in #{@container}", "You"
+##  res = bput "drop package", "You toss"
+##
+##  if res != "You toss"
+##    echo "script error"
+##    exit
+# end
+##  bput "wear my #{@container}", "You"
+  exit
+end

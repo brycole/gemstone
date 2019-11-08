@@ -1,0 +1,33 @@
+
+
+## This will use symbol Transcend
+Thread.new { 
+  while true 
+    wait_until{(not Spell[9049].active? and not Spell[9812].active? and not dead? and running?('bigshot')) and percenthealth <= 80 and (!standing? or stunned? or webbed?) and ((GameObj.npcs.any? { |npc| npc.type !~ /passive/ and npc.status !~ /dead/ }) or (GameObj.loot.each { |i| i.noun =~ /cloud/}))} 
+    pause_script 'bigshot' if running? 'bigshot'
+    dothistimeout "sym trans confirm", 3, /space between the corporeal|^You have already|^You strain/ 
+    unpause_script 'bigshot' if running? 'bigshot'
+  end 
+}
+
+while line = get
+  fput 'out' if line =~ /You walk into a gaping/
+  puts "<pushStream id=\"speech\"/>#{line}\n<popStream/>\n" if line =~ /^\[Private/
+
+  if line =~ /^A vaespilon drags/
+    while line2 = get
+      if line2 =~ /A vaespilon draws/
+        pause_script 'bigshot'
+        fput 'sym holi vaesp'
+        fput 'sym holi second vaesp'
+        fput 'sym holi third vaesp'
+        unpause_script 'bigshot'
+        break
+      end
+      break if line =~ /^You hear a sound|^Obvious/
+    end
+  end
+
+
+  
+end

@@ -1,0 +1,5 @@
+while true
+  waitfor "joins your"
+  waitfor "joins your"
+  GSC.bput "renew all", "Your"
+end

@@ -1,0 +1,68 @@
+## Originally build for Dragonrealms
+## Copied over for Gemstone from: https://github.com/rpherbig/dr-scripts
+## They weclome suggestions and contributions
+
+require 'yaml'
+require 'ostruct'
+
+class SetupFiles
+  def initialize(debug)
+    @debug = debug
+    @load = true
+    @latest = false
+    @settings = {}
+    @extras = []
+  end
+
+  def request_settings(options)
+    @load = true
+    @extras = options
+  end
+
+  def loaded?
+    !@load
+  end
+
+  def run_queue
+    load_settings if @load
+  end
+
+  attr_reader :settings
+
+  ## File edited for hunting variables only.
+  def load_settings
+    profile = "./scripts/profiles/creature-data.yaml"
+    if File.exist?(profile)
+      settings = YAML.load_file('./scripts/profiles/base.yaml')
+      settings.merge!(YAML.load_file(profile))
+      @extras.each do |subfile|
+        filepath = "./scripts/profiles/#{checkname}-#{subfile}.yaml"
+        basepath = "./scripts/profiles/base-#{subfile}.yaml"
+        if File.exist?(filepath)
+          settings.merge!(YAML.load_file(filepath))
+        elsif File.exist?(basepath)
+          settings.merge!(YAML.load_file(basepath))
+        else
+          echo("Tried to request setting file that doesn't exist #{subfile}")
+        end
+      end
+    end
+    @settings = OpenStruct.new(settings)
+    @load = false
+  end
+end
+
+$setupfiles = SetupFiles.new(debug)
+
+def get_settings(options = [])
+  $setupfiles.request_settings(options)
+  pause 0.1 until $setupfiles.loaded?
+  $setupfiles.settings
+end
+
+loop do
+  $setupfiles.run_queue
+  pause 0.1
+end
+
+## End setup files

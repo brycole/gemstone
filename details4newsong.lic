@@ -1,0 +1,12 @@
+# Quick and dirty Loresinging report
+
+Person = Vars.client
+item = GameObj.right_hand.name
+
+choose = ["Here's what it sang to me:", "It sings its secrets sweet and bade me tell you about it:", "The properties I heard in its song:", "The loresong details for:", "This proud song hopes it can serve you well:" ]
+prefix = choose[rand(choose.length)]
+
+fput "whisper ooc #{Person} #{prefix} #{script.vars[0]}"
+
+Script.log "#{Time.now.strftime("%Y-%m-%d %H:%M:%S")}: For #{Person}: #{script.vars[0]}"
+

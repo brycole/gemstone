@@ -1,0 +1,9 @@
+
+GSC.open_satchel
+
+
+    Map["24675"].wayto.delete_if { |wayto_destination_id, current_wayto| wayto_destination_id =~ /7892/}
+    Map["24675"].timeto.delete_if { |timeto_destination_id, current_timeto| timeto_destination_id =~ /7892/}
+
+
+

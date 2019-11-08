@@ -1,0 +1,80 @@
+## Spell Monitor
+## Cast spells on the fly
+## by Kalros
+## v.02
+
+
+$spellmonitor_debug = false
+$uac_gloves = 'handwraps'
+use_411 = false
+
+cast_spells = Array.new
+current_favor = 0
+$tremors = false if $tremors.nil?
+$elemental_weapon = false if $elemental_weapon.nil?
+
+# Exec thread to search for line captures.
+spell_line_checks = <<-eos
+while line = get
+	break unless running?('spellmonitor')
+	$tremors = true if line =~ /^Faint ripples in the \\w+ form beneath you for a moment/
+	$tremors = false if line =~ /^Faint ripples in the \\w+ beneath you become apparent/
+  $elemental_weapon = true if line =~ /^A bolt of energy leaps from your hand to the/
+  $elemental_weapon = false if line =~ /^The scintillating \\w+ light surrounding the .* fades away/
+end
+eos
+
+ExecScript.start(spell_line_checks, :quiet => true)
+
+def can_cast?(check_spell)
+	return true if Spell[check_spell].known? and Spell[check_spell].affordable?
+	return false
+end
+
+def cast_now(cast_spells)
+  waitrt?
+  ## Any script that can interfere needs to be paused
+  pause_script 'bigshot' if running? 'bigshot'
+  pause_script 'sloot' if running? 'sloot'
+
+  # Uses an exec thread to cast the spell so dothistimeout does not
+  # interefere with matches from method .cast
+  cast_spells.each {|do_spell|
+    $do_spell = do_spell
+    sleep 0.5
+    waitrt?
+    cast_exec = <<-eos
+    	if $do_spell == 909
+    		put "prep #{$do_spell}"
+    		put 'evoke'
+    	elsif $do_spell == 411
+        Spell[411].cast "#{$uac_gloves}"
+      else
+    		Spell[$do_spell].cast
+    	end
+    eos
+    cast_exec_script = ExecScript.start(cast_exec, :quiet => true)
+    wait_until {!running? cast_exec_script.name}
+  }
+
+  ## This section should mirror the pause section
+  unpause_script 'bigshot' if running? 'bigshot'
+  unpause_script 'sloot' if running? 'sloot'
+  cast_spells.clear
+end
+
+while true
+  if GameObj.npcs.find{ |npc| npc.type =~ /aggressive/ } or $spellmonitor_debug # Only cast when aggressive monsters present
+    waitcastrt?
+
+    ## Spell Section
+    # Add more spells using syntax below.
+    cast_spells << 909 if !$tremors and can_cast?(909)
+    cast_spells << 411 if !$elemental_weapon and can_cast?(411) and use_411
+    cast_spells << 506 if Spell[506].timeleft < 0.01 and can_cast?(506)
+    cast_spells << 1618 if Spell[1618].timeleft < 0.01 and can_cast?(1618)
+
+    cast_now(cast_spells) if !cast_spells.empty?
+  end
+  sleep 0.3
+end

@@ -1,0 +1,102 @@
+
+#plane3 = Set.new
+
+#while line = get
+#  plane3.add(Room.current.id) if line =~ /Obvious/
+#  break if line =~ /You have been/
+#end
+
+#echo plane3.inspect
+
+
+#>;e array = [12227, 12226, 12225, 12224, 12223, 12222, 12221, 12092, 12091, 12218, 12094, 20876, 12216, 20877, 20878, 12214, 12213, 12212, 12205, 12204, 12203, 12202, 12201, 12200, 12199, 12198, 12197, 12196, 12195, 12194, 12193, 12192, 12191, 12190, 12189, 20880, 20881, 20882, 12188, 12187, 12186, 12185, 12184, 12183, 12182, 12181, 12180, 12179, 12178, 12177, 12176, 12175, 12174, 12093];echo array.reverse
+
+@plane3 = {
+  12093 => ['east', 'FORWARD'],
+  12174 => ['east', 'west'],
+  12175 => ['east', 'west'],
+  12176 => ['east', 'west'],
+  12177 => ['east', 'west'],
+  12178 => ['east', 'west'],
+  12179 => ['east', 'west'],
+  12180 => ['southeast', 'west'],
+  12181 => ['south', 'northwest'],
+  12182 => ['south', 'north'],
+  12183 => ['south', 'north'],
+  12184 => ['south', 'north'],
+  12185 => ['south', 'north'],
+  12186 => ['southwest', 'north'],
+  12187 => ['west', 'northeast'],
+  12188 => ['west', 'east'],
+  20882 => ['west', 'east'],
+  20881 => ['west', 'east'],
+  20880 => ['west', 'east'],
+  12189 => ['west', 'east'],
+  12190 => ['west', 'east'],
+  12191 => ['northwest', 'east'],
+  12192 => ['northwest', 'southeast'],
+  12193 => ['north', 'south'],
+  12194 => ['north', 'south'],
+  12195 => ['north', 'south'],
+  12196 => ['northeast', 'south'],
+  12197 => ['east', 'southwest'],
+  12198 => ['east', 'west'],
+  12199 => ['east', 'west'],
+  12200 => ['east', 'west'],
+  12201 => ['east', 'west'],
+  99999 => ['east', 'west'],
+  12202 => ['southeast', 'west'],
+  12203 => ['southeast', 'northwest'],
+  12204 => ['south', 'northwest'],
+  12205 => ['south', 'north'],
+  12212 => ['south', 'north'],
+  12213 => ['southwest', 'north'],
+  12214 => ['west', 'northeast'],
+  20878 => ['west', 'east'],
+  20877 => ['west', 'east'],
+  12216 => ['west', 'east'],
+  20876 => ['west', 'east'],
+  12094 => ['west', 'east'],
+  12218 => ['northwest', 'southeast'],
+  12091 => ['north', 'south'],
+  12092 => ['north', 'south'],
+  12221 => ['northeast', 'south'],
+  12222 => ['northeast', 'southwest'],
+  12223 => ['east', 'southwest'],
+  12224 => ['east', 'west'],
+  12225 => ['southeast', 'west'],
+  12226 => ['southeast', 'northwest'],
+  12227 => ['BACKWARD', 'northwest'],
+  20879 => ['XXXX', 'XXXX'],
+}
+
+
+def move_rift(move_list, direction)
+  move_list.each{|room_id, move|
+    next if move[direction] =~ /XXXX/
+    move_rift(@reversed_plane3, 1) if move[direction] =~ /BACKWARD/
+    move_rift(@plane3, 0) if move[direction] =~ /FORWARD/
+    if @plane3.key?(Room.current.id) == false
+      GSC.run_wait_script('go2', '12093')
+      move_rift(@plane3, 0)
+    end
+    echo room_id
+    echo move
+    GSC.bput "#{move[direction]}", "^Obvious"
+    sleep 0.5
+  }
+end
+
+@plane3_list = []
+@reversed_plane3_list = []
+
+@plane3.each{|k,v| @plane3_list << v[0]}
+echo @plane3_list
+
+@reversed_plane3 = Hash[@plane3.to_a.reverse].to_hash
+
+@reversed_plane3.each{|k,v| @reversed_plane3_list << v[1]}
+echo @reversed_plane3_list
+
+#move_rift(@reversed_plane3, 1) if Room.current.id == 12227
+#move_rift(@plane3, 0) if Room.current.id == 12093

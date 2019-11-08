@@ -1,0 +1,8 @@
+# ActionMailer delivery
+
+require 'sms_fu'
+
+sms_fu = SMSFu::Client.configure(:delivery => :action_mailer)
+
+
+sms_fu.deliver("4153775105","at&t","message")

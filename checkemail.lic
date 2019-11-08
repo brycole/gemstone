@@ -1,0 +1,32 @@
+## Code to check email
+
+require 'mail'
+Mail.defaults do
+  retriever_method :imap, { :address    => "imap.googlemail.com",
+                            :port       => 993,
+                            :user_name  => 'gemstoneruby.smtp',
+                            :password   => 'Rubygemstone123!#',
+                            :enable_ssl => true }
+end
+
+#emails = Mail.find(:what => :first, :count => 10, :order => :asc)
+#emails.length #=> 10
+
+#echo emails
+#echo emails.length
+
+echo Mail.last
+echo Mail.last.date
+prior_date = 'XXX'
+
+#echo Mail.last.body.decoded
+#echo Mail.last.from.to_s
+while true
+  if Mail.last.from.to_s =~ /^\["brycole@gmail.com"\]$/ && Mail.last.date != prior_date
+		fput "#{$1}" if Mail.last.body.decoded =~ /command\: (.+)/
+		#Script.run"#{$1}" if Mail.last.body.decoded =~ /script\: (.+)/
+		LNet.send_message(h={'to'=>"#{$1}", 'type'=>'private'}, "#{$2}") if Mail.last.body.decoded =~ /chat\: (.+) msg: (.+)/
+		prior_date = Mail.last.date
+	end
+	sleep 10
+end
