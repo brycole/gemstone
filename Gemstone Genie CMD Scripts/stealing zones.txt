@@ -1,0 +1,14 @@
+		### ** Boar clan stealing, move to outside hib for spellup
+		### ** To Hib from Boar
+		var 2.spelluproom 162
+		var towngate 169
+		if "$zoneid" = "127" then gosub move 510
+		if "$zoneid" = "126" then gosub move 49
+		if "$zoneid" = "116" then gosub move 3
+		if "$zoneid" = "123" then gosub move 170
+			else 
+			{
+				put #echo >log Red Error in steal check, not in correct zone.  Current zone is $zoneid.
+				gosub clear
+				goto Raelok
+			}

@@ -1,0 +1,2 @@
+echo %1
+To learn from him, you must LISTEN TO Stedis.

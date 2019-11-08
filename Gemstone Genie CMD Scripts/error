@@ -1,0 +1,186 @@
+R> 
+* Driving in like an adept combatant, a bristle-backed peccary lowers its head, tilts it to one side, and slashes its curved tusks at you.  You block with a crocodile-skin buckler.  
+[You're solidly balanced with no advantage.]
+R> 
+*** COUNT_START: ***
+
+*** 4 creatures. ***
+
+*** COUNT_WAIT_1: parry ***+
+
+*** Evasion is learning! Switching to roam mode. ***
+[geniehunter]: parry
+[Script loaded: link.cmd]
+[Script aborted: death.cmd]
+[Script aborted: afkhunt.cmd]
+[Script aborted: geniehunter.cmd]
+[Script loaded: link.cmd]
+
+You move into a position to parry.
+[You're solidly balanced with no advantage.]
+Roundtime: 3 sec.
+R> 
+* Driving in like an adept combatant, a bristle-backed peccary lowers its head, tilts it to one side, and slashes its curved tusks at you.  You block with a crocodile-skin buckler.  
+[You're solidly balanced and have slight advantage.]
+R> 
+* Moving in with powerful grace, a bristle-backed peccary lowers its head, tilts it to one side, and slashes its curved tusks at you.  You block with a crocodile-skin buckler.  
+[You're solidly balanced and opponent has slight advantage.]
+R> [Script loaded: death.cmd]
+[Script loaded: afkk.cmd]
+afkk.cmd(3): [startafk:]
+afkk.cmd(4): [matchre talk ^\w+ says,|explains,|whispers,|You hear the voice]
+afkk.cmd(5): [matchre asks asks,]
+afkk.cmd(6): [matchre endafk SEND]
+afkk.cmd(7): [matchwait]
+[Script aborted: death.cmd]
+[Script loaded: death.cmd]
+[Script aborted: afkk.cmd]
+[Script loaded: afkk.cmd]
+afkk.cmd(3): [startafk:]
+afkk.cmd(4): [matchre talk ^\w+ says,|explains,|whispers,|You hear the voice]
+afkk.cmd(5): [matchre asks asks,]
+afkk.cmd(6): [matchre endafk SEND]
+afkk.cmd(7): [matchwait]
+
+The bristle-backed peccary closes to melee range on you!
+> 
+* Moving as one fluid extension of power, a bristle-backed peccary uses its tusks like dueling blades, twisting violently at you.  You block with a crocodile-skin buckler.  
+[You're solidly balanced with opponent in good position.]
+> [link]: sheath dagger
+[link]: ret
+[link]: sheath dagger
+[link]: ret
+
+With a flick of your wrist you stealthily sheathe the throwing dagger in your wrist sheath.
+> 
+Sorry, you may only type ahead 1 command.
+> 
+You retreat back to pole range.
+> 
+Sheathe what?
+> [link]: ret
+[link]: ret
+
+You retreat from combat.
+> [Script loaded: automapper.cmd]
+[Script loaded: automapper.cmd]
+[automapper]: w
+[automapper]: w
+
+You are already as far away as you can get!
+> 
+The bristle-backed peccary begins to advance on you!
+The bristle-backed peccary is still a distance away from you and is closing steadily.
+> 
+The bristle-backed peccary begins to advance on you!
+The bristle-backed peccary is still a distance away from you and is closing steadily.
+> 
+[Shepherd's Meadow, At the Gate]
+A weathered wooden gate is suspended between a section of palisade wall that rises two stories high.  The rich, fragrant grass of the meadow competes in vain with the smell of the animals brought here to graze.
+Obvious paths: north, northeast, east.
+> [AutoMapper]: gate
+
+You can't go there.
+> *** MOVE FAILED ***
+*** MOVE FAILED ***
+[Script aborted: automapper.cmd]
+[Script aborted: automapper.cmd]
+[Script loaded: automapper.cmd]
+[automapper]: go gate
+
+[Rossman's Landing, Northwall Road]
+The road narrows to be simply a packed dirt path that runs along the eastern end of the soldiers' drill field to a small gate in the walls.  Too narrow for a wagon or cart, the gate allows drovers to herd the town's cattle out to graze during the day.
+Obvious paths: east.
+> [AutoMapper]: gate
+[automapper]: e
+
+[Rossman's Landing, Northwall Road]
+Workers muck out a muddy field, shoveling the dung left by the village's cattle into a small wicker-sided cart.  Sweet scented roses grow in profusion around the common area, enclosing it with their thorns and ameliorating the smell.
+Obvious paths: east, south, west.
+> [automapper]: e
+
+[Rossman's Landing, Northwall Road]
+Thatched roofed cottages huddle together in the shadows of the log palisade surrounding the town.  Carvings decorate the exposed timber beams -- on one house, a gargoyle hunched beneath the eaves, on another, dark brown roses peep out amidst the pale white plaster.  Flimsy stalls against the outer wall can be quickly set up and dismantled on market days.
+Obvious paths: east, west.
+> [automapper]: e
+
+[Rossman's Landing, Northwall Road]
+Built against the wooden palisade, the town's sole tavern does a brisk business day and night.  Uniformed guardsmen, shopkeepers, fishermen and herdsmen wander in and out for a pint of ale or a bite to eat.
+Obvious paths: east, west.
+> [AutoMapper]: tavern
+[automapper]: e
+
+[Rossman's Landing, Eastgate Road]
+A stone drum tower rises at the corner of the wooden palisades.  Completed prior to the building of the stone walls, the tower offers a vantage point for guards keeping watch over the fields around the town, as well as housing for those not currently on duty.  The smell of baking bread wafts through the air from some nearby inn or housewife's kitchen.
+Obvious paths: south, west.
+> [automapper]: s
+
+[Rossman's Landing, Eastgate Road]
+A patch of marigolds struggle for survival in a small garden beside the road, beaten down by the heavy boots of the workers constructing the curtain wall.  The houses are built close together, most sharing a common wall with its neighbors on either side.  Fire must remain an ever-present danger in the tiny village.
+Obvious paths: north, south.
+> [automapper]: s
+
+[Rossman's Landing, Eastgate Road]
+Log houses chinked with pale plaster line the narrow, winding street.  Workmen have been demolishing poorly built shacks huddled along the inner palisade to make way for the new stone curtain wall under construction.  Wagons bringing in building stone and carrying away lumber for use elsewhere leave deep ruts in the dirt road.  Towering above the small houses, a fortress rises on a steep hill to the west, overlooking the rest of the town.
+Obvious paths: north, south.
+> [automapper]: s
+
+[Rossman's Landing, Eastgate Road]
+Within the wooden palisade, work has begun on a stone curtain wall.  About six spans in width, it abuts the existing town wall, reinforcing the logs and providing a more secure defense for the residents.  Beginning at the stone arch around the portcullis, the new wall extends to the north and south about half the length of the existing lumber one.  You also see a completely destroyed poster, a waste bin and a high stone archway.
+Also here: Warlock Dalkzin.
+Obvious paths: north, south.
+> [AutoMapper]: arch
+[automapper]: go arch
+
+[Rossman's Landing, Foregate Passage]
+A guard stands just within the iron-banded outer gates, checking travelers as they come through.  The high archway leading to the town is guarded by a massive iron portcullis, raised and lowered by a windlass someplace within.  Gaps between the logs roofing the foregate passage allow defenders to rain down rocks, hot oil or other, less appealing substances upon would-be intruders.
+Obvious paths: none.
+> [AutoMapper]: arch, gate
+[automapper]: go gate
+
+[Rossman's Landing, Southeast Gate]
+A wooden palisade, about twice the height of an Elf, rises above the fields around the town.  Pacing back and forth on a walkway, a guard is visible through the palisade's arrow slits, while others man the gates.  A series of shallow trenches filled with sharpened wooden stakes surround the town, offering further defense against attack.
+Obvious paths: east.
+> [AutoMapper]: gate
+*** DONE ***
+[Script finished (In 9.033 seconds): automapper.cmd(42)]
+[Script loaded: janswim.cmd]
+[Script loaded: automapper.cmd]
+[Script loaded: janswim.cmd]
+[Script loaded: automapper.cmd]
+[automapper]: e
+[automapper]: e
+
+[Mistwood Forest, Northwest Road]
+Fields of grain, all green and gold, sway in the light breeze.  Ditches line both sides of the road to provide irrigation and discourage travelers from straying off the track as they make their way to or from the riverside keep.
+Obvious paths: southeast, west.
+> 
+You can't go there.
+> *** MOVE FAILED ***
+*** MOVE FAILED ***
+
+Active scripts: 
+link: 22.45 seconds. WaitFor (link.cmd)
+link: 22.44 seconds. WaitFor (link.cmd)
+death: 18.77 seconds. Delayed (death.cmd)
+afkk [Debuglevel: 10]: 18.73 seconds. MatchWait (afkk.cmd)
+janswim: 2.07 seconds. WaitFor (janswim.cmd)
+automapper: 2.04 seconds. Delayed (automapper.cmd)
+janswim: 2.03 seconds. WaitFor (janswim.cmd)
+automapper: 2.01 seconds. Delayed (automapper.cmd)
+[Script aborted: automapper.cmd]
+[Script aborted: automapper.cmd]
+[Script loaded: automapper.cmd]
+[automapper]: se
+[Script aborted: link.cmd]
+[Script aborted: link.cmd]
+[Script aborted: death.cmd]
+[Script aborted: afkk.cmd]
+[Script aborted: janswim.cmd]
+[Script aborted: janswim.cmd]
+[Script aborted: automapper.cmd]
+
+[Mistwood Forest, Northwest Road]
+Almost as wide as a Gor'Tog is tall, a lightning-blasted stump is all that remains of a once-mighty mistwood tree.  The charred wood, crackled by heat, is split into jagged spikes that tower above the fallen branches.  Blueberry bushes cluster around its base, thriving in the ashes.  To the northwest, the forest gives way to fields of wheat and barley surrounding a palisaded wooden fort.
+Obvious paths: east, northwest.
+> 

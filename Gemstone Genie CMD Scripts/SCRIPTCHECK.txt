@@ -1,0 +1,4 @@
+-=-=-=-=-=-=-=-= A voice booms in your head, "HELLO, THERE.  I NEED TO KNOW THAT YOU ARE HERE.  Please SMILE so that I know you are awake." -=-=-=-=-=-=-=-=
+
+
+setvariable dangertriggers (Continues|Hello|Respond|Reply|Answer|Speak|whisper|Scream|Ignoring| Wait|Y...have.*Seconds|SEND\[|\]SEND|\*SEND\*|Aloud| Talk|\".*\"|scripting|smil|frown|snort |yell|exclaim|announc|declar|voic|say|claim|announce|boom|shout|this place|you there| squeak| doing| spider|alert|cheer|nod)/i

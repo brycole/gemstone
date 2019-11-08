@@ -1,0 +1,31 @@
+debuglevel 10
+put #var afkcheck 0
+var verb
+var z 0
+var temp
+
+start:
+action var temp $1;goto word when ([A-Z][A-Z]\w+)
+goto delay
+
+word:
+if %verb = %temp then math z add 1
+else var verb %temp
+if %z = 0 then goto delay
+else if %z >= 2 then goto afk.check
+echo %verb
+echo %z
+delay:
+delay 300
+goto start
+
+afk.check:
+put #script abort all except gmcheck.cmd
+put %verb
+delay 2
+put %verb
+delay 2
+put %verb
+say Helloooooo.
+dealy 2
+put dance silly

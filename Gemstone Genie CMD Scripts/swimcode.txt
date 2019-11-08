@@ -1,0 +1,10 @@
+## ** Faldesu Swimming Directions
+    if $Athletics.LearningRate < %globalexp then
+	{
+		gosub eotb
+		if $zoneid = 4 then gosub move 264
+		if $zoneid = 6 then gosub move 98
+		gosub swimnow
+		gosub returnhome
+	}
+	var doresearch 0

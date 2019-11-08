@@ -1,0 +1,31 @@
+You feel certain that a polished bronze full plate appears to impose (11) great maneuvering hindrance and insane stealth hindrance, offering:
+    
+    (8) very high protection and (14) exceptional damage absorption for puncture attacks.
+    (9) great protection and (14) exceptional damage absorption for slice attacks.
+    (6) very good protection and (14) exceptional damage absorption for impact attacks.
+    (8) very high protection and (14) exceptional damage absorption for fire attacks.
+	(8) very high protection and (14) exceptional damage absorption for cold attacks.
+    (7) high protection and (14) exceptional damage absorption for electrical attacks.
+
+If you were only wearing a polished bronze full plate your maneuvering would be minimally hindered and your stealth would be rather hindered.
+But considering all the armor and shields you are wearing or carrying, you are currently lightly hindered and your stealth is highly hindered.
+
+You are certain that the full plate is (15) extremely resistant to damage, and are practically in mint condition.
+
+
+You feel certain that a light lumium plate cuirass appears to impose moderate (7/15) maneuvering hindrance and great (11/15) stealth hindrance, offering:
+    very high (8/15) protection and extreme (13/18) damage absorption for puncture attacks.
+    very high (8/15) protection and extreme (13/18) damage absorption for slice attacks.
+    very good (6/15) protection and extreme (13/18) damage absorption for impact attacks.
+    very good (6/15) protection and great (11/18) damage absorption for fire attacks.
+    very good (6/15) protection and great (11/18) damage absorption for cold attacks.
+    good (5/15) protection and high (9/18) damage absorption for electrical attacks.
+	
+	
+	
+	8 very high protection and exceptional damage absorption for puncture attacks.
+    9 great protection and exceptional damage absorption for slice attacks.
+    7 high protection and exceptional damage absorption for impact attacks.
+    9 great protection and exceptional damage absorption for fire attacks.
+    9 great protection and exceptional damage absorption for cold attacks.
+    7 very high protection and exceptional damage absorption for electrical attacks.

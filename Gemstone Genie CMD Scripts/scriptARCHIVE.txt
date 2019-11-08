@@ -1,0 +1,38 @@
+	var gap 0
+gapsearch:
+	action var gap 1 when ^You find a narrow
+	gosub put.1 "search" "^Roundtime"
+	if %gap = 0 then goto gapsearch
+	gosub put.1 "go gap" "^Obvious"
+	if "$1" = "home" then return
+	
+	
+	
+	
+	
+	
+	goto climbpass
+
+put #var train.start $gametime
+climbtemp:
+	evalmath traintemp ($gametime - $train.start)
+	echo %traintemp seconds training.
+	if %traintemp > 1200 then goto climbexit
+	if $Climbing.LearningRate > %globalexp then goto climbexit
+	put #var last.climb $gametime
+	
+	gosub climb 0
+	gosub put.1 "climb practice trunk" "^You begin"
+delay1:
+	evalmath climbtemp ($gametime - $last.climb)
+	if %climbtemp > 60 then
+		{
+			waitforre ^You continue|^You finish
+			gosub put.1 "stop climb" "^You stop"
+			goto climbtemp
+		}
+		else delay 5
+		goto delay1	
+climbexit:
+	
+climbpass:	

@@ -1,0 +1,8 @@
+ulf hara instructions
+
+click file -  open user data directory in genie
+move ulf'hara keep ruins map into your maps folder. this is a tailored copy. you must have this version.
+move aidtask.cmd and ulf.cmd to scripts folder.
+stand by zukir and run ulf.cmd
+
+once in a while (once an hour or so) the mapping in sewers gets pfft and confusing, if the script gets lost there it will beep and tell you and ask you to lead it for a moment. doesn't happen oftent.

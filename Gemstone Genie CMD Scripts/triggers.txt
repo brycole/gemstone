@@ -1,0 +1,8 @@
+#trigger {^(Behind|In|On|Under) the (.+), you see:$} {#var shop2 $2} {shop}
+#trigger {^\s+(a|an|some|the) (.+) for (\d+) bronze (Kronars|Lirums|Dokoras)$} {#log >Shoplog.txt $date	$time	$2	$roomname	$3_0	$shop2		$shopcity} {shop}
+#trigger {^\s+(a|an|some|the) (.+) for (\d+) copper (Kronars|Lirums|Dokoras)$} {#log >Shoplog.txt $date	$time	$2	$roomname	$3	$shop2		$shopcity} {shop}
+#trigger {^\s+(a|an|some|the) (.+) for (\d+) gold (Kronars|Lirums|Dokoras)$} {#log >Shoplog.txt $date	$time	$2	$roomname	$3_000	$shop2		$shopcity} {shop}
+#trigger {^\s+(a|an|some|the) (.+) for (\d+) platinum (Kronars|Lirums|Dokoras)$} {#log >Shoplog.txt $date	$time	$2	$roomname	$3_0000	$shop2		$shopcity} {shop}
+#trigger {^\s+(a|an|some|the) (.+) for (\d+) silver (Kronars|Lirums|Dokoras)$} {#log >Shoplog.txt $date	$time	$2	$roomname	$3_00	$shop2		$shopcity} {shop}
+#trigger {^\s+(a|an|some|the) (.+) for (\d+)k platinum (Kronars|Lirums|Dokoras)$} {#log >Shoplog.txt $date	$time	$2	$roomname	$3_000_0000	$shop2		$shopcity} {shop}
+#trigger {^\s+(a|an|some|the) (.+) for (\d+\.\d+)k platinum (Kronars|Lirums|Dokoras)$} {#log >Shoplog.txt $date	$time	$2	$roomname	$3_000_000	$shop2		$shopcity} {shop}

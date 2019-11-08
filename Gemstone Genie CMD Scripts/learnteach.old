@@ -1,0 +1,63 @@
+##debuglevel 10
+include base.cmd
+var level.3 0
+var level.2 0
+var level.1 0
+
+put #script abort afkk
+
+action var level.3 1;var teach.3 $1 when (\w+) is teaching a class on extremely advanced
+action var level.2 1;var teach.2 $1 when (\w+) is teaching a class on [^extremely]
+action goto loop.teach when ^You are already listening|^You begin to listen
+action var in.class 1 when You are observing this class!
+
+if "$zoneid" = "7b" then
+{
+	gosub move 102
+	gosub move 2
+}
+if "$zoneid" = "1" then
+{
+	gosub move 211
+}
+else if $zoneid = 7 then gosub move 2
+
+find.class:
+gosub put.1 "ass teach" "^Roundtime:"
+if %level.3 = 1 then gosub put.1 "listen %teach.3 observe" "isn't teaching|^I could not find|^You begin|^You are already|has closed the class"
+else if %level.2 = 1 then gosub put.1 "listen %teach.2 observe" "isn't teaching|^I could not find|^You begin|^You are already|has closed the class"
+else if %level.1 = 1 then gosub put.1 "listen %teach.1 observe" "isn't teaching|^I could not find|^You begin|^You are already|has closed the class"
+goto next
+
+loop.teach:
+var in.class 0
+if $Teaching.LearningRate = 34 then goto end
+##gosub ss studyc
+gosub put.1 "power" "^Roundtime"
+delay 50
+gosub put.1 "ass teach" "^Roundtime:"
+if %in.class = 1 then goto loop.teach
+else goto find.class
+
+next:
+if $roomid = 2 then
+{
+	gosub move 10
+	goto find.class
+}
+if $roomid = 10 then 
+{
+	gosub move 83
+	gosub move 839
+	goto find.class
+}
+goto end
+
+
+end:
+if "$zoneid" = "1" then gosub move 211
+gosub move 80
+echo done
+send .afkk
+put #parse learnteach.cmd done.
+exit

@@ -1,0 +1,113 @@
+* Moving like a striking snake, a bristle-backed peccary lowers its head, tilts it to one side, and slashes its curved tusks at you.  You block with a crocodile-skin buckler.  
+[You're solidly balanced with opponent in very strong position.]
+
+winds:
+gosub put.1 "stow harp" "^You put|^Stow"
+gosub put.1 "get my jug" "^You get|^You already"
+winds.l:
+gosub put. "play elegy" "^You begin|^You're"
+waitforre ^You finish playing
+if $Percussions.LearninRate >= 34 then goto perc
+goto winds.l
+
+perc:
+gosub put.1 "stow jug" "^You put|^Stow"
+gosub put.1 "get my stick" "^You get|^You already"
+perc.l:
+gosub put. "play battle" "^You begin|^You're"
+waitforre ^You finish playing
+if $Percussions.LearninRate >= 34 then goto end
+goto perc.l
+R> [Script resumed: geniehunter.cmd]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[Script finished (In 2.278 seconds): counthide.cmd]
+
+*** COUNT_START: ***
+
+*** 4 creatures. ***
+
+*** COUNT_WAIT_1: parry ***+
+
+*** Evasion is learning! Switching to roam mode. ***
+[geniehunter]: parry
+[Script loaded: link.cmd]
+[Script aborted: death.cmd]
+[Script aborted: afkhunt.cmd]
+[Script aborted: geniehunter.cmd]
+[Script loaded: link.cmd]
+
+* Moving with incredible power and control, a bristle-backed peccary lowers its head, tilts it to one side, and slashes its curved tusks at you.  You block with a crocodile-skin buckler.  
+[You're solidly balanced with opponent in very strong position.]
+> 
+You move into a position to parry.
+[You're solidly balanced with opponent in very strong position.]
+[Script loaded: death.cmd]
+[Script loaded: afkk.cmd]
+afkk.cmd(3): [startafk:]
+afkk.cmd(4): [matchre talk ^\w+ says,|explains,|whispers,|You hear the voice]
+afkk.cmd(5): [matchre asks asks,]
+afkk.cmd(6): [matchre endafk SEND]
+afkk.cmd(7): [matchwait]
+Roundtime: 4 sec.
+R> 
+* Driving in like an adept combatant, a bristle-backed peccary uses its tusks like dueling blades, twisting violently at you.  You block with a crocodile-skin buckler.  
+[You're solidly balanced with opponent in better position.]
+R> 
+* Moving with incredible power and control, a bristle-backed peccary lowers its head, tilts it to one side, and slashes its curved tusks at you.  You block with a crocodile-skin buckler.  
+[You're solidly balanced with opponent in very strong position.]
+R> 
+The bristle-backed peccary closes to pole weapon range on you!
+> 
+* Moving as one fluid extension of power, a bristle-backed peccary lowers its head, tilts it to one side, and slashes its curved tusks at you.  You block with a crocodile-skin buckler.  
+[You're solidly balanced with opponent in excellent position.]
+> [Script aborted: death.cmd]
+[Script loaded: death.cmd]
+[Script aborted: afkk.cmd]
+[Script loaded: afkk.cmd]
+afkk.cmd(3): [startafk:]
+afkk.cmd(4): [matchre talk ^\w+ says,|explains,|whispers,|You hear the voice]
+afkk.cmd(5): [matchre asks asks,]
+afkk.cmd(6): [matchre endafk SEND]
+afkk.cmd(7): [matchwait]
+[link]: sheath dagger
+[link]: ret
+[link]: sheath dagger
+[link]: ret
+
+> 
+Disconnected from: 209.16.218.2:4901 (11/13/2009 7:33:45 PM)
+
+Active scripts: 
+link: 6735.74 seconds. WaitFor (link.cmd)
+link: 6735.70 seconds. WaitFor (link.cmd)
+death: 6731.62 seconds. Delayed (death.cmd)
+afkk [Debuglevel: 10]: 6731.60 seconds. MatchWait (afkk.cmd)
+combat: 5281.21 seconds. WaitFor (combat.cmd)
+combat: 5281.16 seconds. WaitFor (combat.cmd)
+toross: 5216.79 seconds. MatchWait (toross.cmd)
+toross: 5216.76 seconds. MatchWait (toross.cmd)
+
+[Script aborted: link.cmd]
+[Script aborted: link.cmd]
+[Script aborted: death.cmd]
+[Script aborted: afkk.cmd]
+[Script aborted: combat.cmd]
+[Script aborted: combat.cmd]
+[Script aborted: toross.cmd]
+[Script aborted: toross.cmd]
+
+
+

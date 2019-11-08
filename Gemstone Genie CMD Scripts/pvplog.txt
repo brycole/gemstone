@@ -1,0 +1,168 @@
+[Hilltop Cemetery, Before Mausoleum]
+The trees have given way to a mausoleum crafted from white marble.  The entrance is marked by two smooth columns and perched just above, a solemn-looking stone gargoyle surveys the surroundings.
+You also see a huge **WARNING** sign.
+Also here: Ervo.
+Obvious paths: north, east, south, west.
+
+You sense an overall decrease in Lunar mana.
+> prep mb 30
+
+You raise an arm skyward, chanting the equation of the Mental Blast spell.
+> harness 30
+
+You tap into the mana from thirty of the surrounding streams and attempt to keep it channeling in a stream around you.
+Roundtime: 2 sec.
+R> 
+You feel fully prepared to cast your spell.
+> cast ervo
+
+You gesture at Ervo.
+You contribute your harnessed streams to increase the pattern's potential.
+A jolt of psychic energy discharges from your pattern and grounds into Ervo's brain.
+Ervo collapses as if dead.
+
+Roundtime: 2 sec.
+
+R> 
+Elusive Zehira just arrived.
+
+> target pd 30
+You raise an arm skyward, chanting the equation of the Partial Displacement spell.
+There is nothing else to face!
+What are you trying to attack?
+You are not engaged to anything, so you must specify a target to focus on!
+> 
+You notice as a blue-tongued turtle lumbers into the area.
+
+> 
+You feel fully rested.
+> face rovo
+Face what?
+FACE HELP for more information
+> 
+You notice Zehira attempting to conceal her spell preparations.
+Icy blue frost suddenly crackles up Zehira's arms with the uttering of several cold words!
+You're able to decipher telltale signs of the Vivisection spell.
+> face ervo
+You turn to face Ervo.
+> 
+Zehira begins to focus intently on Ervo.
+> target
+You begin to weave mana lines into a target pattern around Ervo.
+
+> 
+You notice Zehira attempting to conceal her spell preparations.
+Icy blue frost suddenly crackles up Zehira's arms with the uttering of several cold words!
+You're able to decipher telltale signs of the Vivisection spell.
+> cast
+
+You gesture at Ervo.
+A crackling stream of energy flies at Ervo!
+Ervo intercepts the stream with his target shield, slowing it down!  The stream activates too early due to the interference, harmlessly scrambling the space in front of him.
+
+Roundtime: 1 sec.
+R> 
+Zehira begins to focus intently on Ervo.
+> target pd 30
+You raise an arm skyward, chanting the equation of the Partial Displacement spell.
+You begin to weave mana lines into a target pattern around Ervo.
+
+> 
+You feel fully rested.
+> stance set 100 0 80 100
+Setting your Evasion stance to 100%, your Parry stance to 0%, your Shield stance to 80%, and your Attack stance to 100%.  You have 3 stance points left.
+> l
+[Hilltop Cemetery, Before Mausoleum]
+The trees have given way to a mausoleum crafted from white marble.  The entrance is marked by two smooth columns and perched just above, a solemn-looking stone gargoyle surveys the surroundings.
+You also see a blue-tongued turtle and a huge **WARNING** sign.
+Also here: Elusive Zehira and Ervo who is lying down.
+Obvious paths: north, east, south, west.
+> 
+Ervo's chest tears itself open with no warning, blood dripping out from the wound.
+Ervo is lightly stunned!
+> 
+Your formation of a targeting pattern around Ervo has completed.
+> cast
+
+You gesture at Ervo.
+A crackling stream of energy flies at Ervo!
+A fissure rips across his forehead, partly revealing the bubbling cavity forming within the skull.
+
+Roundtime: 1 sec.
+
+R> 
+You notice Zehira attempting to conceal her spell preparations.
+Icy blue frost suddenly crackles up Zehira's arms with the uttering of several cold words!
+You're able to decipher telltale signs of the Vivisection spell.
+R> 
+Ervo's in shock and dying!
+
+> 
+You feel fully rested.
+> 
+Zehira begins to focus intently on Ervo.
+
+> target pd 30
+You raise an arm skyward, chanting the equation of the Partial Displacement spell.
+You begin to weave mana lines into a target pattern around Ervo.
+
+> release
+You aren't harnessing any mana.
+You let your concentration lapse and feel the spell's energies dissipate.
+
+You have no cyclic spell active to release.
+> 
+The blue-tongued turtle sits down.
+
+> l
+[Hilltop Cemetery, Before Mausoleum]
+The trees have given way to a mausoleum crafted from white marble.  The entrance is marked by two smooth columns and perched just above, a solemn-looking stone gargoyle surveys the surroundings.
+You also see a blue-tongued turtle that is sitting and a huge **WARNING** sign.
+Also here: Elusive Zehira and Ervo who is sleeping.
+Obvious paths: north, east, south, west.
+> 
+Ervo raises his shield suddenly to fend off something you cannot see.
+> 
+You notice as a blue-tongued turtle adjusts the fit of its shell on its back.
+> 
+You notice Zehira attempting to conceal her spell preparations.
+Icy blue frost suddenly crackles up Zehira's arms with the uttering of several cold words!
+You're able to decipher telltale signs of the Vivisection spell.
+> say finish em
+You say, "Finish em."
+> 
+You feel fully attuned to the mana streams again.
+> l
+[Hilltop Cemetery, Before Mausoleum]
+The trees have given way to a mausoleum crafted from white marble.  The entrance is marked by two smooth columns and perched just above, a solemn-looking stone gargoyle surveys the surroundings.
+You also see a blue-tongued turtle that is sitting and a huge **WARNING** sign.
+Also here: Elusive Zehira and Ervo who is lying down.
+Obvious paths: north, east, south, west.
+> l ervo
+You see Ervo, a Halfling.
+Ervo has a round face, almond-shaped ale-brown eyes and a crushed small nose.  He has cropped black hair, with dark brown skin and an athletic build.
+He is a bit over average height for a Halfling.
+He appears to be young.
+He has a short scruffy mustache on his upper lip and a short rough beard.
+
+He appears to be dying!  Other than that...
+
+He looks fatigued.
+
+He has a ghastly bloated head with bleeding from the ears compounded by a crushed skull with horrendous wounds, severely swollen and bruised chest area compounded by deep cuts across the chest area, complete paralysis of the entire body.
+
+He is bleeding with discoloration in the chest, lightly from the chest, with widespread discoloration in the head and severely from the head.
+
+He is wearing a chain helm, a rich crimson cloak branded with a simple beach scene, a rosewood longbow, a lever-drawn light crossbow, a sturdy backpack, a fuligin silk kimono with gracefully trailing sleeves, a chain shirt, a target shield, some mail gloves, a grey cambrinth ring, an albredine crystal ring, a leather sheath, a lockpick ring, some scarlet pantaloons, some chain greaves, a tiger-embossed bronze quiver and some knee-high deerskin boots.
+> 
+Zehira begins to focus intently on Ervo.
+> 
+You notice as a blue-tongued turtle pulls its head into its shell for a moment.
+> 
+Blood suddenly flies up from Ervo's abdomen as thick, violent slashes carve up and down it.  Gibbets of flesh are joined by chips of bone as organs designed never to see the light of day begin to be revealed.
+Ervo is knocked completely senseless!
+> 
+Your shadow babbles, "Na na bo mageemoleelibo!"
+> 
+ * Ervo is slain before your eyes!
+

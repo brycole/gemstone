@@ -1,0 +1,96 @@
+#steal
+
+action [ begins to shout loudly for help] boxmessage Busted!!!
+action [The door is locked up tightly for the night.] goto Nighttime
+
+User Stealing.Cooldown minutes 60
+
+
+Crossings:
+Boxmessage Stealing from the Crossings
+Setvariable location [8943 898 1174 1175 1277 2469 4439 4556 6461 8089 8222]
+Setvariable Item [cloth heavy.rope beret skullcap pestle choker cloche dagger  lockpick slippers chain.greaves]
+Setvariable Length 11
+Setvariable Count 2
+Setvariable MoveTo 2
+Setvariable Attempts 0
+Setvariable Rotate Arthe
+goto Move
+
+Arthe:
+If %thesunvisible = 0
+	Goto Nighttime
+Boxmessage Stealing from Arthe Dale
+Setvariable location [850 996 11886 6349 6456]
+Setvariable Item [Cloth Odd.Bodkin wayfarer.cheese snood needle]
+Setvariable Length 5
+Setvariable Count 0
+Setvariable MoveTo 0
+Setvariable Attempts 0
+Setvariable Rotate Tiger
+goto Move
+
+Tiger:
+put out
+boxmessage write this when you need to
+exit
+
+Haven:
+Boxmessage Stealing from Haven
+Setvariable location []
+Setvariable Item []
+Setvariable Length 5
+Setvariable Count 0
+Setvariable MoveTo 0
+Setvariable Attempts 0
+Setvariable Rotate Tiger
+
+Move:
+	calculate MoveTo inc
+	calculate Count inc
+	if %count > %length
+		goto %Rotate
+	getword %MoveTo %location
+	setvariable Next %w
+	command -walkto room %next
+	setvariable Attempts 0
+	goto Steal
+
+
+
+Steal:
+	pause
+	if %Attempts > 3
+		goto Move
+	put hide
+	pause
+	getword %Count %Item
+	setvariable Goodz %w
+	
+	if %goodz contains [.]
+		calculate goodz replace [.] with [ ]
+	calculate attempts inc
+	calculate attempts inc
+	put Steal %goodz
+	pause
+	put steal %goodz
+	matchwait 2
+	goto DropGoodz
+
+DropGoodz:
+pause
+put unhide
+pause
+put drop %goodz
+put drop %goodz
+pause
+goto steal
+
+Nighttime:
+Boxmessage Nighttime... No go
+goto %Rotate
+	
+
+	
+end:
+exit

@@ -1,0 +1,7 @@
+
+action echo $1 when (.+)
+
+start:
+
+delay 300
+end

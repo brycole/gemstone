@@ -1,0 +1,736 @@
+#FyrnCombat
+
+action [HAVE BEEN IDLE] goto quit
+action [You feel like you're dying!] goto quitNOW
+action [are infected.] goto quit
+action [badly hurt] goto quitNOW
+action [death's door] goto quitNOW
+
+
+action [You need both hands in order to aim.] put stow left
+action [ruining your hiding place!] gosub m.inputuff.Shadows
+action [You no longer feel as strong a connection to the webs of fate] gosub m.inputuff.Seers
+#action [counters the] gosub m.inputuff.Disarm
+
+action [You are already advancing] gosub wait.advancing
+
+action [ holds you fast!] gosub webbed
+
+
+
+VariableSet:
+#
+# Do you want to train astrology? put yes in the astro box if so.
+#
+# what tool do you want to use to predict? Tokka decks not supported (yet)
+# leave blank if you dont want to use a tool (becareful, bad predictions can make hunting a lot more dangerous.
+#
+# what is the type of shield you want to use?
+#
+# What weapons do you want to train?  You need to write each weapon name
+# like it appears on the skill check as one word.  (ex: MediumEdged StaffSling LightCrossbow etc.
+
+setvariable astro [no]
+setvariable tool []
+setvariable zshield [buckler]
+goto internalVariables
+SkillSet:
+end
+if %1 contains TM
+	begin
+	setvariable TM yes
+	shift
+	goto Skillset
+if %1 contains HX
+	begin
+	setvariable HX yes
+	shift
+	goto skillset
+if %1 contains LX
+	begin
+	setvariable LX yes
+	shift
+	goto skillset
+if %1 contains ME
+	begin
+	setvariable ME yes
+	goto skillset
+
+
+
+
+
+InternalVariables:
+if %tool contains bones
+	setvariable predict [roll bones at %charactername]
+
+if %tool excludes bones
+	setvariable predict [predict future]
+
+
+
+
+
+Control.Control:
+put release
+put rem cross
+pause
+put awake
+put resync
+pause
+put exp
+waitfor EXP HELP 
+#getinfo hidingstate
+#if %result < 10 setvariable stealth 1
+
+#getinfo slingsstate
+#if %result < 25 gosub slings.Control
+
+#getinfo LightThrownState
+#if %result < 25 gosub LT.Control
+
+getinfo HeavyThrownState
+if %result < 25 gosub HT.Control
+
+#getinfo heavyCrossbowstate
+#if %result < 25 gosub HX.Control
+
+getinfo LightCrossbowstate
+if %result < 25 gosub LX.Control
+
+#getinfo ShortBowstate
+#if %result < 25 gosub SB.Control
+
+#getinfo Longbowstate
+#if %result < 25 gosub Long.Control
+
+#getinfo MediumEdgedState
+#if %result < 25 gosub ME.Control
+
+#getinfo HeavyEdgedState
+#if %result < 25 gosub HE.control
+
+#getinfo LightEdgedState
+#if %result < 25 gosub LE.Control
+
+if %1 contains tm
+	begin
+	getinfo targettedmagicstate
+	if %result < 25 gosub TM.control
+	end
+
+
+#getinfo StaffSlingState
+#if %result < 25 gosub Staffsling.Control
+
+Boxmessage Alll DONE!!!!
+
+goto end
+
+exit
+
+
+
+LE.Control:
+	setvariable zWeapon Kythe
+	setvariable attacklist [prep.dazzle parry feint.left cast draw hide stalk sweep slice chop]
+	setvariable attacklength 10
+	setvariable zSkill LE
+	setvariable attackcount 0
+	put get %zshield
+	put wear %zshield 
+	pause
+	put stance shield
+	gosub emptyhands
+	put get %zweapon
+	goto attack
+
+ME.Control:
+	setvariable zWeapon [jet scimitar]
+	setvariable attacklist [prep.dazzle parry feint.left cast draw hide stalk sweep slice chop]
+	setvariable attacklength 10
+	setvariable zSkill ME
+	setvariable attackcount 0
+	put get %zshield
+	put wear %zshield 
+	pause
+	put stance parry
+	gosub emptyhands
+	put get %zweapon
+	goto attack
+
+HE.Control:
+	setvariable zWeapon falchion
+	setvariable attacklist [prep.dazzle parry feint.left cast draw hide stalk sweep slice chop]
+	setvariable attacklength 10
+	setvariable zSkill HE
+	setvariable attackcount 0
+	put get %zshield
+	put wear %zshield 
+	pause
+	put stance shie
+	gosub emptyhands
+	put get %zweapon
+	goto attack
+
+MB.Control:
+	setvariable
+
+Slings.Control:
+	setvariable zWeapon [sling]
+	setvariable attacklist [load aim feint.left hide poach stow.stone]
+	setvariable attacklength 6
+	setvariable zSkill slings
+	setvariable attackcount 0
+	gosub emptyhands
+	put get %zshield
+	put wear %zshield
+	pause
+	put stance set 80 3 100
+	put get %zweapon
+	goto attack
+
+StaffSling.Control:
+	setvariable zweapon [staff sling]
+	setvariable attacklist [load aim feint.left hide poach stow.stone]
+	setvariable attacklength 6
+	setvariable zSkill [staff sling]
+	setvariable attackcount 0
+	setvariable stealth 0
+	put get %zshield
+	put wear %zshield
+	pause
+	put parry
+	put stance parry
+	gosub emptyhands
+	put get %zweapon
+	goto attack
+
+LT.Control:
+	setvariabke zweapon [mallet]
+	setvariable attacklist [get.mallet cast throw prep.dazzle]
+	setvariable attacklength 4
+	setvariable zskill [LT]
+	setvariable attackcount 0
+	pause
+	put stance shield
+	gosub emptyhands
+	goto attack
+
+HT.Control:
+	setvariable zstealths 1
+	setvariable zAppraisal 0
+	setvariable zBrawling 1
+	setvariabke zweapon [hunt spear]
+	setvariable attacklist [get.spear cast throw prep.mb]
+	setvariable attacklength 4
+	setvariable zskill [Heavythrown]
+	setvariable attackcount 0
+	pause
+	put stance shield
+	gosub emptyhands
+	goto attack
+
+LX.Control:
+	setvariable zstealths 1
+	setvariable zAppraisal 0
+	setvariable zBrawling 1
+	setvariable zweapon [forest crossbow]
+	setvariable attacklist [load aim feint.left hide stalk poach]
+	setvariable attacklength 6
+	setvariable zskill [LightCrossbow]
+	setvariable attackcount 0
+	put get %zshield
+	put wear %zshield
+	pause
+	put stance shield
+	gosub emptyhands
+	put get %zweapon
+	goto attack
+
+
+
+HX.Control:
+	setvariable zstealths 0
+	setvariable zAppraisal 0
+	setvariable zBrawling 1
+	setvariable zWeapon [Heavy crossbow]
+	setvariable attacklist [feint.left load aim feint.left hide stalk poach]
+	setvariable attacklength 7
+	setvariable zSkill [HeavyCrossbow]
+	setvariable attackcount 0
+	put get %zshield
+	put wear %zshield
+	pause
+	put stance shield
+	gosub emptyhands
+	put get %zWeapon
+	goto attack
+	
+
+SB.Control:
+	setvariable zweapon [silver bow]
+	setvariable attacklist [load aim feint.left hide stalk poach]
+	setvariable attacklength 6
+	setvariable zskill [Short]
+	setvariable attackcount 0
+	pause
+	put stance eva
+	put remove %shield
+	pause
+	gosub emptyhands
+	put get %zweapon
+	goto attack
+
+Long.Control:
+	setvariable zWeapon [longbow]
+	setvariable attacklist [load aim feint.left hide poach]
+	setvariable attacklength 5
+	setvariable zSkill [long]
+	setvariable attackcount 0
+	pause
+	put stance eva
+	pause
+	put remove %shield
+	put stow %shield
+	pause
+	put parry
+	gosub emptyhands
+	put get %zWeapon
+	goto attack
+
+TM.Control:
+	setvariable zstealths 1
+	setvariable zAppraisal 0
+	setvariable zBrawling 1
+	setvariable zweapon [nothing]
+	setvariable attacklist [look prep.pd.13 feint.left target hide stalk cast feint.left]
+	setvariable attacklength 8
+	setvariable zSkill targetedmagic
+	setvariable zshield buckler
+	setvariable attackcount 0
+	pause
+	put get %zshield
+	put wear %zshield
+	pause
+	gosub emptyhands
+	put stance shield
+	goto attack
+	
+
+
+attack:
+#	getinfo status
+#	if %result IAND %standing
+#		put dance
+#	getinfo %perceptionstate
+#	if %result < 30
+#		begin
+	gettimerindex hunting
+	if $usertime%result$ < 5 gosub Hunting
+#		end
+ 
+	calculate attackcount inc
+
+	if %attackcount > %attacklength gosub startover
+	getword %attackcount %attacklist
+	setvariable action %w
+
+#	if %action contains hide
+#		gosub stealthcheck
+#	if %action contains feint
+#		gosub m.inputrawlingcheck
+
+	if %action contains [.]
+		calculate action replace [.] with [ ]
+
+	match dead You were aiming at a different target, but you fire anyway.
+	match dead balanced]
+	match dead balanced.]
+	match dead It's dead!
+	match dead appears dead
+	match RoomEmpty There is nothing else to face!
+	match NoAmmo You don't have the proper ammunition
+
+	put %action
+	matchwait .5
+	goto attack
+
+startover:
+setvariable attackcount 0
+return
+
+NoAmmo:
+gosub CollectLoot
+return
+
+stealthcheck:
+	If %zStealths == 0
+		begin
+		calculate attackcount add 2
+		getword %attackcount %attacklist
+		setvariable action %w
+		if %action contains poach
+			calculate action replace [poach] with [fire]
+		end
+	If %zAppraisal == 1
+		put appraise %zCritter
+	return
+
+brawlingcheck:
+	if %zBrawling == 0
+		begin
+		calculate attackcount add 1
+		getword %attackcount %attacklist
+		setvariable action %w
+		end
+	if %zAppraisal == 1
+		put appraise %zCritter
+	return
+
+
+Dead:
+record until [Obvious] with look
+locate recorded [which appears dead]
+setvariable string %l
+calculate %string pos [which appears dead]
+counter set %result
+calculate string left %c
+getword -1 %string
+setvariable zCritter %w
+boxmessage you just killed %zCritter
+
+gosub Skin
+
+gosub LootAll
+gosub CollectLoot
+goto EXPCheck
+
+ExpCheck:
+	put exp
+	pause
+	getinfo %zSkillstate
+	if %result > 30
+		goto control.control
+#	getinfo stalkingstate
+#	if %result > 30
+#		setvariable zStealths 0
+#	if %result < 25
+#		setvariable zStealths 1
+#	getinfo appraisalstate
+#	if %result > 30
+#		setvariable zAppraisal 0
+#	if %result < 25
+#		setvariable zAppraisal 1
+#	getinfo brawlingstate
+#	if %result > 30
+#		setvariable zBrawling 0
+#	if %result < 25
+#		setvariable zBrawling 1
+	goto attack
+
+
+RoomEmpty:
+
+#	callwith astro
+	callwith collectCombat rock bundle
+
+#	match Reequip You say, "I'm going to
+	match Reequip position.]
+	match Reequip advantage.]
+	match Reequip opponent.]
+
+	matchwait
+
+Reequip:
+goto attack
+
+
+
+Skin:
+Arrange1:
+match return cannot be skinned
+match Arrange2 guarantees a greater reward.
+match SkinzCritter but manage not to damage the corpse.
+match SkinzCritter arranged as much as you can manage.
+match return The corpse is worthless now.
+match return Arrange what?
+match arrange1 You can't do that while entangled in a web.
+put arrange all
+matchwait 4
+goto return
+
+
+
+Arrange2:
+match Arrange2 guarantees a greater reward.
+match SkinzCritter but manage not to damage the corpse.
+match SkinzCritter arranged as much as you can manage.
+match return The corpse is worthless now.
+match return Arrange what?
+match arrange2 You can't do that while entangled in a web.
+put arrange all
+matchwait 4
+goto return
+
+Arrange3:
+match SkinzCritter guarantees a greater reward.
+match SkinzCritter but manage not to damage the corpse.
+match SkinzCritter arranged as much as you can manage.
+match return The corpse is worthless now.
+match return Arrange what?
+match arrange3 You can't do that while entangled in a web.
+put arrange all
+matchwait 4
+goto return
+
+SkinzCritter:
+put skin 0crit
+pause
+put stow %zweapon
+pause
+put get bun
+pause
+match NewBundle can't seem to find a good spot.
+match NewBundle What were you referring to?
+match NewBundle BUNDLE HELP
+match DropBundle into the bundle
+put bundle
+matchwait 4 goto SkinzCritter
+
+NewBundle:
+put drop bun
+pause
+put get bundling rope
+put bun
+pause
+goto DropBundle
+
+DropBundle:
+pause
+put wear bundle
+pause
+put drop bundle
+pause
+put get %zweapon
+pause
+goto LootAll
+
+LootAll:
+pause
+put Loot all
+return
+
+emptyhands:
+pause 1
+put stow l
+put unload
+pause 2
+put stow
+put stow l
+pause
+return
+
+CollectLoot:
+	pause
+	put look
+	pause
+
+	if %youalsosee contains [%shield] gosub StowLoot [%shield]
+
+	if %youalsosee contains [basilisk head arrow] gosub StowLoot [Bas Arrow]
+	if %youalsosee contains pulzone gosub StowLoot pulzone
+	if %youalsosee contains [divination bones] gosub StowLoot [bones]
+	if %youalsosee contains quadrello gosub StowLoot Quad
+	if %youalsosee contains unicorn-carved gosub StowLoot [unicorn stone]
+	if %youalsosee contains bolt gosub StowLoot bolt
+	if %youalsosee contains [ spear] gosub StowLoot spear
+	if %youalsosee contains [ tablet] gosub StowLoot tablet
+	if %youalsosee contains [ scroll] gosub StowLoot scroll
+	if %youalsosee contains [ vellum] gosub StowLoot vellum
+	if %youalsosee contains [hhr'lav'geluhh bark] gosub StowLoot bark
+	if %youalsosee contains [papyrus roll] gosub StowLoot [papyrus roll]
+	if %youalsosee contains [seishaka leaf] gosub StowLoot [seishaka leaf]
+	if %youalsosee contains [ostracon] gosub StowLoot ostracon
+	if %youalsosee contains [tattered papyrus] gosub StowLoot [tattered papyrus]
+	if %youalsosee contains [smudged parchment] gosub StowLoot [smudged parchment]
+
+	if %youalsosee contains [ card] gosub StowLoot card
+	of %youalsosee contains [ dira] gosub StowLoot dira
+
+        if %youalsosee contains diopside gosub StowLoot diopside
+        if %youalsosee contains topaz gosub StowLoot topaz
+        if %youalsosee contains crystal gosub StowLoot crystal
+        if %youalsosee contains jasper gosub StowLoot jasper
+        if %youalsosee contains amethyst gosub StowLoot amethyst
+        if %youalsosee contains zircon gosub StowLoot zircon
+        if %youalsosee contains emerald gosub StowLoot emerald
+        if %youalsosee contains ruby gosub StowLoot ruby
+        if %youalsosee contains [ stone] gosub StowLoot stone
+        if %youalsosee contains bloodstone gosub StowLoot bloodstone
+	if %youalsosee contains chrysoprase gosub StowLoot chrysoprase
+	if %youalsosee contains peridot gosub StowLoot peridot
+	if %youalsosee contains nugget gosub StowLoot nugget
+	if %youalsosee contains agate gosub StowLoot agate
+	if %youalsosee contains tanzanite gosub StowLoot tanzanite
+	if %youalsosee contains [ bar] gosub StowLoot bar
+	if %youalsosee contains [ opal] gosub StowLoot opal
+	if %youalsosee contains morganite gosub StowLoot morganite
+	if %youalsosee contains chalcedony gosub StowLoot chalcedony
+	if %youalsosee contains citrine gosub StowLoot citrine
+	if %youalsosee contains [lapis lazuli] gosub stowloot lazuli
+	if %youalsosee contains [ pearl,] gosub StowLoot pearl
+	if %youalsosee contains [ coral,] gosub StowLoot coral
+	if %youalsosee contains moonstone gosub StowLoot moonstone
+	if %youalsosee contains turquoise, gosub StowLoot turquoise
+	if %youalsosee contains iolite gosub StowLoot iolite
+	if %youalsosee contains hematite gosub StowLoot hematite
+	if %youalsosee contains quartz gosub StowLoot quartz
+	if %youalsosee contains sunstone gosub StowLoot sunstone
+	if %youalsosee contains tsavorite gosub StowLoot tsavorite
+	if %youalsosee contains kunsize gosub StowLoot Kunzite
+	if %youalsosee contains spinel gosub StowLoot spinel
+	if %youalsosee contains [ ivory,] gosub StowLoot ivory
+	if %youalsosee contains [ onyx,] gosub StowLoot onyx
+	if %youalsosee contains [ beryl] gosub StowLoot beryl
+	if %youalsosee contains [ sapphire,] gosub StowLoot sapphire
+	if %youalsosee contains [ amber,] gosub StowLoot amber
+	if %youalsosee contains tourmaline gosub StowLoot tourmaline
+	if %youalsosee contains aquamarine gosub StowLoot aquamarine
+
+	if %youalsosee contains [silver coin] gosub StowLoot [silver coin]	
+
+	Return
+
+
+return
+
+StowLoot:
+
+	match Return Stow what?
+	match StowLoot You pick up
+	match StowLootHands You need a free hand to pick that up.
+	match Return is not yours.
+	match FullPouch You've already got a wealth of gems in there!
+
+	put stow %w
+	matchwait 3
+	goto StowLoot
+
+StowLootHands:
+	put stow left
+	goto StowLoot
+
+WebbedWait:
+pause 2
+
+webbed:
+getinfo status
+if %result AND %webbed
+	goto webbedwait
+else
+return
+
+AstroStart:
+
+
+Buff.Shadows:
+put release
+pause
+put prep shadows
+pause
+put harn 10
+pause
+put harn 10
+pause
+put harn 10
+pause
+put harn 10
+pause
+put harn 10
+pause
+put harn 10
+pause 
+put cast
+pause
+return
+
+Buff.Seers:
+put hide
+waitfor shadow
+put prep seers
+pause
+put harn 10
+pause
+put harn 10
+pause
+put harn 10
+pause
+put harn 10
+pause 
+put harn 10
+pause 9
+put cast
+pause
+return
+
+buff.disarm:
+pause
+put release
+put prep MB
+pause
+put harn 10
+pause
+put cast
+pause
+return
+
+wait.advancing:
+
+match return melee
+
+matchwait 5
+goto return
+
+
+Return:
+return
+
+Hunting:
+put hunt
+User Hunting seconds 90
+return
+
+quitnow:
+put quit
+exit
+
+quit:
+pause 
+put sigh
+pause 3
+put 'no, no thanks.  This just sucks all around
+pause 1
+put quit
+exit
+
+end:
+put ret
+put ret
+pause
+put hide
+put stance shield
+if %1 contains quit
+	put quit
+if %1 contains cont
+	goto Wait.It.Out
+else
+pause 3
+exit
+
+Wait.It.Out:
+put sleep
+pause 500
+put awa
+goto Control.control
+

@@ -1,0 +1,74 @@
+#debuglevel 10
+#
+# TODO
+# ----
+# Add features for special rooms by roomID variable
+# Add features for sneak/drag
+# Add features for carpet/horses
+
+# Includes
+include base.cmd
+
+# variables
+var do return
+put #var automapper 1
+
+# Standard Account = 2, Premium Account = 3
+var maxdepth 2
+if $move.fail = 1 then var maxdepth 1
+var depth 0
+action math depth subtract 1 when ^Obvious
+action math depth subtract 1 when ^It's pitch dark
+
+# movement actions
+
+action setvar do move.retreat when ^You are engaged to|^You can't do that while
+action setvar do move.retreat when ^You'll have better luck 
+action setvar do move.failed when ^You can't go there
+action setvar do move.failed when ^I could not find what you were referring to\.
+action setvar do move.failed when ^What were you referring to
+action setvar do move.failed when ^^You can't swim in that direction\.
+
+#if $maxd = 2 then action put #var maxd 1;goto move.failed when ^You wade|^You swim
+	
+loop:
+	if $connected = 0 then echo MOVE %1
+	if $connected = 1 then gosub move.set %1
+	shift
+	if_1 goto loop
+	delay 1
+	put #parse @walk done.
+	put #var automapper 0
+	echo *** DONE ***
+	put #var move.fail 0
+	#if $maxd != 2 then put #var maxd 2
+	exit
+
+move.set:
+	math depth add 1
+	if %depth < %maxdepth then goto move.whip
+	goto move.real
+move.whip:
+	put $0
+	return
+move.real:
+	pause .01
+	gosub put.1 "$0" "^Obvious|^It's pitch dark|^You are engaged|^You'll have better luck|^You can't go there|^I could not find what you were referring to\.|^What were you referring to|^You can't do that while|^You can't swim in that direction\."
+	if %do = return then return
+	else goto %do
+move.retreat:
+	gosub retreat.start
+	var do return
+	goto move.real
+move.stand:
+	gosub put.1 "dance silly" "^You leap|You dance"
+	var do return
+	goto move.real
+move.failed:
+	action remove when ^You wade|^You swim
+	echo *** MOVE FAILED ***
+	put #var move.fail 1
+	delay 2
+	delay 2
+	put #mapper walk $lastmove
+	exit

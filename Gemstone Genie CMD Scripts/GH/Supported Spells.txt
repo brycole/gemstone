@@ -1,0 +1,106 @@
+-------------------------
+ANALOGOUS PATTERNS
+
+Ease Burden [ease]
+Gauge Flow [gaf]
+Lay Ward [lw]
+Manifest Force [maf]
+
+-------------------------
+PALADIN SPELLS
+
+Anti-Stun [as]
+Aspirant's Aegis [aa]
+Banner of Truce [bot]
+Bond Armaments [ba]
+Clarity
+Courage
+Crusader's Challenge [crc]
+Divine Armor [da]
+Divine Guidance [dig]
+Hands of Justice [hoj]
+Heroic Strength [hes]
+Holy Warrior [how]
+Marshal Order [mo]
+Righteous Wrath [rw]
+Rutilor's Edge [rue]
+Sentinel's Resolve [sr]
+Soldier's Prayer [sp]
+Truffenyi's Rally [tr]
+
+-------------------------
+EMPATH SPELLS
+
+Absolution
+Aesandry Darlaeth [ad]
+Aggressive Stance [ags]
+Awaken
+Blood Staunching [bs]
+Circle of Sympathy [cos]
+Cure Disease [cd]
+Flush Poisons [fp]
+Gift of Life [gol]
+Guardian Spirit [gs]
+Heart Link [hl]
+Innocence
+Iron Constitution [ic]
+Mental Focus [mef]
+Perseverance of Peri'el [pop]
+Raise Power [rp]
+Refresh
+Regenerate
+Tranquility
+Vigor
+
+-------------------------
+RANGER SPELLS
+
+Claws of the Cougar [cotc]
+Earth Meld [em]
+Essence of Yew [ey]
+Hands of Lirisa [hol]
+Instinct [inst]
+Memory of Nature [mon]
+See the Wind [stw]
+Sense of the Tiger [sott]
+Wisdom of the Pack [wotp]
+
+-------------------------
+WARRIOR MAGE SPELLS
+
+Aegis of Granite [aeg]
+Ethereal Shield [es]
+Mantle of Flame [mof]
+Substratum
+Sure Footing [suf]
+Swirling Winds [sw]
+Tailwind [tw]
+Veil of Ice [voi]
+Y'ntrel Sechra [ys]
+
+-------------------------
+BARD SPELLS
+
+Drums of the Snake [drum]
+Eillie's Cry [ecry]
+Harmony
+Misdirection [mis]
+Naming of Tears [name]
+Rage of the Clans [rage]
+Redeemer's Pride [repr]
+
+-------------------------
+MOON MAGE SPELLS
+
+Aura Sight [aus]
+Clear Vision [cv]
+Piercing Gaze [pg]
+Psychic Shield [psy]
+Seer's Sense [seer]
+Shadows
+Tenebrous Sense [ts]
+
+-------------------------
+NECROMANCER SPELLS
+
+Obfuscation

@@ -1,0 +1,235 @@
+> [Script loaded: observe1.cmd]
+[observe1]: stop play
+
+In the name of love?
+> 
+Tanath continues to braid his vines.
+> 
+Laram gestures.
+Laram's cambrinth eyeball emits a loud *snap*.
+Pale yellow sparks begin to flicker over Laram's body.
+> 
+Laram begins to carefully examine a jeweled faenrae skull.
+> 
+Sanafer begins to hum some quiet scales with only the slightest hint of difficulty.
+> 
+Rucent smashes his foot into a pile of twigs.  It suddenly explodes, scattering bits and pieces of debris in every direction.
+> 
+Rucent roots around the area for a moment.
+Rucent forages around the area for a while and manages to collect a pile of twigs.
+> [observe1]: get my tele
+
+You get a simple satinwood telescope from inside your duffel bag.
+> 
+Sanafer begins to carefully examine some grey hunting leathers.
+> 
+Tanath continues to braid his vines.
+> [observe1]: center tele on shrike
+
+You put your eye to the satinwood telescope and attempt to center on the constellation of The Shrike.
+Your search for the constellation of The Shrike is foiled by the daylight.
+> [observe1]: center tele on yavash
+
+You put your eye to the satinwood telescope and attempt to center on the red moon Yavash.
+> [observe1]: peer tele
+
+Clouds obscure the sky where Yavash should appear.
+You are able to sense Yavash lurking somewhere behind the clouds.
+
+> [observe1]: stop play
+
+In the name of love?
+> 
+Rucent finishes humming a quiet lullaby.
+> 
+Aokage gestures.
+Aokage's cambrinth ring emits a loud *snap*.
+> 
+Kshar seems to be concentrating intently on something.
+> 
+Tanath continues to braid his vines.
+> [observe1]: prep pg 20
+[observe1]: harness 10
+
+You raise your arms skyward, chanting the words of the Piercing Gaze spell.
+> 
+You tap into the mana from ten of the surrounding streams and attempt to keep it channeling in a stream around you.
+Roundtime: 3 seconds
+R> 
+Aokage slides a cambrinth ring onto his finger.
+R> 
+The ball of lightning explodes in an angry shower of hissing and sizzling sparks.
+R> 
+Aokage roots around the area for a moment.
+R> 
+Kshar gestures.
+Kshar seems to move more easily.
+> [observe1]: harness 10
+
+You tap into the mana from ten of the surrounding streams and add it to the moderate amount already streaming around you.
+Roundtime: 3 seconds
+R> 
+Laram traces an arcane sigil in the air.
+R> 
+Tanath pulls and tugs on his vines, testing them thoroughly.
+Tanath proudly examines his new lead rope.
+R> 
+You listen carefully to Tanath's every word as he lectures in detail on aspects of Targeted Magic you have never mastered.
+> 
+Sanafer begins to carefully examine some leather gloves.
+> 
+Aokage stares at the sky for a few long moments.
+He breathes deeply of the air and faces the wind.
+> 
+Tanath just went north.
+> 
+Tanath just arrived.
+> 
+Tanath gets a simple black compendium from inside his gentleman's greatcloak.
+> 
+Tanath opens his black compendium.
+> 
+Rucent begins to hum a quiet lullaby with only the slightest hint of difficulty.
+> 
+Rucent smashes his foot into a pile of twigs.  It suddenly explodes, scattering bits and pieces of debris in every direction.
+> 
+Rucent roots around the area for a moment.
+Rucent forages around the area for a while and manages to collect a pile of twigs.
+> 
+You feel fully attuned to the mana streams again.
+> 
+Tanath continues to hum a spritely reel with only the slightest hint of difficulty.
+> 
+Ssaga just arrived.
+> 
+Ssaga appears to be concentrating intently on something.
+> 
+Laram holds a black cambrinth eyeball in both hands and closes his eyes in concentration.
+> 
+Sanafer begins to carefully examine a leather helm.
+> 
+Kshar gets a cloth compendium patterned with large black and white spots from inside his oilcloth rucksack.
+> 
+You feel fully prepared to cast your spell.
+> [observe1]: cast
+[observe1]: peer tele
+
+You gesture.
+The mana you were holding contributes to the spell.
+The world around you brightens considerably.
+> 
+You focus your enhanced sight, through some of the cloud cover, upon Yavash.
+Fully half of Yavash is blocked by the clouds overhead.
+You are able to sense Yavash lurking somewhere behind the clouds.
+
+You struggle to make your observation through the clouds, but you manage to pinpoint Yavash with the help of your telescope.
+You learned something useful from your observation.
+Roundtime: 5 sec.
+R> 
+Laram gestures.
+Laram's cambrinth eyeball emits a loud *snap*.
+The ethereal shield surrounding Laram shimmers slightly.
+R> 
+Aokage stares at the sky for a few long moments.
+He breathes deeply of the air and faces the wind.
+R> 
+Laram traces an arcane sigil in the air.
+> [observe1]: stow tele
+
+You put your telescope in your duffel bag.
+> 
+Sanafer continues to hum some quiet scales with only the slightest hint of difficulty.
+> [observe1]: get my mirror
+[observe1]: align survival
+
+You notice as a black panther yawns lazily for a moment, showing large white fangs.
+> 
+You get an ornate mirror from inside your duffel bag.
+> 
+You focus internally and align yourself for a prediction on a random survival skill.
+Roundtime: 2 seconds.
+R> 
+Rucent smashes his foot into a pile of twigs.  It suddenly explodes, scattering bits and pieces of debris in every direction.
+R> 
+Rucent roots around the area for a moment.
+Rucent forages around the area for a while and manages to collect a pile of twigs.
+R> [observe1]: gaze mirror
+
+Sanafer roots around the area for a moment.
+Sanafer forages around the area for a while and manages to collect a pile of rocks.
+> 
+You gaze into the mirror looking for insight into the future.  From the colors swirling across the surface of the glass an image appears of a sullen sky streaked with clouds over a meandering pathway through a hazy field of wheat.  Sitting on a stool next to a diminutive cloud of steam is a worried looking Gnome man holding a piton.
+Roundtime: 10 seconds.
+R> 
+Laram appears to be concentrating intently on something.
+R> [observe1]: align magic
+
+You feel fully attuned to the mana streams again.
+> 
+You focus internally and align yourself for a prediction on a random magic skill.
+Roundtime: 2 seconds.
+R> [observe1]: gaze mirror
+
+You gaze into the mirror looking for insight into the future.  From the colors swirling across the surface of the glass an image appears of a lowering sky streaked with clouds over some snow-capped mountains rising up in the distance.  Sitting on a stool next to a wee statue is a calm Gnome man staring ahead blankly.
+Roundtime: 10 seconds.
+R> 
+Rucent continues to hum a quiet lullaby with only the slightest hint of difficulty.
+R> 
+Ssaga just went southwest.
+R> 
+Rucent smashes his foot into a pile of twigs.  It suddenly explodes, scattering bits and pieces of debris in every direction.
+R> 
+Rucent roots around the area for a moment.
+Rucent forages around the area for a while and manages to collect a pile of twigs.
+R> 
+Laram holds a black cambrinth eyeball in both hands and closes his eyes in concentration.
+R> 
+Sanafer smashes his foot into a pile of twigs.  It suddenly explodes, scattering bits and pieces of debris in every direction.
+R> 
+Tanath continues to hum a spritely reel with only the slightest hint of difficulty.
+R> 
+Sanafer roots around the area for a moment.
+Sanafer forages around the area for a while and manages to collect a pile of rocks.
+R> [observe1]: pred anal
+
+You close your eyes, mentally seeking the threads of fate.  A few images materialize before your mind's eye and you pick out the following:
+
+A flickering scarlet tree that disappears and is replaced by a tall mountain.  It seems to vanish almost immediately.  A Gnome man stands immediately before you.  Something about him seems strangely familiar.
+
+A flickering aquamarine spellbook that slowly reshapes itself into a crystal prism.  It pops out of existence the moment you notice it.  A Gnome man stands immediately before you.  Something about him seems strangely familiar.
+Roundtime: 10 sec.
+R> 
+Laram gestures.
+Laram's cambrinth eyeball emits a loud *snap*.
+A crackling mantle of blazing reddish-gold flames surrounds Laram!
+R> 
+Laram begins to carefully examine a suit of finely woven bronzed battle mesh with scorched links.
+R> 
+Sanafer continues to hum some quiet scales with only the slightest hint of difficulty.
+R> 
+Rucent roots around the area for a moment.
+Rucent forages around the area for a while and manages to collect a pile of twigs.
+R> 
+Laram puts his eyeball in his silk cloak.
+> [observe1]: stow mirror
+
+You put your mirror in your duffel bag.
+> 
+Laram gets a simple black compendium from inside his caracal fur backpack.
+> [Script loaded: powerp.cmd]
+[powerp]: perc xibar
+
+Xibar is a waxing crescent moon, high in the eastern sky.
+You're certain that Xibar is seventy-two degrees above the eastern horizon.
+It is contributing a moderately strong amount of mana.
+Roundtime: 6 sec.
+R> 
+Tanath closes his black compendium.
+R> 
+Tanath puts his compendium in his gentleman's greatcloak.
+R> Sparkles follow the reflective stars as they zip by Chelinde's left arm.
+
+Tanath stops playing his song.
+R> 
+Tiny tendrils of lightning begin to jolt between Tanath's hands as he utters a few magical words!
+R> 

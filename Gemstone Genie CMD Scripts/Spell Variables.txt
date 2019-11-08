@@ -1,0 +1,82 @@
+ANALOGOUS PATTERNS
+
+#trigger {^Closing the (WIZARD|STORMFRONT) front end|^Your death cry echoes in your brain|^You feel a weight settle over you, and realize the magic that has been easing your burden has faded\.$} {#var EASE OFF} {buff}
+#trigger {^You sense the Ease Burden spell upon you, which will last for|^Pale yellow sparks flicker around your torso\.  Your possessions suddenly feel lighter and easier to carry\.$} {#var EASE ON} {buff}
+#trigger {^Closing the (WIZARD|STORMFRONT) front end|^Your death cry echoes in your brain|^You sense your invisible ward give away, leaving you more vulnerable\.$} {#var LW OFF} {buff}
+#trigger {^You sense the Lay Ward spell upon you, which will last for|^A .+ briefly appears around your arms and spreads imperceptibly around you to form your ward\.$} {#var LW ON} {buff}
+#trigger {^Closing the (WIZARD|STORMFRONT) front end|^Your death cry echoes in your brain|^The air around you shimmers with a weak yellow light that quickly disperses\.$} {#var MAF OFF} {buff}
+#trigger {^You sense the Manifest Force spell surrounding you, which will last for|^The air around you shimmers with an? .+\.  The scintillating light writhes and twists, abruptly coalescing into a translucent field before blinking out of sight\.$} {#var MAF ON} {buff}
+
+EMPATH
+
+#trigger {^Closing the (WIZARD|STORMFRONT) front end|^Your death cry echoes in your brain|^Aesandry Darlaeth loses cohesion, returning your reaction time to normal\.$} {#var AD OFF} {buff}
+#trigger {^You sense the Aesandry Darlaeth spell upon you, which will last until|^Life energy floods through your veins, burning without consuming\.  Time seems to slow as it flows into your muscles and nerves, increasing your reaction speed\.$} {#var AD ON} {buff}
+#trigger {^Closing the (WIZARD|STORMFRONT) front end|^Your death cry echoes in your brain|^You sense the Aggressive Stance spell fade away, returning your body to a state more sluggish and serene\.$} {#var AGS OFF} {buff}
+#trigger {^You sense the Aggressive Stance spell upon you, which will last for|^Your body tenses with a burning, stressful ache as you take on a physiological stance better prepared for combat\.$} {#var AGS ON} {buff}
+#trigger {^Closing the (WIZARD|STORMFRONT) front end|^Your death cry echoes in your brain|^You no longer feel the insomnious solace of Awaken\.$} {#var AWAKEN OFF} {buff}
+#trigger {^You sense the Awaken spell upon you, which will last for|^The vivacious energies of your spell focalize around your head\.  As the pattern reaches deeply beyond your conscious mind, you are pervaded by a feeling of sobered vigilance\.$} {#var AWAKEN ON} {buff}
+#trigger {^Closing the (WIZARD|STORMFRONT) front end|^Your death cry echoes in your brain|^You feel the warmth between your shoulders dissipate\.$} {#var BS OFF} {buff}
+#trigger {^You sense the Blood Staunching spell upon you, which will last for|^A sudden sensation of warmth spreads through your body, settling itself between your shoulders\.$} {#var BS ON} {buff}
+#trigger {^Closing the (WIZARD|STORMFRONT) front end|^Your death cry echoes in your brain|^You feel the protective warmth just under your \w+ fade away\.$} {#var CD OFF} {buff}
+#trigger {^You sense the Cure Disease spell upon you, which will last for|^A wave of vertigo washes over you as your spell seeks out disease in your body\.  However, you don't seem to be so afflicted\.  Instead, you use your knowledge of Adaptive Curing to set a reactive ward\.  You feel the pattern sink into your body, a lingering warmth just beneath your \w+ reminding you of its protective presence\.$} {#var CD ON} {buff}
+#trigger {^Closing the (WIZARD|STORMFRONT) front end|^Your death cry echoes in your brain|^You feel the heat at the small of your back fade away\.$} {#var FP OFF} {buff}
+#trigger {^You sense the Flush Poisons spell upon you, which will last for|^A sudden wave of heat washes over you as your spell attempts to flush poison from your body but finds no toxins\.  Since you don't seem to be poisoned, you use your knowledge of Adaptive Curing to set a reactive ward\.  You feel the pattern center itself in the small of your back, a lingering warmth reminding you of its protective presence\.$} {#var FP ON} {buff}
+#trigger {^Closing the (WIZARD|STORMFRONT) front end|^Your death cry echoes in your brain|^You feel less connected to the world around you as the Gift of Life spell ends\.$} {#var GOL OFF} {buff}
+#trigger {^You sense the Gift of Life spell upon you, which will last for|^New life flows into your body, sharpening your Empathic senses and increasing your sense of wellness\.$} {#var GOL ON} {buff}
+#trigger {^Closing the (WIZARD|STORMFRONT) front end|^Your death cry echoes in your brain|^You sense your hold on your Guardian Spirit weaken, then evaporate entirely\.$} {#var GS OFF} {buff}
+#trigger {^You sense the Guardian Spirit spell upon you, which will last until|^Your heart skips a beat as your spell sends a subtle jingling call outward from you in all directions\.$} {#var GS ON} {buff}
+#trigger {^Closing the (WIZARD|STORMFRONT) front end|^Your death cry echoes in your brain|^You feel your Heart Link with \w+ fade away\.$} {#var HL OFF} {buff}
+#trigger {^You sense a heart link between yourself and \w+, which will last|^You reach out and touch \w+, linking your heart's rhythm with \w+'s\.  You feel her heart shudder as its natural beat is forced to match your own\.$} {#var HL ON} {buff}
+#trigger {^Closing the (WIZARD|STORMFRONT) front end|^Your death cry echoes in your brain|^The lingering effects of your Innocence spell fade away\.$} {#var INNOCENCE OFF} {buff}
+#trigger {^You sense the Innocence spell upon you, which will last for|^Tapering ribbons of soft yellow extend across the area, pausing to dance in swirls and eddies\.$} {#var INNOCENCE ON} {buff}
+#trigger {^Closing the (WIZARD|STORMFRONT) front end|^Your death cry echoes in your brain|^Your \w+ loses its protective numbness\.$} {#var IC OFF} {buff}
+#trigger {^You sense the Iron Constitution spell upon you, which will last for|^The pattern secretes a liquid, dusky light which cascades down your body like thick honey, numbing your \w+ as it covers you from head to toe before thinning out\.$} {#var IC ON} {buff}
+#trigger {^Closing the (WIZARD|STORMFRONT) front end|^Your death cry echoes in your brain|^The Mental Focus spell fades away, releasing its grip on your mind\.  You feel briefly confused and stupid as your senses return to their normal state\.$} {#var MEF OFF} {buff}
+#trigger {^You sense the Mental Focus spell upon you, which will last for|^The world around you seems to slow as the spell grips your mind\.  You feel centered and steady, your concentration honed to a keen edge\.$} {#var MEF ON} {buff}
+#trigger {^Closing the (WIZARD|STORMFRONT) front end|^Your death cry echoes in your brain|} {#var RP OFF} {buff}
+#trigger {^You sense the Raise Power spell in the area, which will last for|^You feel completely spent as your life force pours into the land\.$} {#var RP ON} {buff}
+#trigger {^Closing the (WIZARD|STORMFRONT) front end|^Your death cry echoes in your brain|^You feel the surge of energy within you ebb away\.$} {#var REFRESH OFF} {buff}
+#trigger {^You sense the Refresh spell upon you, which will last for|^Soft waves of a gentle, warm peach color flicker around you\.$|^A surge of renewed strength runs through you, replacing the previous sensation\.$|^You are already being bolstered by a more powerful cast of the refresh spell\.$} {#var REFRESH ON} {buff}
+#trigger {^Closing the (WIZARD|STORMFRONT) front end|^Your death cry echoes in your brain|^The tingling across your body diminishes as you feel the motes of energy fade away\.$} {#var REGENERATE OFF} {buff}
+#trigger {^You sense the Regenerate spell upon you, which will last until|^Rutilant sparks of light encircle you, bathing you in a warm glow as your body begins to tingle with energy\.$} {#var REGENERATE ON} {buff}
+#trigger {^Closing the (WIZARD|STORMFRONT) front end|^Your death cry echoes in your brain|^The fluidity of your mind expires\.$} {#var TRANQUILITY OFF} {buff}
+#trigger {^You sense a .+ Tranquility upon you, which should last for|^A newfound fluidity of your mind imparts you with enhanced awareness of every nerve in your body\.$} {#var TRANQUILITY ON} {buff}
+#trigger {^Closing the (WIZARD|STORMFRONT) front end|^Your death cry echoes in your brain|^You sense the Vigor spell fade away, returning your body to a weaker, more clumsy state\.$} {#var VIGOR OFF} {buff}
+#trigger {^You sense the Vigor spell upon you, which will last for|^You close your eyes, drawing on the vitality of your surroundings to enhance yourself\.  You settle into a graceful stance, able to act quicker and firmer than usual\.$} {#var VIGOR ON} {buff}
+
+PALADIN
+
+#trigger {^Closing the (WIZARD|STORMFRONT) front end|^Your death cry echoes in your brain|^The dull orange glow fades from you\.$} {#var AS OFF} {buff}
+#trigger {^You sense the Anti-Stun spell upon you, which will last for|^A dull orange glow settles around you\.$} {#var AS ON} {buff}
+#trigger {^Closing the (WIZARD|STORMFRONT) front end|^Your death cry echoes in your brain|^You sense the invisible magic guarding you fade\.$} {#var AA OFF} {buff}
+#trigger {^You sense the Aspirant's Aegis spell upon you, which will last for|^A comforting opalescent glow momentarily illuminates you before sinking into your \w+\.$} {#var AA ON} {buff}
+#trigger {^Closing the (WIZARD|STORMFRONT) front end|^Your death cry echoes in your brain|^The ghostly banner fades out of sight\.$} {#var BOT OFF} {buff}
+#trigger {^You sense the Banner of Truce spell matrix in the area\.$|^A ghostly white banner fades into view overhead\.$} {#var BOT ON} {buff}
+#trigger {^Closing the (WIZARD|STORMFRONT) front end|^Your death cry echoes in your brain|^Your previous bond with an? .+ breaks\.$} {#var BA OFF} {buff}
+#trigger {^You sense that there is a bond between you and an? .+, which should last for|^You sense a new bond forged between you and your|^Tendrils of translucent white writhe around your .+\.$|^The spell pattern refuses to meld with the bonding magic} {#var BA $righthand} {buff}
+#trigger {^Closing the (WIZARD|STORMFRONT) front end|^Your death cry echoes in your brain|^You seem to lose the clarity of your mind\.$} {#var CLARITY OFF} {buff}
+#trigger {^You sense the Clarity spell upon you, which will last for|^You feel your holy inclinations strengthen your senses, allowing a clearer perspective on the world\.$} {#var CLARITY ON} {buff}
+#trigger {^Closing the (WIZARD|STORMFRONT) front end|^Your death cry echoes in your brain|^You falter for a moment as your extra courage slips away\.$} {#var COURAGE OFF} {buff}
+#trigger {^You sense the Courage spell upon you, which will last for|^You feel your courage bolstered by your faith and determination\.$} {#var COURAGE ON} {buff}
+#trigger {^Closing the (WIZARD|STORMFRONT) front end|^Your death cry echoes in your brain|^Your .+ returns? to (its|their) normal condition\.$} {#var DA OFF} {buff}
+#trigger {^You sense the Divine Armor spell upon you, which will last for|^Your .+ feels?.+ more substantial\.$} {#var DA ON} {buff}
+#trigger {^Closing the (WIZARD|STORMFRONT) front end|^Your death cry echoes in your brain|^Your profound inspiration wanes and expires as thin, wispy lines of light alternately appear and disappear near your head\.$} {#var DIG OFF} {buff}
+#trigger {^You sense the Divine Guidance spell upon you, which will last for|^Brilliant, hair-like threads of light form a wispy crown around your head, bringing with them an epiphany of thought and knowledge\.$} {#var DIG ON} {buff}
+#trigger {^Closing the (WIZARD|STORMFRONT) front end|^Your death cry echoes in your brain|^Your zeal for justice wanes as you realize the divine guidance of Chadatru has faded\.$} {#var HOJ OFF} {buff}
+#trigger {^You sense the Hands of Justice spell upon you, which will last for|^Your hands glow briefly with a pristine white light as you feel your dedication to the pursuit of justice strengthened!$} {#var HOJ ON} {buff}
+#trigger {^Closing the (WIZARD|STORMFRONT) front end|^Your death cry echoes in your brain|^Your extra strength deserts you as the glistening net unravels from your body\.$} {#var HES OFF} {buff}
+#trigger {^You sense the Heroic Strength spell upon you, which will last for|^A glistening net of coiling tendrils interlaces itself across your muscles, outlining each vein and contour with sparkles of white light\.$} {#var HES ON} {buff}
+#trigger {^Closing the (WIZARD|STORMFRONT) front end|^Your death cry echoes in your brain|^The holy golden radiance of your soul subsides, retreating into your body\.$} {#var HOW OFF} {buff}
+#trigger {^You sense the Holy Warrior spell upon you, which will last until|^You clap your hands once in an august gesture of piety\.$} {#var HOW ON} {buff}
+#trigger {^Closing the (WIZARD|STORMFRONT) front end|^Your death cry echoes in your brain|^You falter for a moment as your inner faculties return to normal\.$} {#var MO OFF} {buff}
+#trigger {^You sense the Marshal Order spell upon you, which will last for|^You sense a righteous awakening, leaving you .+ more in tune with your body, mind and spirit\.$} {#var MO ON} {buff}
+#trigger {^Closing the (WIZARD|STORMFRONT) front end|^Your death cry echoes in your brain|^You feel your righteous rage dissipate\.$} {#var RW OFF} {buff}
+#trigger {^You sense the Righteous Wrath spell upon you, which will last for|^Your blood begins to boil and with a mighty shout you allow the rage within to flow outward for all to see\.$} {#var RW ON} {buff}
+#trigger {^Closing the (WIZARD|STORMFRONT) front end|^Your death cry echoes in your brain|^You sense the Rutilor's Edge spell fade from your .+\.$|^A soft silver glow fades from .+\.$} {#var RUE OFF} {buff}
+#trigger {^A silver hue dances along the surface of the weapon\.  You sense that your .+ is sturdier than normal, which should last for|^A soft silver glow envelops your .+ and is slowly absorbed into it\.$} {#var RUE $righthand} {buff}
+#trigger {^Closing the (WIZARD|STORMFRONT) front end|^Your death cry echoes in your brain|^Your sense of protection leaves you\.$} {#var SR OFF} {buff}
+#trigger {^You sense the Sentinel's Resolve spell upon you, which will last for|^You sense a potent wave of righteousness lend its protection to you\.$|^You sense a familiar wave of righteousness lend its protection to you once more\.$} {#var SR ON} {buff}
+#trigger {^Closing the (WIZARD|STORMFRONT) front end|^Your death cry echoes in your brain|^The power of the Soldier's Prayer slips away from you, fused elements of its pattern falling away like brittle metal\.$} {#var SP OFF} {buff}
+#trigger {^You sense the Soldier's Prayer spell upon you, which will last for|^You weave a simple barrier out of invisible strands of Holy energy and then focus inward\.  Spiritual heat surges from your refined soul, tempering the pattern\.$} {#var SP ON} {buff}
+#trigger {^Closing the (WIZARD|STORMFRONT) front end|^Your death cry echoes in your brain|^Truffenyi's Rally ends, leaving behind a momentary sensation of something stuck in your throat\.$} {#var TR OFF} {buff}
+#trigger {^You sense the Truffenyi's Rally spell upon you, which will last until|^You speak a few words of righteousness in Truffenyi's name\.$} {#var TR ON} {buff}
